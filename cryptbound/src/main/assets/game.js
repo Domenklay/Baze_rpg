@@ -376,7 +376,7 @@ function renderMenu(){
 }
 function draw(){
  if(!s)return;
- hud();if(!r){$('content').innerHTML=section('Записки выживших','Лагерь')+
+ hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=section('Записки выживших','Лагерь')+
  '<div class="scene">'+window.CryptArt.room(0,1)+'<div class="banner-label">Место, где всё начинается снова.</div></div>'+
  frame('НОВАЯ ЭКСПЕДИЦИЯ','<p class="fine muted">Выберите одного из трёх героев. Каждый забег создаёт новый лабиринт, но полученные осколки памяти позволяют усиливать будущие походы.</p>'+
  '<button class="btn wide space-top" data-action="choose">Выбрать героя</button>')+
@@ -760,6 +760,7 @@ function action(name,id){
  if(name==='confirm-end'){die();return;}
  if(!r)return;
  if(name==='reveal'){reveal(id);return;}
+ if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='strike'){strike(id);return;}
  if(name==='descend'){descend();return;}
  if(name==='inspect-tile'){inspectTile(id);return;}
@@ -768,11 +769,19 @@ function action(name,id){
  if(name==='wait'){wait();return;}
  if(name==='cast'){cast(id);return;}
  if(name==='talent'){gainTalent(id);return;}
+ if(name==='tree'){r.treeView=clamp(Number(id)||0,0,2);draw();save();return;}
+ if(name==='bag-filter'){r.bagFilter=id||'all';r.bagSelected=null;draw();save();return;}
  if(name==='item-select'){r.bagSelected=Number(id);draw();return;}
- if(name==='inspect-item'){r.bagSelected=Number(id);r.tab='bag';draw();return;}
+ if(name==='inspect-slot'){r.bagFilter=SLOT[id]?id:'all';r.bagSelected=r.equip[id]||null;r.tab='bag';draw();save();return;}
+ if(name==='inspect-item'){r.bagSelected=Number(id);r.bagFilter=(item(id)||{}).slot||'all';r.tab='bag';draw();save();return;}
  if(name==='equip'){equip(id);return;}
  if(name==='upgrade'){upgrade(id);return;}
  if(name==='scrap'){scrap(id);return;}
+ if(name==='battle-log'){
+  dialog('<div class="emblem">▤</div><h2>ЖУРНАЛ ПОХОДА</h2><div class="log" style="max-height:60dvh;text-align:left;">'+
+   r.log.map(function(x){return '<div>'+esc(x)+'</div>';}).join('')+
+   '</div><button class="btn wide space-top" data-action="close">Вернуться</button>');return;
+ }
  if(name==='event-yes'){eventChoice(id);return;}
  if(name==='altar-heal'){altarChoice(false);return;}
  if(name==='altar-risk'){altarChoice(true);return;}
