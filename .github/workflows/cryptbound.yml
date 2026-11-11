@@ -1,0 +1,73 @@
+name: Build Cryptbound Offline APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'cryptbound/**'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - '.github/workflows/cryptbound.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Use preinstalled Android SDK
+        run: echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Install Android platform
+        run: |
+          SDKMANAGER=$(find "$ANDROID_SDK_ROOT/cmdline-tools" -name sdkmanager -type f | head -n 1)
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Validate original artwork and game scripts
+        run: |
+          node --check cryptbound/src/main/assets/art.js
+          node --check cryptbound/src/main/assets/game.js
+          node cryptbound/tests/smoke.cjs
+
+      - name: Compile playable Android app
+        run: gradle :cryptbound:assembleDebug --no-daemon
+
+      - name: Gather APK
+        run: |
+          mkdir -p dist
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-Offline-Android.apk
+          sha256sum dist/Cryptbound-Offline-Android.apk > dist/SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cryptbound-Offline-Android
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Publish standalone APK release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view cryptbound-v0.1.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.1.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.1.0 — Android" --notes "Отдельная тестовая офлайн roguelike: 25 плит на этаж, 3 класса, некромант со скелетом, заклинания, древа талантов, секреты, инвентарь, боссы. Независимые оригинальные графика и сюжет."
+          fi
+          gh release upload cryptbound-v0.1.0 dist/Cryptbound-Offline-Android.apk dist/SHA256SUMS.txt --clobber
