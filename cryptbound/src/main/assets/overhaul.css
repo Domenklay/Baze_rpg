@@ -98,3 +98,7 @@
  .tree-nodes{gap:3px}.compare-head,.compare-row{grid-template-columns:minmax(60px,1fr) 44px 44px 46px;font-size:10px}
 }
 @media(max-height:700px){.dungeon-header{height:41px}.dungeon-footer{min-height:118px}.dungeon-encounter{height:44px}.dungeon-action{min-height:45px}.dungeon-border{width:min(96%, calc(100dvh - 395px),440px)}}
+
+/* Hero remains visible at the entrance, while empty squares stay uninteractive. */
+.dungeon-board .tile.tile-player{background:radial-gradient(ellipse at center,#60493b,#262025 75%);border:1px solid #ad8b5b;box-shadow:inset 0 0 13px #ab83533a}
+.dungeon-board .tile.tile-player svg{display:block;width:82%;height:100%;filter:drop-shadow(2px 3px 2px #080708)}
