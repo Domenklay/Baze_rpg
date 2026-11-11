@@ -402,33 +402,37 @@ function choose(){
 }
 function upgradeCost(i){return 9+(i.plus+1)*7+i.rarity*4;}
 function consumeTurn(){
- if(!r)return;
+ if(!r)return false;
  r.turn++;
  if(r.blessed>0)r.blessed--;
  var alive=enemies();
- // Summoned skeleton acts once per player turn; can attack even when hero explores.
  if(r.summon&&r.summon.hp>0&&alive.length){
-  var t=alive[0],d=Math.max(1,r.summon.atk-t.foe.def);
-  t.foe.hp-=d;log('Ваш скелет поражает '+t.foe.name+' ('+d+').');
-  if(t.foe.hp<=0)kill(t);
+  var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def);
+  victim.foe.hp-=hit;log('Скелет поражает '+victim.foe.name+': '+hit+'.');
+  if(victim.foe.hp<=0)kill(victim);
  }
  alive=enemies();
- // No more than four simultaneous attackers per turn: risky exploration, survivable.
  alive.slice(0,4).forEach(function(t){
   var e=t.foe;
-  if(e.stun>0){e.stun--;log(e.name+' пропускает ход.');return;}
-  if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48));if(e.hp<=0){kill(t);return;}}
-  var amount=Math.max(1,e.atk+rand(-2,2)-stats().def-Math.floor(r.blessed));
-  if(r.summon&&r.summon.hp>0&&Math.random()<.72){
-    r.summon.hp=Math.max(0,r.summon.hp-amount);
-    log('Скелет перехватывает '+amount+' урона.');
-    if(!r.summon.hp){log('Скелет рассыпался костяной пылью.');r.summon=null;}
-  }else{
-    var taken=amount;
-    if(r.shield>0){var absorbed=Math.min(r.shield,taken);r.shield-=absorbed;taken-=absorbed;}
-    r.hp=Math.max(0,r.hp-taken);
-    if(taken)log(e.name+' наносит '+taken+' урона.');
+  if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
+  if(e.burn>0){
+   e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage'));
+   if(e.hp<=0){kill(t);return;}
   }
+  var amount=Math.max(1,e.atk+rand(-2,2)-stats().def-bonus('damageFlat')-Math.floor(r.blessed));
+  if(Math.random()*100<stats().dodge){log('Вы уклонились от удара '+e.name+'.');return;}
+  if(r.summon&&r.summon.hp>0&&Math.random()<.72){
+   r.summon.hp=Math.max(0,r.summon.hp-amount);
+   log('Скелет перехватывает '+amount+' урона.');
+   if(!r.summon.hp){log('Призванный скелет рассыпался.');r.summon=null;}
+  }else{
+   var taken=amount;
+   if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
+   r.hp=Math.max(0,r.hp-taken);
+   if(taken)log(e.name+' наносит '+taken+' урона.');
+  }
+  var counter=bonus('thorns')+(Math.random()*100<bonus('reflect')?Math.max(1,Math.floor(stats().atk*.45)):0);
+  if(counter>0&&e.hp>0){e.hp-=counter;log('Ответный урон: '+counter+'.');if(e.hp<=0)kill(t);}
  });
  if(r.hp<=0){die();return false;}
  return true;
@@ -451,7 +455,8 @@ function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def);
- if(critical)amount=Math.floor(amount*1.6);
+ if(t.foe.boss)amount=Math.floor(amount*(1+bonus('bossDamage')*.01));
+ if(critical)amount=Math.floor(amount*(1.6+bonus('critDamage')*.01));
  t.foe.hp-=amount;
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
