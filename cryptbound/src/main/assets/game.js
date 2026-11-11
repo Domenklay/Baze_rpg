@@ -282,8 +282,9 @@ function renderHero(){
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>')+
  '<div class="btnrow"><button class="btn dark wide" data-action="abandon">Завершить забег</button></div>';
 }
+function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
 function spellValid(sp){
- if(r.mp<sp.cost)return 'Недостаточно маны';
+ if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(['attack','burn','stun','chain','drain'].indexOf(sp.kind)>=0&&!enemies().length)return 'Нет цели';
  if(sp.kind==='reveal'&&!r.tiles.some(function(t){return !t.revealed;}))return 'Всё открыто';
@@ -293,7 +294,7 @@ function renderSpells(){
  var cards=SPELLS.map(function(sp){
   var error=spellValid(sp);
   return '<button class="spell-card" data-action="cast" data-id="'+sp.id+'" '+(error?'disabled':'')+'>'+
-  '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4><p>'+sp.description+'</p><small>◈ '+sp.cost+' маны · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
+  '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4><p>'+sp.description+'</p><small>◈ '+manaCost(sp)+' маны · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
  }).join('');
  return section('Книга магии','Мощь '+stats().pow)+
  frame('ПЕЧАТИ И СВИТКИ','<div class="spell-list">'+cards+'</div>')+
@@ -468,8 +469,8 @@ function useSkill(){
  var targetTile=target();var st=stats();
  if(r.class==='necromancer'){
   if(r.mp<8){toast('Нужно 8 маны.');return;}
-  r.mp-=8;r.summon={name:'Костяной страж',maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual'),
-   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual'),atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')};
+  r.mp-=8;r.summon={name:'Костяной страж',maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp'),
+   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp'),atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')};
   r.skillUsed=r.turn;log('Некромант призывает скелета из могильной пыли.');
  }else if(r.class==='executioner'){
   if(!targetTile){toast('Нужен враг для удара.');return;}
@@ -505,20 +506,19 @@ function wait(){log('Вы затаились, собираясь с силами
 function cast(id){
  var sp=SPELLS.find(function(x){return x.id===id;});if(!sp)return;
  var error=spellValid(sp);if(error){toast(error);return;}
- r.scrolls[id]--;r.mp-=sp.cost;
+ r.scrolls[id]--;r.mp-=manaCost(sp);
  var tar=target(),st=stats();
- var magic=Math.floor(sp.base+st.pow*1.45);
+ var magic=Math.floor((sp.base+st.pow*1.45)*(1+bonus('spellDamage')*.01));
  if(sp.kind==='heal'){r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
  else if(sp.kind==='shield'){r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
  else if(sp.kind==='reveal'){
   var covered=r.tiles.filter(function(t){return !t.revealed;});var count=0;
-  for(var j=0;j<sp.base&&covered.length;j++){
-   var index=rand(0,covered.length-1);covered.splice(index,1)[0].revealed=true;count++;
-  }
-  log('Око забвения открыло '+count+' скрытые клетки.');
+  for(var j=0;j<sp.base&&covered.length;j++){var index=rand(0,covered.length-1);covered.splice(index,1)[0].revealed=true;count++;}
+  log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
-  var victims=enemies().slice(0,3);
-  victims.forEach(function(t){var dmg=Math.max(1,magic-t.foe.def);t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
+  var victims=enemies().slice(0,3+bonus('chainTargets'));
+  victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
+   t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
  }else if(tar){
   var dmg2=Math.max(1,magic-tar.foe.def);
