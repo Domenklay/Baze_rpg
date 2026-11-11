@@ -41,7 +41,7 @@ r.hp=9999;r.mp=1000;
 check('Dungeon displays without full-page scene and has a stone floor',()=>{
  assert.match(el('content').innerHTML,/dungeon-root/);
  assert.match(el('content').innerHTML,/dungeon-board/);
- assert.match(el('content').innerHTML,/tile-bare/);
+ assert.match(el('content').innerHTML,/tile-player/);
  assert.doesNotMatch(el('content').innerHTML,/scene-bg/);
 });
 check('Empty tiles become visibly blank and unclickable after reveal',()=>{
