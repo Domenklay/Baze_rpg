@@ -650,17 +650,18 @@ function altarChoice(risk){
  else{var heal=Math.floor(stats().hp*.35);r.hp=Math.min(stats().hp,r.hp+heal);log('Алтарь возвращает '+heal+' здоровья.');}
  close();finishAction();
 }
+function shopPrice(id){var base=id==='potion'?16:id==='scroll'?15:38;
+ return Math.max(1,Math.ceil(base*(1-bonus('discount')*.01)));}
 function showShop(){
+ var items=[['potion','✚','Целебный эликсир'],['scroll','✣','Случайный свиток'],['gear','⚔','Случайная экипировка']];
  dialog('<div class="emblem">◈</div><div class="subhead">СТРАНСТВУЮЩИЙ ТОРГОВЕЦ</div><h2>ЛАВКА ЗАБОРОМНОГО</h2>'+
  '<p>Под рваным плащом торговец держит реликвии и свитки. Его глаза не отражают свет.</p>'+
- '<div class="row space-bottom"><span>✚ Целебный эликсир</span><button class="btn small" data-action="buy" data-id="potion" '+(r.gold<16?'disabled':'')+'>16 ◈</button></div>'+
- '<div class="row space-bottom"><span>✣ Случайный свиток</span><button class="btn small" data-action="buy" data-id="scroll" '+(r.gold<15?'disabled':'')+'>15 ◈</button></div>'+
- '<div class="row space-bottom"><span>⚔ Случайная экипировка</span><button class="btn small" data-action="buy" data-id="gear" '+(r.gold<38?'disabled':'')+'>38 ◈</button></div>'+
+ items.map(function(info){var price=shopPrice(info[0]);return '<div class="row space-bottom"><span>'+info[1]+' '+info[2]+'</span>'+
+ '<button class="btn small" data-action="buy" data-id="'+info[0]+'" '+(r.gold<price?'disabled':'')+'>'+price+' ◈</button></div>';}).join('')+
  '<button class="btn alt wide" data-action="close">Уйти</button>');
 }
 function buy(id){
- var cost=id==='potion'?16:id==='scroll'?15:38;
- if(r.gold<cost){toast('Недостаточно монет.');return;}
+ var cost=shopPrice(id);if(r.gold<cost){toast('Недостаточно монет.');return;}
  r.gold-=cost;
  if(id==='potion')r.potions++;
  else if(id==='scroll'){var spell=pick(SPELLS);r.scrolls[spell.id]=(r.scrolls[spell.id]||0)+1;}
