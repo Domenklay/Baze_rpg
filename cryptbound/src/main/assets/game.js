@@ -381,21 +381,18 @@ function consumeTurn(){
  return true;
 }
 function kill(t){
- var e=t.foe;
- if(!e||e.hp>0)return;
- t.cleared=true;e.hp=0;r.kills++;var reward=addGold(e.gold);
- r.ep+=e.ep;
- r.hp=Math.min(stats().hp,r.hp+4*lvl('vamp'));
- log('Победа над '+e.name+'. +'+e.ep+' ✧, +'+reward+' ◈.');
- if(e.boss){
-  r.ep+=4;
-  r.potions++;
-  addItem(pick(Object.keys(SLOT)),Math.max(2,rarityRoll()));
-  log('ПОВЕРЖЕН БОСС. +4 очка пути и ценный трофей.');
- }else if(Math.random()<.2){
-  if(Math.random()<.52){addItem(pick(Object.keys(SLOT)),null);}
-  else{var key=pick(SPELLS).id;r.scrolls[key]=(r.scrolls[key]||0)+1;log('Найден свиток: '+SPELLS.find(function(x){return x.id===key;}).name+'.');}
+ var e=t.foe;if(!e||e.hp>0)return;
+ e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
+ r.hp=Math.min(stats().hp,r.hp+bonus('killHeal'));
+ var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0};
+ if(e.boss){drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};drop.potion=1;r.ep+=4;}
+ else {
+  if(Math.random()<.23+bonus('lootChance')*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
+  else if(Math.random()<.33){drop.scroll=pick(SPELLS).id;}
  }
+ t.drops=drop;
+ if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
+ log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
 }
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
@@ -476,45 +473,83 @@ function cast(id){
  }
  finishAction();
 }
+function rewardDialog(title,lines){
+ dialog('<div class="emblem">✥</div><div class="subhead">ДОБЫЧА ПОДЗЕМЕЛЬЯ</div><h2>'+esc(title)+'</h2>'+
+  '<div class="reward-rows">'+lines.map(function(line){return '<div class="reward-entry">'+line+'</div>';}).join('')+'</div>'+
+  '<button class="btn wide space-top" data-action="close">ЗАБРАТЬ</button>');
+}
+function claimTile(t){
+ if(!t||!t.revealed||t.cleared)return;
+ var kind=t.kind,lines=[],pending=t.drops||null;
+ if(pending){
+   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');}
+   if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');}
+   if(pending.potion){r.potions+=pending.potion;lines.push('<strong>✚ '+pending.potion+' целебный эликсир</strong>');}
+   if(pending.scroll){r.scrolls[pending.scroll]=(r.scrolls[pending.scroll]||0)+1;
+    var spell=SPELLS.find(function(sp){return sp.id===pending.scroll;});
+    lines.push('<strong>✣ Свиток «'+esc(spell.name)+'»</strong>');}
+   if(pending.gear){var drop=addItem(pending.gear.slot,pending.gear.rarity);
+    if(drop)lines.push('<div class="loot-gear">'+window.CryptArt.item(drop.slot,drop.rarity)+
+     '<span><strong>'+esc(drop.name)+'</strong><small>'+RARITY[drop.rarity]+' · '+SLOT[drop.slot]+'</small></span></div>');}
+   t.drops=null;t.cleared=true;log('Награды подобраны с клетки.');finishAction();
+   if(r)rewardDialog('Трофеи битвы',lines);return;
+ }
+ if(kind==='chest'){
+  var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+bonus('chestGold')*.01)));
+  lines.push('<strong>◈ '+money+' монет</strong>');
+  if(Math.random()<.8){var item=addItem(pick(Object.keys(SLOT)),null);
+   if(item)lines.push('<div class="loot-gear">'+window.CryptArt.item(item.slot,item.rarity)+
+     '<span><strong>'+esc(item.name)+'</strong><small>'+RARITY[item.rarity]+' · '+SLOT[item.slot]+'</small></span></div>');
+  }else{r.potions++;lines.push('<strong>✚ Лечебный эликсир</strong>');}
+  t.cleared=true;log('Сундук открыт. Содержимое отправлено в сумку.');finishAction();
+  if(r)rewardDialog('Старинный сундук',lines);return;
+ }
+ if(kind==='coin'){var gold=addGold(rand(9,18)+r.floor*2);lines.push('<strong>◈ '+gold+' монет</strong>');
+   t.cleared=true;finishAction();if(r)rewardDialog('Монеты под плитой',lines);return;}
+ if(kind==='potion'){r.potions++;lines.push('<strong>✚ Целебный эликсир</strong>');
+   t.cleared=true;finishAction();if(r)rewardDialog('Запечатанный флакон',lines);return;}
+ if(kind==='trap'){
+   t.cleared=true;
+   var reduction=clamp(1-bonus('trapReduce')*.01,0,.95);
+   var dmg=Math.max(0,Math.floor((7+r.floor*2)*reduction*(r.class==='scout'?.55:1)));
+   r.hp=Math.max(0,r.hp-dmg);log('Вы обезвредили ловушку, но получили '+dmg+' урона.');
+   finishAction();return;
+ }
+ if(kind==='secret'){t.cleared=true;discoverSecret();finishAction();return;}
+ if(kind==='altar'){t.cleared=true;showAltar();finishAction();return;}
+ if(kind==='shop'){t.cleared=true;showShop();finishAction();return;}
+ if(kind==='puzzle'){t.cleared=true;showPuzzle();finishAction();return;}
+ if(kind==='event'){t.cleared=true;eventRandom();finishAction();return;}
+}
 function reveal(id){
  var t=tile(id);if(!t||t.revealed)return;
- t.revealed=true;var k=t.kind;
- if(k==='enemy'||k==='boss')log('Из темноты выходит '+t.foe.name+'!');
- else if(k==='chest'){addGold(rand(6,14)+r.floor*2);if(Math.random()<.78)addItem(pick(Object.keys(SLOT)),null);else r.potions++;t.cleared=true;log('Сундук вскрыт. Добыча получена.');}
- else if(k==='coin'){var coins=addGold(rand(9,18)+r.floor*2);t.cleared=true;log('Под плитой найдено '+coins+' монет.');}
- else if(k==='potion'){r.potions++;t.cleared=true;log('Вы находите запечатанный лечебный эликсир.');}
- else if(k==='trap'){
-  t.cleared=true;var damage=Math.floor((7+r.floor*2)*(1-.25*lvl('seeker')));
-  if(r.class==='scout')damage=Math.floor(damage*.55);
-  r.hp=Math.max(0,r.hp-damage);
-  log('Ловушка! Острые шипы: −'+damage+' HP.');
- }
- else if(k==='secret'){t.cleared=true;discoverSecret();}
- else if(k==='altar'){t.cleared=true;showAltar();}
- else if(k==='shop'){t.cleared=true;showShop();}
- else if(k==='puzzle'){t.cleared=true;showPuzzle();}
- else if(k==='event'){t.cleared=true;eventRandom();}
- else if(k==='exit')log('Обнаружена лестница в глубину. Дверь открывается после победы над чудовищами.');
- else{t.cleared=true;log('За плитой лишь камни, пыль и дурные предчувствия.');}
+ t.revealed=true;
+ var k=t.kind;
+ if(k==='enemy'||k==='boss')log('Открыта плита: '+t.foe.name+'.');
+ else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
+ else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
+ else if(k==='start'){t.cleared=true;}
+ else log('Под камнем обнаружено: '+({chest:'сундук',coin:'монеты',potion:'флакон',trap:'ловушка',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
  finishAction();
 }
 function inspectTile(id){
  var t=tile(id);if(!t)return;
  if(t.kind==='exit'){descend();return;}
  if(t.foe&&t.foe.hp>0){strike(id);return;}
- toast('Здесь уже всё обследовано.');
+ if(t.drops||!t.cleared){claimTile(t);return;}
 }
 function descend(){
  var exit=r.tiles.find(function(t){return t.kind==='exit';});
  if(!exit||!exit.revealed){toast('Сначала найдите лестницу.');return;}
- if(hiddenEnemies().length){toast('Сначала очистите этаж от чудовищ.');return;}
+ if(!r.key){toast('Нужен ключ. Найдите ключника среди врагов.');return;}
  var heal=Math.floor(stats().hp*.16);
  r.floor++;r.ep+=2;r.hp=Math.min(stats().hp,r.hp+heal);
- r.shield=0;r.turn++;startFloor();log('Новый этаж: восстановлено '+heal+' здоровья и +2 очка пути.');
+ r.shield=0;r.turn++;startFloor();
+ log('Новый этаж: +'+heal+' здоровья и +2 ✧.');
  save();draw();toast('Спуск на этаж '+r.floor+'.');
 }
 function gainSecret(e){
- r.secrets++;
+ r.secrets++;r.ep+=bonus('secretEp');
  if(s.meta.secrets.indexOf(e.title)===-1)s.meta.secrets.push(e.title);
  switch(e.type){
   case'relic':addItem('relic',Math.max(2,rarityRoll()));break;
@@ -598,14 +633,15 @@ function puzzleAnswer(id){
 function gainTalent(id){
  var t=TALENTS.find(function(x){return x.id===id;});if(!t)return;
  var n=lvl(id),cost=levelCost(t);
- if(n>=3||r.ep<cost)return;
- var before=talentsByTree(t.tree)[t.rank-1];
- if(t.rank>0&&!lvl(before.id))return;
+ if(n>=3||r.ep<cost||!talentUnlocked(t))return;
  r.ep-=cost;r.talents[id]=n+1;
- if(id==='endure')r.hp+=18;
- if(id==='reserve')r.mp+=12;
- if(id==='ritual'&&r.summon){r.summon.hp+=14;r.summon.maxHp+=14;r.summon.atk+=4;}
- log('Развит талант: '+t.name+' ('+(n+1)+'/3).');toast('Открыт талант: '+t.name);draw();save();
+ if(t.effect==='hp')r.hp+=t.amount;
+ if(t.effect==='mp')r.mp+=t.amount;
+ if(t.effect==='summonBase'&&r.summon){r.summon.hp+=14;r.summon.maxHp+=14;r.summon.atk+=4;}
+ if(t.effect==='summonHp'&&r.summon){r.summon.hp+=t.amount;r.summon.maxHp+=t.amount;}
+ if(t.effect==='summonAtk'&&r.summon)r.summon.atk+=t.amount;
+ log('Принят титул «'+t.name+'»: '+(n+1)+'/3.');
+ toast('Развитие: '+t.name);draw();save();
 }
 function equip(id){
  var i=item(id);if(!i)return;
