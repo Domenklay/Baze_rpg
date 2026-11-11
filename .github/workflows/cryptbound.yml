@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: cryptbound-android-release
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,6 +48,8 @@ jobs:
       - name: Validate original artwork and game scripts
         run: |
           node --check cryptbound/src/main/assets/art.js
+          node --check cryptbound/src/main/assets/equipment_art.js
+          node --check cryptbound/src/main/assets/titles.js
           node --check cryptbound/src/main/assets/game.js
           node cryptbound/tests/smoke.cjs
 
