@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/><meta name="theme-color" content="#100c0d"/>
+<title>Пепельный лабиринт · офлайн roguelike</title><link rel="stylesheet" href="style.css"/></head>
+<body>
+<div id="app">
+  <header id="header">
+    <div class="brandline"><div class="emblem">✥</div><div><div class="brand">ПЕПЕЛЬНЫЙ ЛАБИРИНТ</div><div class="brand-sub">ХРОНИКА ПРОКЛЯТЫХ ГЛУБИН</div></div></div>
+    <button id="menu-btn" class="icon-btn" data-action="menu" aria-label="Меню">☷</button>
+  </header>
+  <div id="status">
+    <div id="portrait" class="small-portrait"></div>
+    <div class="vitals"><div class="vitallabel"><span id="status-name">СТРАННИК</span><span id="status-depth">ЭТАЖ 1</span></div>
+      <div class="meter health"><i id="hp-fill"></i><strong id="hp-label"></strong></div>
+      <div class="meter mana"><i id="mp-fill"></i><strong id="mp-label"></strong></div>
+    </div>
+    <div class="currencies"><span title="Монеты"><b>◈</b><i id="gold-label">0</i></span><span title="Очки пути"><b>✧</b><i id="ep-label">0</i></span></div>
+  </div>
+  <main id="content"></main>
+  <nav id="navbar" aria-label="Разделы">
+    <button data-tab="maze" class="active"><span>▦</span><small>Лабиринт</small></button>
+    <button data-tab="hero"><span>♜</span><small>Герой</small></button>
+    <button data-tab="spells"><span>✣</span><small>Магия</small></button>
+    <button data-tab="talents"><span>✥</span><small>Таланты</small></button>
+    <button data-tab="bag"><span>▤</span><small>Сумка</small></button>
+  </nav>
+</div>
+<div id="overlay"></div><div id="toast" role="status" aria-live="polite"></div>
+<script src="art.js"></script><script src="game.js"></script>
+</body></html>
