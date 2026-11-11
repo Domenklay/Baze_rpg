@@ -76,6 +76,9 @@ test('Reveal a monster and strike in turn-based combat',()=>{
 });
 test('Use a scroll and consume mana',()=>{
   run.mp=100;run.scrolls.bolt=2;
+  // Guarantee a live target; the skeleton may have already killed the first one.
+  const spellTarget=run.tiles.find(t=>t.foe&&t.foe.hp>0&&t.revealed) || run.tiles.find(t=>t.foe);
+  spellTarget.revealed=true;spellTarget.foe.hp=200;spellTarget.foe.maxHp=200;
   A('cast','bolt');
   assert.equal(run.scrolls.bolt,1);
   assert.ok(run.mp<=95);
