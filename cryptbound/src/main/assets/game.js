@@ -173,6 +173,12 @@ function load(){
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
   if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
+  if(!v.run.key&&!v.run.tiles.some(function(t){return t.hasKey||(t.drops&&t.drops.key);})){
+    // Migrate a v0.1 floor where enemies had no key-carrier marker.
+    var surviving=v.run.tiles.find(function(t){return t.foe&&t.foe.hp>0;});
+    if(surviving)surviving.hasKey=true;
+    else v.run.key=true;
+  }
  }
  return v;}catch(e){return null;}
 }
