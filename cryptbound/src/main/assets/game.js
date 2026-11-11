@@ -18,10 +18,16 @@ var MOBS=[
  {id:'golem',name:'Проклятый истукан',hp:42,atk:10,def:4,ep:3,gold:12}
 ];
 var BOSSES=['Князь надгробий','Преподобный без лица','Король чернильного праха','Колокол Пустоты'];
-var SLOT={weapon:'Оружие',armor:'Броня',relic:'Реликвия'};
+var SLOT={weapon:'Оружие',helm:'Голова',shoulders:'Плечи',armor:'Нагрудник',gloves:'Перчатки',belt:'Пояс',legs:'Поножи',boots:'Сапоги',relic:'Талисман'};
 var ITEM_NAMES={
- weapon:['Сколотая сабля','Жертвенный клинок','Коса сборщика','Меч без присяги','Клинок холодной стали','Костяной посох'],
- armor:['Могильная кольчуга','Хитон отступника','Нагрудник дозорного','Доспех раскаяния','Панцирь чёрной смолы'],
+ weapon:['Сколотая сабля','Жертвенный клинок','Коса сборщика','Меч без присяги','Мрачный меч','Костяной посох'],
+ helm:['Шлем дозорного','Личина печали','Шишак отступника','Капюшон ночи'],
+ shoulders:['Оплечье стража','Костяные наплечники','Плечи паладина','Плащ безымянного'],
+ armor:['Могильная кольчуга','Хитон отступника','Нагрудник дозорного','Доспех раскаяния','Панцирь смолы'],
+ gloves:['Перчатки могильщика','Рукавицы клятвы','Пальцы колдуна','Рукавицы экзекутора'],
+ belt:['Пояс паломника','Кушак оккультиста','Железный ремень','Пояс реликвария'],
+ legs:['Поножи забвения','Защита колен стража','Чёрные набедренники'],
+ boots:['Сапоги скитальца','Погребальные ботфорты','Сапоги следопыта'],
  relic:['Глаз ночного ворона','Кровавая печать','Ключ без двери','Обсидиановое сердце','Пепельный медальон']
 };
 var RARITY=['Обычный','Необычный','Редкий','Эпический','Легендарный'];
@@ -35,17 +41,7 @@ var SPELLS=[
  {id:'sight',name:'Око забвения',icon:'◉',cost:8,kind:'reveal',base:3,description:'Раскрывает три случайные скрытые клетки.'},
  {id:'leech',name:'Жажда крови',icon:'☽',cost:11,kind:'drain',base:23,description:'Вытягивает здоровье из врага и лечит героя.'}
 ];
-var TALENTS=[
- {id:'blade',tree:0,rank:0,name:'Крепкая рука',icon:'⚔',desc:'Атака +3 за ранг.'},
- {id:'iron',tree:0,rank:1,name:'Стальная воля',icon:'♜',desc:'Броня +2 за ранг.'},
- {id:'vamp',tree:0,rank:2,name:'Кровопийца',icon:'☽',desc:'Каждое убийство лечит 4 HP за ранг.'},
- {id:'mind',tree:1,rank:0,name:'Мудрость',icon:'✣',desc:'Мощь магии +3 за ранг.'},
- {id:'reserve',tree:1,rank:1,name:'Источник маны',icon:'◈',desc:'Макс. мана +12 за ранг.'},
- {id:'ritual',tree:1,rank:2,name:'Ритуал смерти',icon:'☠',desc:'Скелет сильнее на 4 атаки и 14 HP за ранг.'},
- {id:'fortune',tree:2,rank:0,name:'Охотник за тайнами',icon:'✥',desc:'Больше монет (+15% за ранг).'},
- {id:'endure',tree:2,rank:1,name:'Тяжёлая поступь',icon:'❖',desc:'Макс. здоровье +18 за ранг.'},
- {id:'seeker',tree:2,rank:2,name:'Острое зрение',icon:'◉',desc:'Ловушки слабее на 25% за ранг.'}
-];
+var TALENTS=window.CryptTitles||[];
 var SECRET_EVENTS=[
  {title:'Кот в чёрном капюшоне',text:'На ступенях сидит костлявый кот и смотрит прямо в душу. На шее — ключ, который он явно не собирается отдавать.',reward:'На полу остаётся редкая реликвия.',type:'relic'},
  {title:'Шахматы мертвеца',text:'Костяные фигуры продолжают партию без игроков. Вы делаете единственный ход, после которого король падает.',reward:'Ваша проницательность вознаграждена очками пути.',type:'ep'},
@@ -66,38 +62,54 @@ function log(t){r.log.unshift(t);r.log=r.log.slice(0,12);}
 function levelTheme(){return Math.floor((r.floor-1)/4)%4;}
 function maxFloorLabel(){return THEMES[levelTheme()][0];}
 function lvl(n){return (r.talents[n]||0);}
-function levelCost(t){return 1+t.rank+(r.talents[t.id]||0);}
+function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
+function levelCost(t){return 2+(t.rank*3)+(lvl(t.id)*3);}
+function talentUnlocked(t){return !t.parent || lvl(t.parent)>0;}
 function talentsByTree(tree){return TALENTS.filter(function(x){return x.tree===tree;});}
 function equipped(id){return Object.values(r.equip).some(function(v){return v===Number(id);});}
 function item(id){return r.items.find(function(x){return x.id===Number(id);})||null;}
 function equippedItem(slot){return item(r.equip[slot]);}
 function stats(){
  var c=C[r.class],e=r.equip;
- var a=c.atk+(r.floor-1)*1.1+3*lvl('blade')+(s.meta.upgrades.atk*2),def=c.def+2*lvl('iron');
- var hp=c.hp+18*lvl('endure')+s.meta.upgrades.hp*12;
- var mp=c.mp+12*lvl('reserve')+s.meta.upgrades.mp*8,pow=c.pow+3*lvl('mind'),crit=c.crit;
+ var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2);
+ var def=c.def+bonus('def');
+ var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12;
+ var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8;
+ var pow=c.pow+bonus('pow'),crit=c.crit+bonus('crit');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
  });
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:crit};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge'),0,50)};
 }
 function newItem(slot,floor,rarity){
  var z=rarity==null?rarityRoll():rarity;
- var bonus=1+z*.38;
+ var mul=1+z*.38,scale=1+floor*.34;
  var i={id:++s.seq,slot:slot,rarity:z,name:pick(ITEM_NAMES[slot]),plus:0,floor:floor,atk:0,def:0,hp:0,mp:0,pow:0,crit:0};
- if(slot==='weapon'){i.atk=Math.round((3+floor*1.55+rand(0,3))*bonus);if(z>1)i.pow=1+z*2;}
- if(slot==='armor'){i.def=Math.round((1+floor*.62+rand(0,2))*bonus);i.hp=Math.round((10+floor*3)*bonus);}
- if(slot==='relic'){i.pow=Math.round((2+floor*.75)*bonus);i.mp=Math.round((7+floor*2)*bonus);if(z>1)i.crit=z;}
+ function n(base){return Math.max(1,Math.round(base*mul*scale));}
+ switch(slot){
+  case'weapon':i.atk=n(4+rand(0,2));if(z>=2)i.pow=n(z);break;
+  case'helm':i.hp=n(8);i.def=n(1.2);break;
+  case'shoulders':i.def=n(2);i.hp=n(5);break;
+  case'armor':i.def=n(3);i.hp=n(10);break;
+  case'gloves':i.atk=n(2);if(z>=1)i.crit=z;break;
+  case'belt':i.hp=n(12);i.mp=n(4);break;
+  case'legs':i.def=n(2.2);i.hp=n(8);break;
+  case'boots':i.def=n(1);i.mp=n(6);break;
+  case'relic':i.pow=n(3);i.mp=n(9);if(z>=2)i.crit=z;break;
+ }
  return i;
 }
-function rarityRoll(){var n=rand(1,100);return n<=2?4:n<=9?3:n<=25?2:n<=58?1:0;}
+function rarityRoll(){
+ var n=rand(1,100),boost=bonus('rarityBoost');
+ return n<=2+boost*.1?4:n<=9+boost*.35?3:n<=25+boost?2:n<=58+boost?1:0;
+}
 function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
  if(r.items.length>=30){r.gold+=10+r.floor*2;log('Сумка переполнена. Добыча обменяна на монеты.');return null;}
  r.items.push(i);log('Найдено: '+i.name+' ('+RARITY[i.rarity]+').');return i;
 }
-function bonusGold(n){return Math.round(n*(1+lvl('fortune')*.15));}
+function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
 function mkEnemy(boss){
  var src=boss?{id:'boss',name:BOSSES[Math.floor((r.floor-1)/5)%BOSSES.length],hp:95,atk:12,def:3,ep:9,gold:30}:pick(MOBS.slice(0,Math.min(6,2+Math.ceil(r.floor/2))));
@@ -106,34 +118,45 @@ function mkEnemy(boss){
  return {id:src.id,name:src.name,hp:ehp,maxHp:ehp,atk:eatk,def:edef,ep:src.ep+(boss?Math.floor(r.floor/2):0),gold:src.gold+Math.floor(r.floor*1.3),boss:!!boss,burn:0,stun:0};
 }
 function distributeTiles(){
- var types=[];
- for(var i=0;i<25;i++)types.push('empty');
+ var types=Array.from({length:25},function(){return 'empty';});
  var positions=Array.from({length:25},function(_,i){return i;});
- for(var j=positions.length-1;j>0;j--){var k=rand(0,j),temp=positions[j];positions[j]=positions[k];positions[k]=temp;}
- var pos=0;
- function insert(kind,count){
-  for(var t=0;t<count;t++){var loc=positions[pos++];types[loc]=kind;}
- }
+ for(var j=24;j>0;j--){var k=rand(0,j),v=positions[j];positions[j]=positions[k];positions[k]=v;}
+ var pos=0;function insert(kind,count){for(var n=0;n<count;n++)types[positions[pos++]]=kind;}
  insert('start',1);insert('exit',1);
  insert('enemy',r.floor%5===0?5:6+(r.floor>6?1:0));
  if(r.floor%5===0)insert('boss',1);
- insert('chest',2);insert('trap',2);
- insert('altar',1);insert('shop',1);
- insert('event',2);insert('puzzle',1);
- insert('secret',1);insert('coin',2);insert('potion',1);
- return types.map(function(kind,idx){return {id:idx,kind:kind,revealed:kind==='start',cleared:kind==='start',foe:kind==='enemy'||kind==='boss'?mkEnemy(kind==='boss'):null};});
+ insert('chest',2);insert('trap',2);insert('altar',1);insert('shop',1);
+ insert('event',2);insert('puzzle',1);insert('secret',1);
+ insert('coin',2);insert('potion',1);
+ var tiles=types.map(function(kind,id){
+  return {id:id,kind:kind,revealed:kind==='start',cleared:kind==='start'||kind==='empty'&&false,
+    foe:kind==='enemy'||kind==='boss'?mkEnemy(kind==='boss'):null,
+    drops:null,hasKey:false};
+ });
+ var boss=tiles.find(function(t){return t.kind==='boss';});
+ var holders=tiles.filter(function(t){return t.foe;});
+ var carrier=boss||pick(holders);
+ if(carrier)carrier.hasKey=true;
+ return tiles;
 }
 function startFloor(){
- r.tiles=distributeTiles();r.shield=0;r.blessed=0;
+ r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor');r.blessed=0;
  if(r.summon)r.summon.hp=Math.max(0,r.summon.hp);
  var st=stats();
- r.mp=Math.min(st.mp,r.mp+7);
- log('Этаж '+r.floor+'. «'+maxFloorLabel()+'». За стенами кто-то шевелится.');
+ r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));
+ r.ep+=bonus('epFloor');
+ var revealCount=Math.floor(bonus('revealFloor'));
+ var unseen=r.tiles.filter(function(t){return !t.revealed;});
+ for(var i=0;i<revealCount&&unseen.length;i++){
+   var chosen=unseen.splice(rand(0,unseen.length-1),1)[0];
+   chosen.revealed=true;
+ }
+ log('Этаж '+r.floor+'. «'+maxFloorLabel()+'». Под плитами скрыты опасности и находки.');
 }
 function begin(hero){
  var meta=s.meta;
  r=s.run={class:hero,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
-    hp:1,mp:1,items:[],equip:{weapon:null,armor:null,relic:null},bagSelected:null,
+    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,tiles:[],log:[],tab:'maze',
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0};
@@ -147,6 +170,10 @@ function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,a
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
+ if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
+  if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
+  if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
+ }
  return v;}catch(e){return null;}
 }
 function save(){try{if(!s)return;localStorage.setItem(KEY,JSON.stringify(s));}catch(e){console.warn('Save unavailable',e);}}
