@@ -209,7 +209,7 @@ function renderMaze(){
  '<div class="floor-line"><span class="subhead">СКРЫТЫЕ ЗАЛЫ</span><span class="progress-label">Исследовано '+exposed+'/25 · Врагов '+hiddenEnemies().length+'</span></div>'+
  '<div class="maze" role="group" aria-label="Карта подземелья 5 на 5">'+grid+'</div>'+
  combatView()+summon+
- '<div class="actionbar"><button class="btn" data-action="skill" '+(r.turn-r.skillUsed<r.class==='none'?0:0)+' title="'+skillHint()+'">'+skillText()+'</button>'+
+ '<div class="actionbar"><button class="btn" data-action="skill" '+''+' title="'+skillHint()+'">'+skillText()+'</button>'+
  '<button class="btn alt" data-action="potion" '+(r.potions?'':'disabled')+'>✚ Эликсир ('+r.potions+')</button>'+
  '<button class="btn alt" data-action="wait">⧗ Ход</button></div>'+
  '<div class="fine muted space-top">Каждое действие занимает один ход. После вашего хода враги атакуют, а призванные союзники помогают.</div>'+
