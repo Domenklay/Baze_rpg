@@ -197,7 +197,9 @@ function hud(){
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
 function activeTileView(t){
- var kind=t.kind,alive=t.foe&&t.foe.hp>0,drop=!!t.drops,empty=t.revealed&&!alive&&!drop&&(t.cleared||kind==='empty'||kind==='start');
+ var kind=t.kind,alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
+ if(t.revealed&&kind==='start')return '<div class="tile tile-player" aria-label="Позиция героя">'+window.CryptArt.miniHero(r.class)+'</div>';
+ var empty=t.revealed&&!alive&&!drop&&(t.cleared||kind==='empty');
  if(t.revealed&&empty){
   return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
  }
@@ -248,7 +250,7 @@ function renderMaze(){
  '<div class="dungeon-footer">'+
  '<div class="dungeon-encounter">'+footer+'</div>'+summon+
  '<div class="dungeon-buttons">'+
- '<button class="dungeon-action special" data-action="skill" '+(turns<(r.class==='executioner'?4:5)?'disabled':'')+'><span>☠</span><small>Умение</small></button>'+
+ '<button class="dungeon-action special" data-action="skill" '+(turns<(r.class==='executioner'?4:5)?'disabled':'')+'><span>'+(r.class==='necromancer'?'☠':r.class==='executioner'?'⚔':'◉')+'</span><small>'+(r.class==='necromancer'?'Призыв':r.class==='executioner'?'Казнь':'Разведка')+'</small></button>'+
  '<button class="dungeon-action" data-tab="spells"><span>✣</span><small>Магия</small></button>'+
  '<button class="dungeon-action" data-action="potion" '+(r.potions?'':'disabled')+'><span>✚</span><small>Зелье '+r.potions+'</small></button>'+
  '<button class="dungeon-action" data-action="wait"><span>⧖</span><small>Пропустить</small></button>'+
