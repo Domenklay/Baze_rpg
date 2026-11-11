@@ -76,8 +76,7 @@ check('Full title prerequisites enforce a five-rank chain',()=>{
  A('talent','citadel');assert.equal(r.talents.citadel||0,0);
  for(const id of ['blade','iron','endure','lastwall','citadel'])A('talent',id);
  assert.equal(r.talents.citadel,1);
- A('tree','magic'); // nonnumeric values default to tree 0; verify numeric controls below
- A('tree','1');assert.equal(r.treeView,1);
+ r.tab='talents';A('tree','1');assert.equal(r.treeView,1);
  assert.match(el('content').innerHTML,/5 ступеней/);
 });
 check('Key remains as loot until pickup, then opens stairs',()=>{
