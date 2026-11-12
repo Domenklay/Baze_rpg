@@ -36,6 +36,22 @@ test('Six imported T1–T2 regions, 156 unique monsters, 12 sets and 24 weapons'
 A('begin','necromancer');
 const state=api.state();let r=state.run;
 r.hp=5000;r.mp=5000;
+test('Only one specialization per title fork; chosen path remains upgradeable',()=>{
+ const oldEp=r.ep,oldTitles=Object.assign({},r.talents);r.ep=3000;
+ A('talent','fortune');A('talent','seeker');assert.ok(r.talents.seeker>0);
+ let before=r.ep;A('talent','explorer');assert.equal(r.ep,before);
+ assert.equal(r.talents.explorer||0,0);
+ A('talent','vault');assert.ok(r.talents.vault>0);
+ before=r.ep;A('talent','stealth');assert.equal(r.ep,before);
+ assert.equal(r.talents.stealth||0,0);
+ A('talent','secretkeeper');assert.ok(r.talents.secretkeeper>0);
+ before=r.ep;A('talent','scavenger');assert.equal(r.ep,before);
+ assert.equal(r.talents.scavenger||0,0);
+ const rank=r.talents.vault;A('talent','vault');
+ assert.equal(r.talents.vault,rank+1);
+ r.talents=oldTitles;r.ep=oldEp;api.debug.draw();
+});
+
 test('Hero origin at center with connected orthogonal exploration',()=>{
  assert.equal(r.tiles.length,25);
  assert.equal(r.tiles[12].kind,'start');

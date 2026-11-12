@@ -71,7 +71,16 @@ function levelCost(t){var main=C[r.class].type==='Магия'?1:C[r.class].type=
  var base=2+t.rank*3+lvl(t.id)*3;
  return t.tree===main?base:Math.ceil(base*1.25);
 }
-function talentUnlocked(t){return !t.parent || lvl(t.parent)>0;}
+/* Reject sibling specializations at every ancestor branch, not only at the current rank. */
+function talentPathConflict(t){
+ var node=t;
+ while(node&&node.parent){
+  if(TALENTS.some(function(other){return other.tree===node.tree&&other.parent===node.parent&&other.id!==node.id&&lvl(other.id)>0;}))return true;
+  node=TALENTS.find(function(p){return p.id===node.parent;});
+ }
+ return false;
+}
+function talentUnlocked(t){return (!t.parent||lvl(t.parent)>0)&&!talentPathConflict(t);}
 function talentsByTree(tree){return TALENTS.filter(function(x){return x.tree===tree;});}
 function equipped(id){return Object.values(r.equip).some(function(v){return v===Number(id);});}
 function item(id){return r.items.find(function(x){return x.id===Number(id);})||null;}
@@ -385,7 +394,7 @@ function renderTalents(){
       (current===3?'maxed':'')+'" data-action="talent" data-id="'+t.id+'" '+(can?'':'disabled')+'>'+
       '<span class="title-glyph">'+t.icon+'</span><strong>'+t.name+'</strong>'+
       '<small>'+t.desc+'</small><em>'+(current===3?'МАКС · 3/3':current+'/3 · '+cost+' ✧')+'</em>'+
-      (!ok?'<span class="need-title">Нужен: '+esc((TALENTS.find(function(p){return p.id===t.parent;})||{}).name||'?')+'</span>':'')+'</button>';
+      (!ok?'<span class="need-title">'+(talentPathConflict(t)?'Путь закрыт':'Нужен: '+esc((TALENTS.find(function(p){return p.id===t.parent;})||{}).name||'?'))+'</span>':'')+'</button>';
    }).join('')+'</div></div>';
  }).join('');
  return section('Пути титулов','✧ '+r.ep)+
