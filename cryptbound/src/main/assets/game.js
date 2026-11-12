@@ -617,8 +617,8 @@ function renderTalents(){
  }).join('');
  return section('Пути титулов','✧ '+r.ep)+
  '<div class="tree-choice">'+treeButtons+'</div>'+
- '<div class="title-tree-info"><div><strong>'+names[tree]+'</strong><small>5 ступеней · 15 титулов · 3 улучшения каждого</small></div>'+
-  '<span>'+progress+'/15</span></div>'+
+ '<div class="title-tree-info"><div><strong>'+names[tree]+'</strong><small>5 ступеней · '+talentsByTree(tree).length+' званий · 3 улучшения каждого</small></div>'+
+  '<span>'+progress+'/'+talentsByTree(tree).length</span></div>'+
  '<p class="fine muted space-bottom">Титулы универсальные. Для '+C[r.class].name+' основная ветка '+names[r.class==='necromancer'?1:r.class==='executioner'?0:2]+': её развитие дешевле остальных.</p>'+ '<div class="title-tree">'+ranks+'</div>'+
  '<p class="fine muted center">Развивайте один из доступных путей, затем выбирайте ответвления. На каждой развилке можно выбрать только один путь.</p>';
 }
