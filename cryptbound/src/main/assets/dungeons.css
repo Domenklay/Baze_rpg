@@ -26,3 +26,7 @@
 .chamber-enemy:active{transform:scale(.95)}
 .chamber-player{border-color:#b39f65}
 .chamber-hidden{border-color:#c8ad58;color:#dfc87d;cursor:pointer}
+
+/* Open ranged archetypes rise one after the other at the start of an exploration floor. */
+.dungeon-board .tile-ranged-emerge{animation:ranged-rise .48s ease-out both}
+@keyframes ranged-rise{0%{opacity:0;transform:translateY(24%) scale(.75)}65%{opacity:1;transform:translateY(-5%) scale(1.04)}100%{opacity:1;transform:none}}

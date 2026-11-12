@@ -371,4 +371,17 @@ test('Regional boss has warned phases and cannot produce a safe portal before de
  assert.equal(run.portalReady,true);
 });
 
+
+test('Visible ranged enemies are a single archetype and emerge sequentially',()=>{
+ A('begin','scout');const run=state.run;
+ run.floor=17;run.key=true;run.tiles.find(t=>t.kind==='exit').revealed=true;
+ A('descend');
+ assert.equal(run.floor,18);
+ const archers=run.tiles.filter(t=>t.foe&&t.foe.ranged);
+ assert.equal(archers.length,2);
+ assert.equal(new Set(archers.map(t=>t.foe.id)).size,1);
+ assert.deepEqual(archers.map(t=>t.spawnIntro).sort(),[1,2]);
+ assert.match(el('content').innerHTML,/tile-ranged-emerge/);
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
