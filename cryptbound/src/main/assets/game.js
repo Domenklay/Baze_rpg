@@ -2,6 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0;
+var EX=window.CryptExpansion,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает верного скелета, который сражается и принимает удары вместо хозяина.',hp:76,mp:59,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -63,7 +64,10 @@ function levelTheme(){return Math.floor((r.floor-1)/4)%4;}
 function maxFloorLabel(){return THEMES[levelTheme()][0];}
 function lvl(n){return (r.talents[n]||0);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
-function levelCost(t){return 2+(t.rank*3)+(lvl(t.id)*3);}
+function levelCost(t){var main=r.class==='necromancer'?1:r.class==='executioner'?0:2;
+ var base=2+t.rank*3+lvl(t.id)*3;
+ return t.tree===main?base:Math.ceil(base*1.25);
+}
 function talentUnlocked(t){return !t.parent || lvl(t.parent)>0;}
 function talentsByTree(tree){return TALENTS.filter(function(x){return x.tree===tree;});}
 function equipped(id){return Object.values(r.equip).some(function(v){return v===Number(id);});}
@@ -71,11 +75,12 @@ function item(id){return r.items.find(function(x){return x.id===Number(id);})||n
 function equippedItem(slot){return item(r.equip[slot]);}
 function stats(){
  var c=C[r.class],e=r.equip;
- var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2);
- var def=c.def+bonus('def');
- var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12;
- var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8;
- var pow=c.pow+bonus('pow'),crit=c.crit+bonus('crit');
+ var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk');
+ var def=c.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def');
+ var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp');
+ var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.relicStat(s.meta,'mp');
+ var pow=c.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow');
+ var crit=c.crit+bonus('crit')+EX.relicStat(s.meta,'crit');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -115,7 +120,7 @@ function mkEnemy(boss){
  var src=boss?{id:'boss',name:BOSSES[Math.floor((r.floor-1)/5)%BOSSES.length],hp:95,atk:12,def:3,ep:9,gold:30}:pick(MOBS.slice(0,Math.min(6,2+Math.ceil(r.floor/2))));
  var scale=1+(r.floor-1)*.18;
  var ehp=Math.floor(src.hp*scale*(boss?1.55:1)),eatk=Math.floor(src.atk*(1+(r.floor-1)*.13)),edef=src.def+Math.floor((r.floor-1)*.32);
- return {id:src.id,name:src.name,hp:ehp,maxHp:ehp,atk:eatk,def:edef,ep:src.ep+(boss?Math.floor(r.floor/2):0),gold:src.gold+Math.floor(r.floor*1.3),boss:!!boss,burn:0,stun:0};
+ return {id:src.id,name:src.name,hp:ehp,maxHp:ehp,atk:eatk,def:edef,ep:src.ep+(boss?Math.floor(r.floor/2):0),gold:src.gold+Math.floor(r.floor*1.3),boss:!!boss,burn:0,stun:0,skill:EX.monster(src.id),cooldown:EX.monster(src.id).every,guard:0};
 }
 function distributeTiles(){
  var types=Array.from({length:25},function(){return 'empty';});
@@ -145,6 +150,7 @@ function startFloor(){
  var st=stats();
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));
  r.ep+=bonus('epFloor');
+ r.poisonTurns=0;
  var revealCount=Math.floor(bonus('revealFloor'));
  var unseen=r.tiles.filter(function(t){return !t.revealed;});
  for(var i=0;i<revealCount&&unseen.length;i++){
@@ -158,7 +164,7 @@ function begin(hero){
  r=s.run={class:hero,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'?1:hero==='scout'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
-    potions:3,summon:null,shield:0,blessed:0,tiles:[],log:[],tab:'maze',
+    potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0};
  ['weapon','armor','relic'].forEach(function(slot){
   var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
@@ -166,12 +172,20 @@ function begin(hero){
  r.hp=stats().hp;r.mp=stats().mp;
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,atk:0,mp:0},secrets:[]},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},totalSecrets:0,bossKills:0},run:null};r=null;}
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
+ var meta=v.meta;
+ for(var x of ['heroRanks','heroEssence','relics','bestiary','milestones'])if(!meta[x])meta[x]={};
+ for(var hero of Object.keys(C)){if(!meta.heroRanks[hero])meta.heroRanks[hero]=0;if(!meta.heroEssence[hero])meta.heroEssence[hero]=0;}
+ if(!meta.totalSecrets)meta.totalSecrets=0;
+ if(!meta.bossKills)meta.bossKills=0;
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
+  if(!v.run.poisonTurns)v.run.poisonTurns=0;
+  for(var enemyTile of v.run.tiles){if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=EX.monster(enemy.id);if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
+  if(v.run.summon){if(v.run.summon.specialCooldown==null)v.run.summon.specialCooldown=4;if(!v.run.summon.def)v.run.summon.def=2;}
   if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
   if(!v.run.key&&!v.run.tiles.some(function(t){return t.hasKey||(t.drops&&t.drops.key);})){
     // Migrate a v0.1 floor where enemies had no key-carrier marker.
