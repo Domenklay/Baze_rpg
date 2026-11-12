@@ -976,7 +976,7 @@ function dungeonAchievements(){
   var list=a.locations.map(function(loc,j){
    var prefix='act'+(i+1)+'-location'+(j+1);
    return '<div class="row space-bottom"><div><strong>'+(claimed[prefix+'-first-boss']?'✓ ':'')+esc(loc.name)+'</strong>'+
-    '<small>Босс 30-го: '+(claimed[prefix+'-first-boss']?'✓':'○')+' · 50-й этаж: '+(claimed[prefix+'-deep-50']?'✓':'○')+' · Элитник: '+(claimed[prefix+'-elite']?'✓':'○')+' · Тайник: '+(claimed[prefix+'-secret-room']?'✓':'○')+' · Без зелий: '+(claimed[prefix+'-boss-no-potions']?'✓':'○')+'</small></div></div>';
+    '<small>Босс 30-го: '+(claimed[prefix+'-first-boss']?'✓':'○')+' · 50-й этаж: '+(claimed[prefix+'-deep-50']?'✓':'○')+' · Элитник: '+(claimed[prefix+'-elite']?'✓':'○')+' · Тайник: '+(claimed[prefix+'-secret-room']?'✓':'○')+' · Без зелий: '+(claimed[prefix+'-boss-no-potions']?'✓':'○')+' · Загадка: '+(claimed[prefix+'-lore-puzzle']?'✓':'○')+'</small></div></div>';
   }).join('');
   return '<div class="frame-title space-top">'+(i+1)+'. '+esc(a.name)+(claimed['act'+(i+1)+'-complete']?' ✓':'')+'</div>'+list;
  }).join('');
@@ -1950,24 +1950,50 @@ function buy(id){
  close();finishAction();
 }
 function showPuzzle(){
- var correct=rand(0,2);
- var options=[
- ['Три черепа','Один факел','Семь печатей'],
- ['Ключ','Перо','Чёрная свеча'],
- ['Тьма','Пепел','Зеркало']
- ][correct];
- var question=['Что хранит забытый страж под сердцем?','Что откроет дверь, в которой нет замка?','Что остаётся от клятвы после смерти?'][correct];
- var answers=[1,0,1],correctIndex=answers[correct];
- r.pendingPuzzle=correctIndex;
- dialog('<div class="emblem">✣</div><div class="subhead">КАМЕННАЯ ЗАГАДКА</div><h2>ПРОВЕРКА ПАМЯТИ</h2>'+
- '<p>'+question+'</p><div class="btnrow wrap">'+options.map(function(o,i){return '<button class="btn alt" data-action="puzzle-answer" data-id="'+i+'">'+o+'</button>';}).join('')+'</div>'+
- '<p class="fine muted space-top">Ошибка может пробудить защитные руны.</p>');
+ var key='puzzle:'+(r.actIndex||0)+':'+(r.locationIndex||0);
+ var regional=!r.uniqueFinds[key]&&STORY.puzzle(r.actIndex||0,r.locationIndex||0);
+ var question,options,correctIndex,hint='';
+ if(regional){
+  r.uniqueFinds[key]=true;
+  question=regional[0];options=regional[1];correctIndex=regional[2];hint=regional[3];
+ }else{
+  var variants=[
+   {q:'Что хранит забытый страж под сердцем?',o:['Три черепа','Один факел','Семь печатей'],a:1},
+   {q:'Что откроет дверь, в которой нет замка?',o:['Ключ','Перо','Чёрная свеча'],a:0},
+   {q:'Что остаётся от клятвы после смерти?',o:['Тьма','Пепел','Зеркало'],a:1},
+   {q:'Что не имеет веса, но может погубить город?',o:['Тишина','Броня','Камень'],a:0},
+   {q:'Какой след не оставляет сапог?',o:['Водный','След сна','Глиняный'],a:1},
+   {q:'Что тяжелее памяти, но не кладётся в сундук?',o:['Долг','Железо','Золото'],a:0}
+  ];
+  var x=pick(variants);question=x.q;options=x.o;correctIndex=x.a;
+ }
+ r.pendingPuzzle={answer:correctIndex,regional:!!regional};
+ dialog('<div class="emblem">✣</div><div class="subhead">'+(regional?'ТАЙНА РЕГИОНА':'КАМЕННАЯ ЗАГАДКА')+'</div>'+
+ '<h2>ПРОВЕРКА ПАМЯТИ</h2><p>'+esc(question)+'</p>'+
+ ((lvl('seeker')||lvl('scavenger'))&&hint?'<p class="fine golden">Подсказка авантюриста: '+esc(hint)+'.</p>':'')+
+ '<div class="btnrow wrap">'+options.map(function(o,i){return '<button class="btn alt" data-action="puzzle-answer" data-id="'+i+'">'+esc(o)+'</button>';}).join('')+'</div>'+
+ '<p class="fine muted space-top">Ошибка пробудит защитные руны. Ответ стоит одного хода.</p>');
 }
 function puzzleAnswer(id){
- var correct=Number(id)===r.pendingPuzzle;
- if(correct){r.ep+=3;var s1=rollSpell(4);grantScroll(s1.id,1,'puzzle');log('Загадка решена! +3 ✧ и свиток.');}
- else{r.hp=Math.max(0,r.hp-10-r.floor);log('Руна ошибочного ответа обжигает вас.');}
- r.pendingPuzzle=null;close();finishAction();
+ if(!r||r.pendingPuzzle==null)return;
+ var pending=r.pendingPuzzle,answer=typeof pending==='object'?pending.answer:pending;
+ var special=!!(pending&&typeof pending==='object'&&pending.regional);
+ var correct=Number(id)===answer;
+ r.pendingPuzzle=null;
+ if(correct){
+  r.ep+=special?6:3;
+  var s1=rollSpell(special?5:4);
+  grantScroll(s1.id,1,'puzzle');
+  if(special){
+   localAchievement('lore-puzzle',1,'Разгаданная тайна');
+   r.journalNotes.push('Разгадана каменная загадка локации «'+currentRegion().name+'».');
+  }
+  log('Загадка решена! +'+(special?6:3)+' очков пути и свиток.');
+ }else{
+  var taken=Math.max(6,Math.round(10+r.floor*.65));
+  r.hp=Math.max(0,r.hp-taken);log('Руна неверного ответа наносит '+taken+' урона.');
+ }
+ close();finishAction();
 }
 function gainTalent(id){
  var t=TALENTS.find(function(x){return x.id===id;});if(!t)return;
