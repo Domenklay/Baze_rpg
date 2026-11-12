@@ -218,24 +218,52 @@ function section(title,extra){return '<div class="section-head"><h2>'+title+'</h
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
 function activeTileView(t){
  var kind=t.kind,alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
- if(t.revealed&&kind==='start')return '<div class="tile tile-player" aria-label="Позиция героя">'+window.CryptArt.miniHero(r.class)+'</div>';
+ if(t.revealed&&kind==='start'){
+  if(r.summon&&r.summon.hp>0)return '<button class="tile tile-summon" data-action="inspect-summon" data-hold="summon" aria-label="Призванный скелет. Удерживайте для описания">'+
+    icon('enemy','skeleton')+
+    '<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
+    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
+    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
+  return '<div class="tile tile-bare tile-entrance" aria-label="Пустая входная клетка"><span class="stone-joint"></span></div>';
+ }
  var empty=t.revealed&&!alive&&!drop&&(t.cleared||kind==='empty');
- if(t.revealed&&empty){
-  return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
- }
- if(!t.revealed){
-  return '<button class="tile hidden" data-action="reveal" data-id="'+t.id+'" aria-label="Раскрыть каменную плиту"><span class="slab-face">✥</span></button>';
- }
+ if(t.revealed&&empty)return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
+ if(!t.revealed)return '<button class="tile hidden" data-action="reveal" data-id="'+t.id+'" aria-label="Раскрыть каменную плиту"><span class="slab-face">✥</span></button>';
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):kind==='exit'?'exit':kind==='puzzle'?'event':kind;
  var iconCode=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):icon(marker,alive?t.foe.id:null);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Награда за бой':
   ({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка'})[kind]||'Находка';
  var act=alive?'strike':kind==='exit'?'descend':'pickup';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+'" data-action="'+act+'" data-id="'+t.id+'" aria-label="'+esc(name)+'" title="'+esc(name)+'">'+iconCode+
- (alive?'<span class="tile-hp"><i style="width:'+pct(t.foe.hp,t.foe.maxHp)+'%"></i></span>':'')+
- (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+
- '</button>';
+ var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
+   '<span class="unit-corner unit-cd">◷'+(t.foe.cooldown||EX.monster(t.foe.id).every)+'</span>'+
+   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+'" data-action="'+act+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
+  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+iconCode+unit+
+ (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
 }
+function inspectUnit(kind,id){
+ if(!r)return;
+ if(kind==='summon'){
+  var u=r.summon;if(!u||u.hp<=0)return;
+  dialog('<div class="emblem">☠</div><div class="subhead">СОЮЗНИК · ПРИЗЫВ</div><h2>'+esc(u.name)+'</h2>'+
+   '<div class="unit-profile">'+icon('enemy','skeleton')+'<div><b>♥ '+u.hp+' / '+u.maxHp+' HP</b><b>⚔ '+u.atk+' УРОН</b><b>⬡ '+(u.def||0)+' БРОНЯ</b></div></div>'+
+   '<div class="unit-skill"><strong>Костяной удар</strong><p>Самостоятельно атакует ближайшего обнаруженного врага каждый ход.</p></div>'+
+   '<div class="unit-skill"><strong>Прикрытие хозяина</strong><p>С вероятностью 72% принимает удар врага вместо героя.</p></div>'+
+   '<div class="unit-skill"><strong>Гробовой раскол · ◷ '+(u.specialCooldown||4)+'</strong><p>Каждый 4-й ход наносит усиленный урон цели.</p></div>'+
+   '<button class="btn wide space-top" data-action="close">Вернуться</button>');
+  return;
+ }
+ var t=tile(id),e=t&&t.foe;if(!e||e.hp<=0)return;
+ var special=e.skill||EX.monster(e.id);
+ dialog('<div class="emblem">⚔</div><div class="subhead">'+(e.boss?'ПОВЕЛИТЕЛЬ ЭТАЖА':'ОБИТАТЕЛЬ ПОДЗЕМЕЛЬЯ')+'</div>'+
+  '<h2>'+esc(e.name)+'</h2>'+
+  '<div class="unit-profile">'+icon('enemy',e.id)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
+  '<div class="unit-skill"><strong>Обычная атака</strong><p>Атакует каждый свой ход. Урон уменьшается вашей бронёй.</p></div>'+
+  '<div class="unit-skill"><strong>'+esc(special.name)+' · ◷ '+(e.cooldown||special.every)+'</strong>'+
+  '<p>'+esc(special.description)+' Следующее применение через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
+  '<button class="btn wide space-top" data-action="close">Продолжить бой</button>');
+}
+
 function combatView(){
  var t=target();
  if(!t)return frame('ЗАЛЫ ОЖИДАЮТ','<p class="fine muted">Касайтесь закрытых плит, чтобы исследовать этаж. Открытые чудовища отвечают ударами на каждый ход.</p>');
@@ -271,7 +299,7 @@ function renderMaze(){
  '<div class="dungeon-encounter">'+footer+'</div>'+summon+
  '<div class="dungeon-buttons">'+
  '<button class="dungeon-action special" data-action="skill" '+(turns<(r.class==='executioner'?4:5)?'disabled':'')+'><span>'+(r.class==='necromancer'?'☠':r.class==='executioner'?'⚔':'◉')+'</span><small>'+(r.class==='necromancer'?'Призыв':r.class==='executioner'?'Казнь':'Разведка')+'</small></button>'+
- '<button class="dungeon-action" data-tab="spells"><span>✣</span><small>Магия</small></button>'+
+ '<button class="dungeon-action" data-action="spell-modal"><span>✣</span><small>Магия</small></button>'+
  '<button class="dungeon-action" data-action="potion" '+(r.potions?'':'disabled')+'><span>✚</span><small>Зелье '+r.potions+'</small></button>'+
  '<button class="dungeon-action" data-action="wait"><span>⧖</span><small>Пропустить</small></button>'+
  '<button class="dungeon-action" data-action="battle-log"><span>▤</span><small>Журнал</small></button></div></div></div>';
