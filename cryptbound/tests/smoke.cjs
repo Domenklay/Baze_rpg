@@ -597,6 +597,91 @@ test('First and final bosses use tactical HP scaling rather than raid-clicker va
 });
 
 
+
+test('Every act is harder at identical depth including the next act vs prior location 3',()=>{
+ const B=win.CryptBalance;
+ assert.equal(B.profiles.length,10);
+ assert.equal(Object.keys(B.roles).length,8);
+ for(let act=0;act<10;act++){
+  const hp=B.combat(act,0,30,'brute',false,false,'constant');
+  const end=B.combat(act,2,30,'brute',false,false,'constant');
+  const elite=B.combat(act,0,30,'brute',true,false,'constant');
+  const boss=B.combat(act,0,30,'brute',false,true,'boss');
+  assert.ok(elite.hp>=hp.hp*1.9);
+  assert.ok(boss.hp>elite.hp);
+  assert.ok(end.hp>hp.hp&&end.atk>=hp.atk);
+  if(act){
+   const earlier=B.combat(act-1,2,30,'brute',false,false,'constant');
+   const oldBoss=B.combat(act-1,2,30,'brute',false,true,'boss');
+   assert.ok(hp.hp>earlier.hp,'Act '+(act+1)+' must start tougher than prior act location 3');
+   assert.ok(hp.atk>earlier.atk,'Act '+(act+1)+' attack must exceed prior act');
+   assert.ok(boss.hp>oldBoss.hp,'Boss HP must strictly rise: '+(act+1));
+   assert.ok(boss.atk>oldBoss.atk,'Boss attacks must strictly rise: '+(act+1));
+  }
+ }
+ assert.equal(B.loot(0,0,50,false,true)>B.loot(0,0,30,false,true),true);
+ assert.ok(B.loot(9,0,50,false,true)>B.loot(0,0,50,false,true));
+});
+test('All 300 normal and 150 elite creatures have stable combat roles and skills',()=>{
+ const B=win.CryptBalance;
+ const catalog=DN.acts.flatMap(x=>x.locations);
+ let normal=0,elite=0,assigned=new Set(),abilities=new Set();
+ for(const loc of catalog){
+  const roles=new Set();
+  for(const m of loc.mobs){
+   const role=B.role(m,false),skill=B.ability(m,role);
+   assert.ok(B.roles[role],m.name);
+   assert.ok(skill&&skill.description);
+   assert.equal(skill.id,B.ability(m,role).id,'Skill must not reroll on reload');
+   roles.add(role);assigned.add(role);abilities.add(skill.id);normal++;
+  }
+  for(const m of loc.elites){
+   const role=B.role(m,false);
+   assert.ok(B.roles[role],m.name);abilities.add(B.ability(m,role).id);elite++;
+  }
+  assert.ok(roles.size>=2,'Each location must contain different combat roles: '+loc.name);
+ }
+ assert.equal(normal,300);assert.equal(elite,150);
+ assert.ok(assigned.size>=6&&abilities.size>=12);
+ assert.equal(B.hazard(0).kind,'bleed');
+ assert.equal(B.hazard(9).kind,'all');
+});
+test('Relative combat work to defeat enemies increases through all ten acts',()=>{
+ const B=win.CryptBalance;
+ let previous=-1,previousBoss=-1;
+ for(let act=0;act<10;act++){
+  const p=B.combat(act,0,30,'brute',false,false,'constant');
+  const boss=B.combat(act,0,30,'brute',false,true,'boss');
+  const training=B.training(act),heroHit=10+Math.floor(29*1.1)+training.atk;
+  const effort=p.hp/heroHit,bossEffort=boss.hp/heroHit;
+  assert.ok(effort>previous,'Relative monster effort must rise in Act '+(act+1));
+  assert.ok(bossEffort>previousBoss,'Boss effort must rise in Act '+(act+1));
+  previous=effort;previousBoss=bossEffort;
+ }
+});
+test('Monster active special is applied only on its cooldown and saved with identity',()=>{
+ const run=state.run;
+ assert.equal(run.actIndex,9);
+ run.hp=99999;run.mp=99999;
+ run.bleedTurns=0;run.poisonTurns=0;run.silenceTurns=0;
+ const choices=run.tiles.filter(t=>t.foe&&!t.foe.boss);
+ assert.ok(choices.length>=1);
+ choices.forEach(t=>t.foe.hp=0);
+ const t=choices[0];t.revealed=true;t.foe.hp=10000;t.foe.maxHp=10000;
+ const enemy=t.foe;enemy.ability='poison';enemy.abilityName='Ядовитый укус';enemy.skill.every=3;
+ enemy.ranged=false;enemy.cooldown=2;enemy.stun=0;
+ A('wait');assert.equal(run.poisonTurns,0,'Special cannot fire before cooldown');
+ A('wait');assert.ok(run.poisonTurns>=2,'Poison must be applied by special on cooldown');
+ enemy.ability='call';enemy.abilityName='Призыв прислужника';enemy.summons=0;enemy.cooldown=1;
+ const before=run.tiles.filter(t=>t.foe&&t.foe.summoned).length;
+ A('wait');
+ const after=run.tiles.filter(t=>t.foe&&t.foe.summoned).length;
+ assert.equal(after,before+1);
+ enemy.cooldown=1;A('wait');
+ assert.equal(run.tiles.filter(t=>t.foe&&t.foe.summoned).length,after,
+  'One summoner cannot spam unlimited helpers');
+});
+
 test('Disk-save roundtrip keeps expedition, quests, prepared loadout and new slot migration',()=>{
  const before=win.Crypt.state();
  before.meta.materials['Проверка сохранения']=13;
