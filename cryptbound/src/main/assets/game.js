@@ -254,7 +254,7 @@ function fairyRemark(kind){
  if(kind==='floor'&&r.floor!==1&&r.floor%5!==1)return;
  var options=FAIRY_LINES[kind]||FAIRY_LINES.floor;
  var offset=(r.floor+r.turn+(r.actIndex||0)*3+(r.locationIndex||0))%options.length;
- log('✦ Светлячок: «'+options[offset]+'»');
+ log('✦ '+(FAIRY_COSMETICS[s.meta.fairyCosmetic||'default']||FAIRY_COSMETICS.default).label+': «'+options[offset]+'»');
 }
 
 function startFloor(){
@@ -269,10 +269,10 @@ function startFloor(){
   if(hintTile)hintTile.hinted=true;
  }
  var st=stats();
- r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));r.ep+=bonus('epFloor');
+ r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
  activateEntranceEquipment(false);
- var revealCount=Math.floor(bonus('revealFloor'));
+ var revealCount=Math.floor(bonus('revealFloor'))+(s.meta.diamondUpgrades?.scouting||0);
  for(var i=0;i<revealCount;i++){
   var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
   if(!available.length)break;
@@ -297,7 +297,7 @@ function begin(hero){
  fillPreparedPotions(r);
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},fairyMuted:false,potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},fairyMuted:false,diamondUpgrades:{},cosmetics:{default:true},fairyCosmetic:'default',potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 
 /* Move v0.5 save equipment to the 4 physical + 4 magical + weapon slots. */
 function migrateEquipSlots(saved){
@@ -327,6 +327,9 @@ function load(){
  if(meta.activeExpedition===undefined)meta.activeExpedition=null;
  if(!meta.completedActs)meta.completedActs={};
  if(!meta.achievements)meta.achievements={};
+ if(!meta.diamondUpgrades)meta.diamondUpgrades={};
+ if(!meta.cosmetics)meta.cosmetics={default:true};
+ if(!meta.fairyCosmetic)meta.fairyCosmetic='default';
  if(meta.fairyMuted==null)meta.fairyMuted=false;
  if(!meta.potionStock)meta.potionStock={};
  if(!Array.isArray(meta.preparedLoadout))meta.preparedLoadout=[null,null];
@@ -871,6 +874,58 @@ function dungeonAchievements(){
  '<div class="log" style="max-height:57dvh;text-align:left;">'+rows+'</div>'+
  '<button class="btn wide space-top" data-action="close">Закрыть</button>');
 }
+
+/* Ordinary diamonds buy modest permanent account improvements. Rainbow diamonds
+   are optional cosmetic currency earned through achievements, not mandatory power. */
+var DIAMOND_UPGRADES={
+ luck:{name:'Наблюдательность',description:'+5% к шансу дополнительной добычи за уровень',cost:7,max:5},
+ scouting:{name:'Карты разведчика',description:'+1 бесплатная клетка при начале этажа за уровень',cost:9,max:4},
+ wisdom:{name:'Путевые записи',description:'+1 очко исследования при начале этажа за уровень',cost:9,max:5}
+};
+var FAIRY_COSMETICS={
+ default:{name:'Обычный светлячок',price:0,label:'Светлячок'},
+ moon:{name:'Лунный огонёк',price:6,label:'Лунная искра'},
+ ash:{name:'Пепельная фея',price:8,label:'Пепельная искра'},
+ astral:{name:'Астральный светлячок',price:12,label:'Звёздная искра'}
+};
+function diamondShop(){
+ if(r){toast('Рынок открыт только в деревне.');return;}
+ var m=s.meta;
+ var upgrades=Object.keys(DIAMOND_UPGRADES).map(function(id){
+  var data=DIAMOND_UPGRADES[id],rank=m.diamondUpgrades[id]||0,cost=data.cost*(rank+1);
+  return '<div class="meta-upgrade"><div><strong>'+data.name+' · '+rank+'/'+data.max+'</strong><small>'+data.description+'</small></div>'+
+   '<button class="btn small" data-action="buy-diamond" data-id="'+id+'"'+(rank>=data.max||m.diamonds<cost?' disabled':'')+'>'+
+   (rank>=data.max?'Максимум':cost+' ◇')+'</button></div>';
+ }).join('');
+ var looks=Object.keys(FAIRY_COSMETICS).map(function(id){
+  var data=FAIRY_COSMETICS[id],owned=!!m.cosmetics[id],selected=m.fairyCosmetic===id;
+  return '<div class="meta-upgrade"><div><strong>'+data.name+'</strong><small>Меняется только название и манера представления феечки — никакого боевого преимущества.</small></div>'+
+   '<button class="btn small" data-action="'+(owned?'equip-cosmetic':'buy-cosmetic')+'" data-id="'+id+'"'+(selected||!owned&&m.rainbowDiamonds<data.price?' disabled':'')+'>'+
+   (selected?'Выбрано':owned?'Выбрать':data.price+' ◈')+'</button></div>';
+ }).join('');
+ dialog('<div class="emblem">◇</div><h2>АЛМАЗНАЯ ЛАВКА</h2>'+
+ '<p>Обычные алмазы: '+m.diamonds+' ◇ · Радужные: '+m.rainbowDiamonds+' ◈. Радужные выдаются за достижения.</p>'+
+ '<div class="frame-title">УМЕРЕННЫЕ ПОСТОЯННЫЕ УЛУЧШЕНИЯ</div>'+upgrades+
+ '<div class="frame-title space-top">КОСМЕТИКА СВЕТЛЯЧКА</div>'+looks+
+ '<button class="btn alt wide space-top" data-action="close">В деревню</button>');
+}
+function buyDiamond(id){
+ if(r||!DIAMOND_UPGRADES[id])return;
+ var info=DIAMOND_UPGRADES[id],level=s.meta.diamondUpgrades[id]||0,cost=info.cost*(level+1);
+ if(level>=info.max||s.meta.diamonds<cost)return;
+ s.meta.diamonds-=cost;s.meta.diamondUpgrades[id]=level+1;save();draw();diamondShop();
+}
+function buyCosmetic(id){
+ if(r||!FAIRY_COSMETICS[id])return;
+ var p=FAIRY_COSMETICS[id];
+ if(s.meta.cosmetics[id]||s.meta.rainbowDiamonds<p.price)return;
+ s.meta.rainbowDiamonds-=p.price;s.meta.cosmetics[id]=true;save();draw();diamondShop();
+}
+function equipCosmetic(id){
+ if(r||!s.meta.cosmetics[id])return;
+ s.meta.fairyCosmetic=id;save();draw();diamondShop();
+}
+
 function renderBase(){
  var exp=s.meta.activeExpedition;
  var acts=DN.acts.map(function(a,i){
@@ -895,7 +950,7 @@ function renderBase(){
  frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
+ '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
  '<button class="btn alt wide space-top" data-action="fairy-toggle">'+(s.meta.fairyMuted?'Включить комментарии светлячка':'Скрыть комментарии светлячка')+'</button>'+frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
@@ -1112,7 +1167,7 @@ function kill(t){
  }
  else {
   if(e.elite&&Math.random()<.55)drop.diamonds=1;
-  if(Math.random()<.23+(bonus('lootChance')+setBonus('lootChance'))*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
+  if(Math.random()<.23+(bonus('lootChance')+setBonus('lootChance')+5*(s.meta.diamondUpgrades?.luck||0))*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
   else if(Math.random()<.33){drop.scroll=rollSpell(e.boss&&r.floor>=40?6:e.elite?5:4).id;}
  }
  t.drops=drop;
@@ -2026,6 +2081,10 @@ function action(name,id){
  if(name==='confirm-switch-act'){var act=s.meta.pendingActChoice;endStoredExpedition();s.meta.selectedAct=act;choose();return;}
  if(name==='escape-25'){escapeDungeon(.25,'Вы сбежали из подземелья.');return;}
  if(name==='escape-ad'){escapeDungeon(.50,'Спасибо за попытку! Реклама недоступна.');return;}
+ if(name==='diamond-shop'){diamondShop();return;}
+ if(name==='buy-diamond'){buyDiamond(id);return;}
+ if(name==='buy-cosmetic'){buyCosmetic(id);return;}
+ if(name==='equip-cosmetic'){equipCosmetic(id);return;}
  if(name==='alchemy'){alchemyMenu();return;}
  if(name==='brew-potion'){brewPotion(id);return;}
  if(name==='use-prepared'){usePreparedPotion(id);return;}
