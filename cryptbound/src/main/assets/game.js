@@ -1996,7 +1996,7 @@ function die(reason){
  '<div class="kpis space-bottom"><div><b>'+depth+'</b><small>Этаж</small></div><div><b>'+kills+'</b><small>Побед</small></div>'+
  '<div><b>+'+gain+'</b><small>Памяти</small></div></div>'+
  '<p class="golden">+'+essence+' эссенции: '+C[hero].name+'.</p>'+
- '<button class="btn wide" data-action="choose">НОВАЯ ЭКСПЕДИЦИЯ</button>'+
+ '<button class="btn wide" data-action="close">Вернуться на базу и выбрать подземелье</button>'+
  '<button class="btn alt wide space-top" data-action="camp">Усилить героев</button>'+
  '<button class="btn dark wide space-top" data-action="chronicles">Хроники и реликвии</button>');
 }
