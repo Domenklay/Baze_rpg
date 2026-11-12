@@ -430,27 +430,40 @@ function consumeTurn(){
  if(r.blessed>0)r.blessed--;
  var alive=enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
-  var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def);
+  var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
+  r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
+  if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;
+   log('Скелет применяет «Гробовой раскол».');}
   victim.foe.hp-=hit;log('Скелет поражает '+victim.foe.name+': '+hit+'.');
   if(victim.foe.hp<=0)kill(victim);
  }
+ if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
+  r.hp=Math.max(0,r.hp-poison);log('Яд обжигает кровь: −'+poison+' HP.');}
  alive=enemies();
  alive.slice(0,4).forEach(function(t){
   var e=t.foe;
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
-  if(e.burn>0){
-   e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage'));
-   if(e.hp<=0){kill(t);return;}
-  }
+  if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage'));if(e.hp<=0){kill(t);return;}}
+  var spec=e.skill||EX.monster(e.id),ready=(e.cooldown||spec.every)<=1;
+  e.cooldown=ready?spec.every:(e.cooldown||spec.every)-1;
   var amount=Math.max(1,e.atk+rand(-2,2)-stats().def-bonus('damageFlat')-Math.floor(r.blessed));
-  if(Math.random()*100<stats().dodge){log('Вы уклонились от удара '+e.name+'.');return;}
+  if(ready){
+    log(e.name+' применяет «'+spec.name+'».');
+    if(spec.kind==='bite')amount=Math.ceil(amount*1.65);
+    if(spec.kind==='guard')e.guard=3+Math.ceil(r.floor/5);
+    if(spec.kind==='curse')amount=Math.max(3,Math.ceil(e.atk*.95));
+    if(spec.kind==='double')amount=Math.max(2,amount*2);
+    if(spec.kind==='poison')r.poisonTurns=2;
+    if(spec.kind==='slam')amount=Math.ceil(amount*1.85);
+  }
+  if(Math.random()*100<stats().dodge){log('Вы уклонились от '+e.name+'.');return;}
   if(r.summon&&r.summon.hp>0&&Math.random()<.72){
-   r.summon.hp=Math.max(0,r.summon.hp-amount);
-   log('Скелет перехватывает '+amount+' урона.');
+   var summonDamage=Math.max(1,amount-(r.summon.def||0));
+   r.summon.hp=Math.max(0,r.summon.hp-summonDamage);
+   log('Скелет перехватывает '+summonDamage+' урона.');
    if(!r.summon.hp){log('Призванный скелет рассыпался.');r.summon=null;}
   }else{
-   var taken=amount;
-   if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
+   var taken=amount;if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
    r.hp=Math.max(0,r.hp-taken);
    if(taken)log(e.name+' наносит '+taken+' урона.');
   }
@@ -477,7 +490,8 @@ function kill(t){
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  var critical=Math.random()*100<st.crit;
- var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def);
+ var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def-(t.foe.guard||0));
+ t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+bonus('bossDamage')*.01));
  if(critical)amount=Math.floor(amount*(1.6+bonus('critDamage')*.01));
  t.foe.hp-=amount;
@@ -491,8 +505,9 @@ function useSkill(){
  var targetTile=target();var st=stats();
  if(r.class==='necromancer'){
   if(r.mp<8){toast('Нужно 8 маны.');return;}
-  r.mp-=8;r.summon={name:'Костяной страж',maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp'),
-   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp'),atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')};
+  r.mp-=8;r.summon={name:'Костяной страж',def:2,specialCooldown:4,maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
+   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
+ atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3};
   r.skillUsed=r.turn;log('Некромант призывает скелета из могильной пыли.');
  }else if(r.class==='executioner'){
   if(!targetTile){toast('Нужен враг для удара.');return;}
