@@ -596,4 +596,35 @@ test('First and final bosses use tactical HP scaling rather than raid-clicker va
  assert.ok(finalBoss.foe.atk>first.foe.atk);
 });
 
+
+test('Disk-save roundtrip keeps expedition, quests, prepared loadout and new slot migration',()=>{
+ const before=win.Crypt.state();
+ before.meta.materials['Проверка сохранения']=13;
+ before.meta.potionStock.ghost=(before.meta.potionStock.ghost||0)+2;
+ before.meta.preparedLoadout=['ghost','aegis'];
+ before.meta.memoryChapters.act1=true;
+ before.run.eliteSchedule={0:7,1:18};
+ const weapon=before.run.equip.weapon;
+ win.Crypt.save();
+ assert.ok(storage.cryptbound_local_v1);
+ const legacy=JSON.parse(storage.cryptbound_local_v1);
+ legacy.run.equip.shoulders=legacy.run.equip.bracer||null;
+ delete legacy.run.equip.bracer;
+ const maybe=legacy.run.items.find(x=>x.slot==='bracer');
+ if(maybe)maybe.slot='shoulders';
+ storage.cryptbound_local_v1=JSON.stringify(legacy);
+ vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'game.js-reload',timeout:12000});
+ const restored=win.Crypt.state();
+ assert.equal(restored.meta.materials['Проверка сохранения'],13);
+ assert.equal(restored.meta.memoryChapters.act1,true);
+ assert.deepEqual(Array.from(restored.meta.preparedLoadout),['ghost','aegis']);
+ assert.equal(restored.run.actIndex,9);
+ assert.equal(restored.run.floor,30);
+ assert.equal(restored.run.equip.weapon,weapon);
+ assert.equal(restored.run.equip.shoulders,undefined);
+ assert.ok('bracer' in restored.run.equip);
+ assert.equal(restored.run.eliteSchedule[0],7);
+ assert.equal(restored.run.eliteSchedule[1],18);
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
