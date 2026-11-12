@@ -6,3 +6,11 @@
 .dungeon-board .maze .hero-on-board .clicker-hero-sequence img{position:absolute;inset:0}
 .dungeon-board .maze .tile-origin .origin-dot{opacity:.2}
 @keyframes hero-tile-hop{from{transform:translateY(-10%) scale(.94)}to{transform:translateY(0) scale(1)}}
+
+/* Animate after a full clear, staggered 35 ms per tile without spending turns. */
+.dungeon-board .tile-auto-open{animation:tile-clear-flash .26s ease-out both}
+@keyframes tile-clear-flash{0%{opacity:0;filter:brightness(1.9);transform:scale(.75)}65%{opacity:1;filter:brightness(1.25)}100%{opacity:1;filter:none;transform:none}}
+.dungeon-board .tile-elite{outline:2px solid #bd9653;outline-offset:-2px}
+.dungeon-board .tile-boss{outline:2px solid #a75261;outline-offset:-2px;z-index:2}
+.dungeon-board .tile-boss svg{transform:scale(1.18);transform-origin:center bottom}
+.dungeon-board .hero-on-board{animation:hero-tile-hop .14s ease-in-out both}

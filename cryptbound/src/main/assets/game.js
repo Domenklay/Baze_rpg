@@ -1,7 +1,7 @@
 /* Пепельный лабиринт: offline, original roguelite. No external calls. */
 (function(){
 'use strict';
-var KEY='cryptbound_local_v1',s=null,toastTimer=0;
+var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -191,6 +191,7 @@ function placeSummon(){
  r.summonTile=spot.tile.id;return true;
 }
 function startFloor(){
+ heroMoveToken++;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
  r.tiles=distributeTiles();r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
@@ -306,7 +307,7 @@ function activeTileView(t){
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
-  return '<button class="tile tile-bare" data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
+  return '<button class="tile tile-bare'+(t.autoOpened!=null?' tile-auto-open':'')+'"'+(t.autoOpened!=null?' style="animation-delay:'+t.autoOpened*35+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
   var access=CR.exploreStatus(t,r.tiles);
   return access.ok?
@@ -321,8 +322,8 @@ function activeTileView(t){
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+
-  '" data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(t.autoOpened!=null?' tile-auto-open':'')+
+  '"'+(t.autoOpened!=null?' style="animation-delay:'+t.autoOpened*35+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
 }
@@ -847,7 +848,7 @@ function kill(t){
   var opened=0;
   r.tiles.forEach(function(t){
    if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
-    t.revealed=true;if(t.kind==='empty')t.cleared=true;opened++;
+    t.revealed=true;t.autoOpened=opened++;if(t.kind==='empty')t.cleared=true;
    }
   });
   var bonusGold=Math.max(1,Math.round(6*depthMultiplier()));addGold(bonusGold);
@@ -1069,6 +1070,22 @@ function reveal(id){
  else log('Под камнем обнаружено: '+({chest:'сундук',coin:'монеты',potion:'флакон',trap:'ловушка',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие',corpse:'останки исследователя',chamber:'побочная комната'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
  finishAction();
 }
+
+/* Cosmetic walking: only adjacent revealed empty/safe cells. No turns, no enemy attacks. */
+function moveHeroTo(id){
+ var dest=tile(id);if(!dest||!dest.revealed||!dest.cleared||dest.drops||(dest.foe&&dest.foe.hp>0)||dest.summon)return;
+ var path=CR.walkPath(r.tiles,r.heroTile,dest.id);
+ if(!path){toast('Нет безопасного пути по исследованным клеткам.');return;}
+ if(path.length<2)return;
+ var ticket=++heroMoveToken,run=r,queue=path.slice(1);
+ function advance(){
+  if(ticket!==heroMoveToken||r!==run)return;
+  run.heroTile=queue.shift();draw();save();
+  if(queue.length)setTimeout(advance,115);
+ }
+ advance();
+}
+
 function inspectTile(id){
  var t=tile(id);if(!t)return;
  if(t.kind==='exit'){descend();return;}
@@ -1465,6 +1482,7 @@ function permanent(id){
  save();camp();draw();
 }
 function action(name,id){
+ if(name!=='move-hero'&&name!=='close')heroMoveToken++;
  if(name==='close'){if(r)r.chamberActive=null;close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
@@ -1491,7 +1509,7 @@ function action(name,id){
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
  if(name==='reveal'){reveal(id);return;}
- if(name==='move-hero'){var t=tile(id);if(t&&t.revealed&&t.cleared&&(!t.foe||t.foe.hp<=0)&&!t.drops){r.heroTile=t.id;draw();save();}return;}
+ if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}

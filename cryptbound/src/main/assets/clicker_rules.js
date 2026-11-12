@@ -78,6 +78,22 @@ function openPath(tiles){
  }}
  return seen;
 }
+
+/* Decorative route over already opened safe floor, never through living monsters or loot. */
+function walkPath(tiles,from,to){
+ if(from==null||to==null)return null;
+ function safe(id){var t=tiles[id];return !!t&&t.revealed&&t.cleared&&!t.drops&&!t.summon&&(!t.foe||t.foe.hp<=0);}
+ if(!safe(from)||!safe(to))return null;
+ var seen=new Set([from]),parents={},queue=[from],found=from===to;
+ while(queue.length&&!found){var here=queue.shift();for(var next of near(here)){
+  if(seen.has(next)||!safe(next))continue;
+  seen.add(next);parents[next]=here;
+  if(next===to){found=true;break;}queue.push(next);
+ }}
+ if(!found)return null;
+ var path=[to];while(path[0]!==from)path.unshift(parents[path[0]]);
+ return path;
+}
 function exploreStatus(t,tiles){
  if(!t||t.revealed)return {ok:false,reason:'Плита уже открыта.'};
  var connected=openPath(tiles),adj=near(t.id);
@@ -110,5 +126,5 @@ function rangedSource(){
 }
 window.ClickerRules={region:region,regionIndex:regionIndex,group:group,setDefinition:setDefinition,gear:gearFromCatalog,
  counts:counts,bonuses:bonuses,descriptions:descriptions,near:near,openPath:openPath,exploreStatus:exploreStatus,
- summonSpot:summonSpot,visualId:visualId,rangedSource:rangedSource};
+ summonSpot:summonSpot,walkPath:walkPath,visualId:visualId,rangedSource:rangedSource};
 })();
