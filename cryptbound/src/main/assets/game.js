@@ -392,6 +392,11 @@ function renderMaze(){
  '<div class="dungeon-board"><div class="dungeon-border"><div class="maze">'+r.tiles.map(activeTileView).join('')+'</div></div></div>'+
  '<div class="dungeon-footer">'+
  '<div class="dungeon-encounter">'+footer+'</div>'+summon+
+ (r.ghost&&r.ghost.hp>0?'<div class="dungeon-summon">☽ Призрачный страж '+r.ghost.hp+'/'+r.ghost.maxHp+' HP · атака каждые 3 хода</div>':'')+
+ (r.guardCharges?'<div class="fine golden">⬡ Защитных зарядов: '+r.guardCharges+'</div>':'')+
+ '<div class="prepared-potions">'+[0,1].map(function(i){var id=r.preparedPotions&&r.preparedPotions[i],p=SYS.byPotion[id];
+  return '<button class="btn small" data-action="use-prepared" data-id="'+i+'"'+(p?'':' disabled')+'>'+esc(p?p.name:'Пустой слот '+(i+1))+'</button>';
+ }).join('')+'</div>'+
  (r.portalReady?'<button class="btn gold wide" data-action="safe-portal">◈ Безопасный портал · вернуться на базу</button>':'')+
  '<div class="dungeon-buttons">'+
  '<button class="dungeon-action special" data-action="skill" '+(turns<skill.turns?'disabled':'')+'><span>'+skill.icon+'</span><small>'+skill.name+'</small></button>'+
@@ -582,6 +587,10 @@ function renderBag(){
  '<div class="bag-filter-scroll">'+quick+'</div>'+
  frame('СНАРЯЖЕНИЕ ДЛЯ ВЫБОРА',filtered.length?'<div class="grid4">'+itemGrid(filtered)+'</div>':'<div class="empty">Предметов в этом слоте пока нет.</div>')+
  frame('СРАВНЕНИЕ СНАРЯЖЕНИЯ',comparison||'<div class="empty">Выберите предмет в сумке.</div>')+
+ frame('ПОДГОТОВЛЕННЫЕ ЗЕЛЬЯ','<div class="prepared-potions">'+[0,1].map(function(i){
+ var p=SYS.byPotion[r.preparedPotions&&r.preparedPotions[i]];
+ return '<button class="btn small" data-action="use-prepared" data-id="'+i+'"'+(p?'':' disabled')+'>'+esc(p?p.name:'Пустой слот '+(i+1))+'</button>';
+ }).join('')+'</div>')+
  frame('ПРИПАСЫ','<div class="kpis"><div><b>'+r.potions+'</b><small>Эликсиров</small></div>'+
  '<div><b>'+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</b><small>Свитков</small></div>'+
  '<div><b>'+r.gold+'</b><small>Монет</small></div></div>'+
@@ -738,7 +747,7 @@ function renderBase(){
  frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
+ '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
  frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
@@ -1609,6 +1618,7 @@ function town(){
  dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
  '<p>Запас материалов: <b class="golden">'+available+'</b>. Они добываются у врагов шести регионов и остаются после смерти героя. В мастерской используем ресурсы вместо золота.</p>'+
  '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
+ '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
  '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
  '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span>'+esc(e[0])+' <b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>'+
@@ -1711,6 +1721,9 @@ function action(name,id){
  if(name==='confirm-switch-act'){var act=s.meta.pendingActChoice;endStoredExpedition();s.meta.selectedAct=act;choose();return;}
  if(name==='escape-25'){escapeDungeon(.25,'Вы сбежали из подземелья.');return;}
  if(name==='escape-ad'){escapeDungeon(.50,'Спасибо за попытку! Реклама недоступна.');return;}
+ if(name==='alchemy'){alchemyMenu();return;}
+ if(name==='brew-potion'){brewPotion(id);return;}
+ if(name==='use-prepared'){usePreparedPotion(id);return;}
  if(name==='camp'){camp();return;}
  if(name==='town'){town();return;}
  if(name==='town-upgrade'){townUpgrade(id);return;}
@@ -1764,6 +1777,10 @@ function action(name,id){
  if(name==='buy'){buy(id);return;}
  if(name==='puzzle-answer'){puzzleAnswer(id);return;}
 }
+document.addEventListener('change',function(e){
+ var selector=e.target.closest('[data-alchemy-slot]');
+ if(selector)choosePreparedPotion(selector.dataset.alchemySlot,selector.value);
+});
 document.addEventListener('click',function(e){
  if(Date.now()<suppressClickUntil && e.target.closest('[data-hold]')){e.preventDefault();return;}
  var b=e.target.closest('[data-action],[data-tab]');if(!b)return;e.preventDefault();
