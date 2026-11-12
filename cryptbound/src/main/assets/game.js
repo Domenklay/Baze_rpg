@@ -203,6 +203,8 @@ function startFloor(){
 }
 function begin(hero){
  var meta=s.meta;
+ if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
+ if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},portalReady:false,materials:{},diamonds:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
@@ -214,7 +216,7 @@ function begin(hero){
  r.hp=stats().hp;r.mp=stats().mp;
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
@@ -224,6 +226,12 @@ function load(){
  if(!meta.totalSecrets)meta.totalSecrets=0;
  if(!meta.bossKills)meta.bossKills=0;
  if(!meta.materials)meta.materials={};if(!meta.city)meta.city={forge:0,barracks:0,library:0};
+ if(meta.unlockedAct==null)meta.unlockedAct=0;
+ if(meta.selectedAct==null)meta.selectedAct=0;
+ if(meta.activeExpedition===undefined)meta.activeExpedition=null;
+ if(!meta.completedActs)meta.completedActs={};
+ if(meta.diamonds==null)meta.diamonds=0;
+ if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
   if(v.run.actIndex==null)v.run.actIndex=0;
@@ -564,13 +572,123 @@ function renderMenu(){
  '<button class="btn dark wide space-top" data-action="abandon">Завершить забег</button>';
 }
 
+
+/* Persistent town / three-location expedition boundary. */
+function bankExpeditionLoot(fraction){
+ var keep=fraction==null?1:Math.max(0,Math.min(1,fraction));
+ var summary={resources:0,diamonds:0};
+ if(!r)return summary;
+ for(var name of Object.keys(r.materials||{})){
+  var amount=Math.floor(Math.max(0,r.materials[name]||0)*keep);
+  if(amount>0){s.meta.materials[name]=(s.meta.materials[name]||0)+amount;summary.resources+=amount;}
+ }
+ r.materials={};
+ if(keep===1&&r.diamonds>0){s.meta.diamonds=(s.meta.diamonds||0)+r.diamonds;summary.diamonds=r.diamonds;}
+ r.diamonds=0;
+ return summary;
+}
+function salvageExpedition(expedition){
+ if(!expedition)return 0;
+ var gain=(expedition.items||[]).reduce(function(total,it){return total+1+(it.rarity||0)+(it.plus||0);},0);
+ s.meta.materials['Металлолом']=(s.meta.materials['Металлолом']||0)+gain;
+ return gain;
+}
+function safePortal(){
+ if(!r||!r.portalReady||!isBossFloor()||!r.bossClears[r.floor]){toast('Безопасный портал открывается только после победы над боссом.');return;}
+ var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex,loot=bankExpeditionLoot(1),scrap=0;
+ s.meta.best=Math.max(s.meta.best,r.floor);
+ if(oldLocation<2){
+  var carry=JSON.parse(JSON.stringify(r));
+  carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
+  carry.bossClears={};carry.key=false;carry.summon=null;carry.summonTile=null;carry.chamberActive=null;carry.shield=0;
+  carry.poisonTurns=0;carry.blessed=0;carry.log=[];
+  s.meta.activeExpedition=carry;
+ }else{
+  scrap=salvageExpedition(r);
+  s.meta.completedActs[oldAct]=(s.meta.completedActs[oldAct]||0)+1;
+  s.meta.unlockedAct=Math.max(s.meta.unlockedAct,Math.min(DN.acts.length-1,oldAct+1));
+  s.meta.activeExpedition=null;
+  s.meta.runs++;
+ }
+ s.run=null;r=null;save();draw();
+ dialog('<div class="emblem">◈</div><h2>'+(oldLocation===2?'Подземелье завершено':'Безопасное возвращение')+'</h2>'+
+ '<p>Покинута локация «'+esc(oldName)+'». На склад сдано '+loot.resources+' ресурсов и '+loot.diamonds+' алмазов.</p>'+
+ (oldLocation<2?'<p>Таланты, предметы, золото, свитки и записи сохранены. Следующая локация начнётся после отдыха на базе.</p>'+
+ '<button class="btn wide" data-action="resume-expedition">Продолжить экспедицию</button>':
+ '<p>Все три локации пройдены. Временное снаряжение разобрано: +'+scrap+' металлолома.</p>'+
+ '<button class="btn wide" data-action="close">Вернуться на базу</button>'));
+}
+function resumeExpedition(){
+ var carry=s.meta.activeExpedition;
+ if(r||!carry)return;
+ if(!DN.location(carry.actIndex,carry.locationIndex)){toast('Ошибка следующей локации.');return;}
+ r=s.run=carry;s.meta.activeExpedition=null;
+ r.floor=1;r.portalReady=false;r.bossClears={};r.key=false;r.summon=null;r.summonTile=null;
+ r.materials={};r.diamonds=0;r.tiles=[];r.chamberActive=null;r.fx=null;
+ r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
+ r.mp=Math.min(stats().mp,r.mp+Math.floor(stats().mp*.35));
+ startFloor();save();draw();close();
+ toast('Экспедиция продолжается: '+maxFloorLabel());
+}
+function scrapStoredItem(id){
+ var exp=s.meta.activeExpedition;if(!exp)return;
+ var it=exp.items.find(function(x){return x.id===Number(id);});
+ if(!it||Object.values(exp.equip).includes(it.id)){toast('Сначала снимите надетую вещь в экспедиции.');return;}
+ var n=1+(it.rarity||0)+(it.plus||0);
+ s.meta.materials['Металлолом']=(s.meta.materials['Металлолом']||0)+n;
+ exp.items=exp.items.filter(function(x){return x.id!==it.id;});
+ save();draw();toast('Разобран '+it.name+': +'+n+' металлолома.');
+}
+function endStoredExpedition(){
+ if(!s.meta.activeExpedition)return;
+ var scrap=salvageExpedition(s.meta.activeExpedition);
+ s.meta.activeExpedition=null;
+ s.meta.runs++;save();draw();close();toast('Экспедиция завершена. Получено '+scrap+' металлолома.');
+}
+function selectAct(id){
+ var n=Number(id);
+ if(!Number.isInteger(n)||n<0||n>=DN.acts.length)return;
+ if(n>s.meta.unlockedAct){toast('Сначала завершите предыдущий акт.');return;}
+ if(s.meta.activeExpedition){
+  if(s.meta.activeExpedition.actIndex===n){resumeExpedition();return;}
+  s.meta.pendingActChoice=n;
+  dialog('<h2>Сменить подземелье?</h2><p>Текущая экспедиция будет завершена, а оставшиеся временные предметы автоматически разобраны.</p>'+
+   '<button class="btn wide" data-action="confirm-switch-act">Разобрать и перейти</button>'+
+   '<button class="btn alt wide" data-action="close">Отмена</button>');return;
+ }
+ s.meta.selectedAct=n;save();choose();
+}
+function renderBase(){
+ var exp=s.meta.activeExpedition;
+ var acts=DN.acts.map(function(a,i){
+  var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0;
+  var current=exp&&exp.actIndex===i;
+  return '<div class="meta-upgrade"><div><strong>'+(done?'✓ ':'')+(i+1)+'. '+esc(a.name)+'</strong>'+
+   '<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small></div>'+
+   '<button class="btn small" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+
+   (current?'Продолжить':unlocked?'Войти':'Закрыто')+'</button></div>';
+ }).join('');
+ var salvage=exp?exp.items.filter(function(i){return !Object.values(exp.equip).includes(i.id);}).slice(0,24).map(function(i){
+  return '<div class="row space-bottom"><span>'+esc(i.name)+'</span><button class="btn small" data-action="scrap-stored-item" data-id="'+i.id+'">Разобрать</button></div>';
+ }).join(''):'';
+ var pending=exp?frame('ОТДЫХ МЕЖДУ ЛОКАЦИЯМИ','<p><b>'+esc(DN.acts[exp.actIndex].name)+'</b> · следующая локация '+(exp.locationIndex+1)+'/3 — '+esc(DN.location(exp.actIndex,exp.locationIndex).name)+'</p>'+
+ '<p>Сохранены временные вещи, таланты, золото и свитки. Найденные ресурсы уже на складе.</p>'+
+ '<button class="btn gold wide" data-action="resume-expedition">Продолжить после отдыха</button>'+
+ (salvage?'<div class="frame-title space-top">Разобрать ненужные вещи</div>'+salvage:'')+
+ '<button class="btn dark wide space-top" data-action="discard-expedition">Завершить текущую экспедицию</button>'):'';
+ return section('Деревня и экспедиции','10 подземелий · 30 локаций')+
+ '<div class="scene">'+window.CryptArt.room(0,1)+'<div class="banner-label">Место отдыха между походами.</div></div>'+
+ pending+frame('ПОДЗЕМЕЛЬЯ',acts)+
+ frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
+ '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
+ '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
+ '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button>')+
+ frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
+ '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
+}
 function draw(){
  if(!s)return;
- hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=section('Записки выживших','Лагерь')+
- '<div class="scene">'+window.CryptArt.room(0,1)+'<div class="banner-label">Место, где всё начинается снова.</div></div>'+
- frame('НОВАЯ ЭКСПЕДИЦИЯ','<p class="fine muted">Выберите одного из шести героев. Каждый забег создаёт новый лабиринт, но полученные осколки памяти позволяют усиливать будущие походы.</p>'+
- '<button class="btn wide space-top" data-action="choose">Выбрать героя</button>')+
- frame('ЛЕТОПИСЬ','<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Забегов</small></div><div><b>'+s.meta.best+'</b><small>Лучший этаж</small></div><div><b>'+s.meta.souls+'</b><small>Осколков</small></div></div><button class="btn alt wide space-top" data-action="camp">Память предков</button>');return;}
+ hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=renderBase();return;}
  $('content').classList.toggle('dungeon-mode',r.tab==='maze');
  $('content').innerHTML=r.tab==='maze'?renderMaze():r.tab==='hero'?renderHero():r.tab==='spells'?renderSpells():r.tab==='talents'?renderTalents():renderBag();
 }
@@ -586,7 +704,7 @@ function choose(){
  '<span><strong>'+c.icon+' '+c.name+'</strong><small>'+c.description+'</small></span></button>';
  }).join('');
  dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.4</div><h2>ВЫБОР ПУТИ</h2>'+
- '<p>Шесть героев. Один бесконечный спуск. Всё, что вы потеряете, останется под землёй — кроме памяти.</p>'+opts+
+ '<p>Выбранное подземелье: <b>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</b>. Начните первую локацию экспедиции.</p>'+opts+
  '<p class="fine muted">Скрытые клетки · Пошаговый бой · Магия · Призыв · Древа титулов</p>'+
  '<button class="btn dark wide" data-action="close">Закрыть</button>');
 }
@@ -1125,8 +1243,9 @@ function scrap(id){
  r.bagSelected=r.items.length?r.items[0].id:null;
  log('Разобрано: '+i.name+'. +'+coins+' монет.');draw();save();
 }
-function die(){
+function die(reason){
  if(!r)return;
+ s.meta.activeExpedition=null;
  var depth=r.floor,kills=r.kills,secret=r.secrets,hero=r.class;
  var gain=3+depth*2+Math.floor(kills/3)+secret*2;
  var essence=3+depth*2+Math.floor(kills/2);
@@ -1135,7 +1254,7 @@ function die(){
  s.meta.heroEssence[hero]=(s.meta.heroEssence[hero]||0)+essence;
  s.run=null;r=null;save();draw();
  dialog('<div class="emblem">☠</div><div class="subhead red">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</div><h2>ПЕПЕЛ ПОМНИТ</h2>'+
- '<p>Титулы забега потеряны. Но память, сущность героя и коллекционные реликвии сохраняются навсегда.</p>'+
+ '<p>Титулы и вещи экспедиции потеряны. Сохранённый ранее склад не затронут.</p>'+(reason?'<p>'+esc(reason)+'</p>':'')+
  '<div class="kpis space-bottom"><div><b>'+depth+'</b><small>Этаж</small></div><div><b>'+kills+'</b><small>Побед</small></div>'+
  '<div><b>+'+gain+'</b><small>Памяти</small></div></div>'+
  '<p class="golden">+'+essence+' эссенции: '+C[hero].name+'.</p>'+
@@ -1143,10 +1262,20 @@ function die(){
  '<button class="btn alt wide space-top" data-action="camp">Усилить героев</button>'+
  '<button class="btn dark wide space-top" data-action="chronicles">Хроники и реликвии</button>');
 }
+function escapeDungeon(fraction,message){
+ if(!r)return;
+ var summary=bankExpeditionLoot(fraction);
+ die(message+' Сохранено '+summary.resources+' несданных ресурсов.');
+}
 function abandon(){
  if(!r){close();return;}
- dialog('<div class="emblem">☠</div><h2>ЗАКОНЧИТЬ ЭКСПЕДИЦИЮ?</h2><p>Забег закончится. Полученные осколки памяти останутся, остальные вещи и таланты пропадут.</p>'+
- '<div class="btnrow"><button class="btn alt" data-action="close">Продолжить</button><button class="btn" data-action="confirm-end">Закончить</button></div>');
+ dialog('<div class="emblem">☠</div><h2>Покинуть подземелье?</h2>'+
+ '<p>Это побег, а не портал. Временные предметы, свитки и прокачка будут потеряны.</p>'+
+ '<p>Без рекламы сохраняется 25% не сданных на склад ресурсов.</p>'+
+ '<button class="btn wide" data-action="escape-25">Сбежать · сохранить 25%</button>'+
+ '<button class="btn alt wide space-top" data-action="escape-ad">Попробовать бонус рекламы</button>'+
+ '<p class="fine muted">Игра сейчас офлайн: если реклама технически недоступна, выдаётся 50%. После подтверждённого просмотра в будущей онлайн-сборке — 75%.</p>'+
+ '<button class="btn dark wide space-top" data-action="close">Отмена</button>');
 }
 function camp(){
  var m=s.meta,up=m.upgrades;
@@ -1280,6 +1409,15 @@ function action(name,id){
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
+ if(name==='select-act'){selectAct(id);return;}
+ if(name==='resume-expedition'){resumeExpedition();return;}
+ if(name==='safe-portal'){safePortal();return;}
+ if(name==='scrap-stored-item'){scrapStoredItem(id);return;}
+ if(name==='discard-expedition'){dialog('<h2>Завершить экспедицию?</h2><p>Всё временное снаряжение будет разобрано на металлолом, остальное временное содержимое сброшено.</p><button class="btn wide" data-action="confirm-discard-expedition">Подтвердить разбор</button><button class="btn alt wide" data-action="close">Отмена</button>');return;}
+ if(name==='confirm-discard-expedition'){endStoredExpedition();return;}
+ if(name==='confirm-switch-act'){var act=s.meta.pendingActChoice;endStoredExpedition();s.meta.selectedAct=act;choose();return;}
+ if(name==='escape-25'){escapeDungeon(.25,'Вы сбежали из подземелья.');return;}
+ if(name==='escape-ad'){escapeDungeon(.50,'Спасибо за попытку! Реклама недоступна.');return;}
  if(name==='camp'){camp();return;}
  if(name==='town'){town();return;}
  if(name==='town-upgrade'){townUpgrade(id);return;}
