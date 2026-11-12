@@ -528,36 +528,44 @@ function consumeTurn(){
  if(r.summon&&r.summon.hp>0&&alive.length){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
-  if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;
-   log('Скелет применяет «Гробовой раскол».');}
-  victim.foe.hp-=hit;log('Скелет поражает '+victim.foe.name+': '+hit+'.');
+  if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
+  victim.foe.hp-=hit;log('Скелет наносит '+hit+' урона: '+victim.foe.name+'.');
   if(victim.foe.hp<=0)kill(victim);
  }
  if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
-  r.hp=Math.max(0,r.hp-poison);log('Яд обжигает кровь: −'+poison+' HP.');}
+  r.hp=Math.max(0,r.hp-poison);log('Яд: −'+poison+' HP.');}
  alive=enemies();
  alive.slice(0,4).forEach(function(t){
-  var e=t.foe;
+  var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage'));if(e.hp<=0){kill(t);return;}}
-  var spec=e.skill||EX.monster(e.id),ready=(e.cooldown||spec.every)<=1;
-  e.cooldown=ready?spec.every:(e.cooldown||spec.every)-1;
+  var ready=false;
+  if(e.ranged){
+   e.attackCooldown=Math.max(0,(e.attackCooldown||3)-1);
+   e.cooldown=e.attackCooldown||3;
+   if(e.attackCooldown>0)return; // Ranged creature fires only every 3 turns.
+   e.attackCooldown=3;e.cooldown=3;ready=true;
+  }else{
+   ready=(e.cooldown||special.every)<=1;
+   e.cooldown=ready?special.every:(e.cooldown||special.every)-1;
+  }
   var amount=Math.max(1,e.atk+rand(-2,2)-stats().def-bonus('damageFlat')-Math.floor(r.blessed));
   if(ready){
-    log(e.name+' применяет «'+spec.name+'».');
-    if(spec.kind==='bite')amount=Math.ceil(amount*1.65);
-    if(spec.kind==='guard')e.guard=3+Math.ceil(r.floor/5);
-    if(spec.kind==='curse')amount=Math.max(3,Math.ceil(e.atk*.95));
-    if(spec.kind==='double')amount=Math.max(2,amount*2);
-    if(spec.kind==='poison')r.poisonTurns=2;
-    if(spec.kind==='slam')amount=Math.ceil(amount*1.85);
+   log(e.name+' применяет «'+special.name+'».');
+   if(special.kind==='bite')amount=Math.ceil(amount*1.65);
+   if(special.kind==='guard')e.guard=3+Math.ceil(r.floor/5);
+   if(special.kind==='curse')amount=Math.max(3,Math.ceil(e.atk*.95));
+   if(special.kind==='double')amount=Math.max(2,amount*2);
+   if(special.kind==='poison')r.poisonTurns=2;
+   if(special.kind==='slam')amount=Math.ceil(amount*1.85);
+   if(special.kind==='shot')amount=Math.max(2,Math.ceil(e.atk*.85));
   }
-  if(Math.random()*100<stats().dodge){log('Вы уклонились от '+e.name+'.');return;}
+  if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.summon&&r.summon.hp>0&&Math.random()<.72){
    var summonDamage=Math.max(1,amount-(r.summon.def||0));
    r.summon.hp=Math.max(0,r.summon.hp-summonDamage);
    log('Скелет перехватывает '+summonDamage+' урона.');
-   if(!r.summon.hp){log('Призванный скелет рассыпался.');r.summon=null;}
+   if(!r.summon.hp){log('Призванный скелет разрушен.');r.summon=null;r.summonTile=null;}
   }else{
    var taken=amount;if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
    r.hp=Math.max(0,r.hp-taken);
@@ -574,7 +582,10 @@ function kill(t){
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal'));
- var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0};
+ var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[]};
+ for(var source of (e.loot||[])){
+  if(Math.random()*100<source.chance)drop.materials.push({name:source.name,qty:rand(source.min,source.max)});
+ }
  if(e.boss){
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
   drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
@@ -589,6 +600,7 @@ function kill(t){
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
 }
 function strike(tid){
+ if(r){r.fx='attack';r.fxUntil=Date.now()+420;}
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def-(t.foe.guard||0));
@@ -600,15 +612,19 @@ function strike(tid){
  if(t.foe.hp<=0)kill(t);
  finishAction();
 }
-function finishAction(){if(!r)return;if(consumeTurn()){}if(r){draw();save();}}
+function finishAction(){if(!r)return;consumeTurn();if(r){draw();save();
+  if(r.fx&&r.fxUntil>Date.now()){setTimeout(function(){if(r&&Date.now()>=r.fxUntil){r.fx=null;draw();}},460);}
+ }}
 function useSkill(){
+ if(r){r.fx='skill';r.fxUntil=Date.now()+420;}
  if(r.turn-r.skillUsed<(r.class==='executioner'?4:5)){toast('Умение ещё восстанавливается.');return;}
  var targetTile=target();var st=stats();
  if(r.class==='necromancer'){
   if(r.mp<8){toast('Нужно 8 маны.');return;}
-  r.mp-=8;r.summon={name:'Костяной страж',def:2,specialCooldown:4,maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
+  r.mp-=8;r.summonTile=null;r.summon={name:'Костяной страж',def:2,specialCooldown:4,maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
    hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
  atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3};
+  if(!placeSummon()){r.summon=null;r.mp+=8;toast('Не удалось найти место для призыва.');return;}
   r.skillUsed=r.turn;log('Некромант призывает скелета из могильной пыли.');
  }else if(r.class==='executioner'){
   if(!targetTile){toast('Нужен враг для удара.');return;}
@@ -641,6 +657,7 @@ function potion(){
 }
 function wait(){log('Вы затаились, собираясь с силами.');r.mp=Math.min(stats().mp,r.mp+1);finishAction();}
 function cast(id){
+ if(r){r.fx='skill';r.fxUntil=Date.now()+420;}
  var sp=SPELLS.find(function(x){return x.id===id;});if(!sp)return;
  var error=spellValid(sp);if(error){toast(error);return;}
  r.scrolls[id]--;r.mp-=manaCost(sp);
@@ -694,6 +711,10 @@ function claimTile(t){
   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');labels.push('⚿ Ключ');}
   if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');labels.push('◈ +'+found);}
   if(pending.potion){r.potions+=pending.potion;lines.push('<strong>✚ '+pending.potion+' эликсир</strong>');labels.push('✚ Эликсир ×'+pending.potion);}
+  if(pending.materials)for(var mat of pending.materials){
+   s.meta.materials[mat.name]=(s.meta.materials[mat.name]||0)+mat.qty;
+   labels.push(mat.name+' ×'+mat.qty);
+  }
   if(pending.scroll){r.scrolls[pending.scroll]=(r.scrolls[pending.scroll]||0)+1;
    var sp=SPELLS.find(function(x){return x.id===pending.scroll;});
    lines.push('<strong>✣ Свиток «'+esc(sp.name)+'»</strong>');labels.push('✣ '+sp.name+' ×1');}
