@@ -104,6 +104,15 @@ function combat(act,location,floor,roleId,elite,boss,id){
   cooldown:cooldown,role:boss?'boss':roleId,
   threat:p.threat,act:Number(act)+1,floor:level};
 }
+var hazards=[
+ {kind:'bleed',name:'Зазубренная ловушка'}, {kind:'poison',name:'Ядовитый осколок разлома'},
+ {kind:'corrode',name:'Подгорная кислота'}, {kind:'silence',name:'Тисовая печать молчания'},
+ {kind:'burn',name:'Адский пепельный огонь'}, {kind:'mana',name:'Сфера бездонной жажды'},
+ {kind:'bleed',name:'Жатва мёртвых'}, {kind:'silence',name:'Песнь забытых снов'},
+ {kind:'shatter',name:'Первозданная ударная волна'}, {kind:'all',name:'Астральный разрыв'}
+];
+function hazard(act){return hazards[clamp(Number(act)||0,0,9)];}
+
 function training(act){var n=clamp(Math.floor(Number(act)||0),0,9);
  return {atk:n*7,def:n*3,hp:n*34,mp:n*8,pow:n*5};
 }
@@ -115,6 +124,6 @@ function loot(act,location,floor,elite,boss){
 }
 window.CryptBalance={
  profiles:profiles,roles:roleMods,abilities:abilities,
- hash:hash,role:role,ability:ability,actProfile:actProfile,combat:combat,training:training,loot:loot
+ hash:hash,role:role,ability:ability,actProfile:actProfile,combat:combat,training:training,hazard:hazard,loot:loot
 };
 })();

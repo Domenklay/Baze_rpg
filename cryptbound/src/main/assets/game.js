@@ -1644,7 +1644,7 @@ function claimTile(t){
   finishAction();if(r)floatLoot(t.id,labels);return;
  }
  if(kind==='chest'){
-  var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+bonus('chestGold')*.01)));
+  var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+(r.actIndex||0)*.16)*(1+bonus('chestGold')*.01)));
   lines.push('<strong>◈ '+money+' монет</strong>');labels.push('◈ +'+money);
   if(Math.random()<.8){
    var i=addItem(pick(Object.keys(SLOT)),null);
@@ -1662,7 +1662,7 @@ function claimTile(t){
   return;
  }
  if(kind==='coin'){
-  var gold=addGold(rand(9,18)+r.floor*2);t.cleared=true;log('Подобрано '+gold+' монет.');
+  var gold=addGold(Math.round((rand(9,18)+r.floor*2)*(1+(r.actIndex||0)*.16)));t.cleared=true;log('Подобрано '+gold+' монет.');
   finishAction();if(r)floatLoot(t.id,['◈ Монеты +'+gold]);return;
  }
  if(kind==='potion'){
@@ -1670,10 +1670,21 @@ function claimTile(t){
   finishAction();if(r)floatLoot(t.id,['✚ Эликсир ×1']);return;
  }
  if(kind==='trap'){
-  t.cleared=true;var reduction=clamp(1-bonus('trapReduce')*.01,0,.95);
-  var dmg=Math.max(0,Math.floor((7+r.floor*2)*reduction*(r.class==='scout'?.55:1)));
-  r.hp=Math.max(0,r.hp-dmg);log('Ловушка наносит '+dmg+' урона.');
-  finishAction();if(r)floatLoot(t.id,['−'+dmg+' HP']);return;
+  t.cleared=true;var hazard=BAL.hazard(r.actIndex||0),reduction=clamp(1-bonus('trapReduce')*.01,0,.95);
+  var dmg=Math.max(0,Math.floor((7+r.floor*1.3+(r.actIndex||0)*10)*reduction*(r.class==='scout'?.55:1)));
+  r.hp=Math.max(0,r.hp-dmg);
+  if(dmg>0){
+   if(hazard.kind==='bleed')r.bleedTurns=Math.max(r.bleedTurns||0,2);
+   if(hazard.kind==='poison')r.poisonTurns=Math.max(r.poisonTurns||0,2);
+   if(hazard.kind==='burn')r.burnTurns=Math.max(r.burnTurns||0,2);
+   if(hazard.kind==='silence')r.silenceTurns=Math.max(r.silenceTurns||0,2);
+   if(hazard.kind==='corrode'){r.armorBreakTurns=3;r.armorBreakPower=Math.max(2,r.armorBreakPower||0);}
+   if(hazard.kind==='mana')r.mp=Math.max(0,r.mp-Math.ceil(dmg*.45));
+   if(hazard.kind==='shatter'){r.shield=Math.max(0,r.shield-dmg);r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-dmg);}
+   if(hazard.kind==='all'){r.mp=Math.max(0,r.mp-Math.ceil(dmg*.40));r.burnTurns=Math.max(r.burnTurns||0,2);}
+  }
+  log(hazard.name+': −'+dmg+' HP; угроза акта '+(r.actIndex+1)+'.');
+  finishAction();if(r)floatLoot(t.id,['−'+dmg+' HP · '+hazard.name]);return;
  }
  if(kind==='corpse'){discoverCorpse(t);return;}
  if(kind==='chamber'){openChamber(t);return;}
@@ -2006,7 +2017,7 @@ function altarChoice(risk){
  close();finishAction();
 }
 function shopPrice(id){var base=id==='potion'?16:id==='scroll'?15:38;
- return Math.max(1,Math.ceil(base*(1-bonus('discount')*.01)));}
+ return Math.max(1,Math.ceil(base*(1+(r.actIndex||0)*.16)*depthMultiplier()*(1-bonus('discount')*.01)));}
 function showShop(){
  var items=[['potion','✚','Целебный эликсир'],['scroll','✣','Случайный свиток'],['gear','⚔','Случайная экипировка']];
  dialog('<div class="emblem">◈</div><div class="subhead">СТРАНСТВУЮЩИЙ ТОРГОВЕЦ</div><h2>ЛАВКА ЗАБОРОМНОГО</h2>'+
@@ -2065,7 +2076,7 @@ function puzzleAnswer(id){
   }
   log('Загадка решена! +'+(special?6:3)+' очков пути и свиток.');
  }else{
-  var taken=Math.max(6,Math.round(10+r.floor*.65));
+  var taken=Math.max(6,Math.round(10+r.floor*.65+(r.actIndex||0)*6));
   r.hp=Math.max(0,r.hp-taken);log('Руна неверного ответа наносит '+taken+' урона.');
  }
  close();finishAction();
