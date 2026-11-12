@@ -123,15 +123,15 @@ function addItem(slot,rarity){
 }
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
-function mkEnemy(boss,ranged){
+function mkEnemy(boss,ranged,forcedElite){
  var reg=currentRegion();
  var elites=reg.elites||[],mobs=reg.mobs||[];
- var elite=!boss&&!ranged&&r.floor>=8&&Math.random()<.13;
- var src=boss?reg.boss:ranged?pick(mobs.filter(function(m){return m.kind==='shot';}).length?mobs.filter(function(m){return m.kind==='shot';}):mobs):
-  pick(elite?elites:mobs);
+ var elite=!!forcedElite;
+ var rangedPool=mobs.filter(function(m){return m.kind==='shot'||/лучник|арбалет|стрелок|пращник|дальник/i.test(m.name+' '+(m.role||''));});
+ var src=boss?reg.boss:elite?pick(elites):ranged?pick(rangedPool.length?rangedPool:mobs):pick(mobs);
  var stage=(r.actIndex||0),location=(r.locationIndex||0);
  var difficulty=(1+Math.floor((r.floor-1)/10)*.20)*(1+stage*.12+location*.12);
- var isBoss=!!boss,isRanged=!!ranged,isElite=!!(src.elite&&!isBoss);
+ var isBoss=!!boss,isRanged=!!ranged,isElite=!!(elite&&!isBoss);
  var hp=Math.max(12,Math.round((src.hp||26+stage*8+location*5)*difficulty*(isBoss?5:isElite?1.8:1)));
  var atk=Math.max(3,Math.round((src.atk||6+stage*1.4+location*1.5)*difficulty*(isBoss?1.4:isElite?1.2:1)));
  var def=Math.max(0,src.def||0);
@@ -140,9 +140,18 @@ function mkEnemy(boss,ranged){
  {name:src.skillName||EX.monster(visual).name,every:isBoss?3:isElite?4:3,description:src.role||'Особый приём.',kind:kind};
  var rewards=Math.max(1,Math.round(depthMultiplier()*(isBoss?60:isElite?20:7)));
  return {id:src.id,name:src.name,visual:visual,hp:hp,maxHp:hp,atk:atk,def:def,
- ep:isBoss?10:isElite?5:2,gold:rewards,boss:isBoss,elite:isElite,
+ ep:isBoss?10:isElite?5:2,gold:rewards,boss:isBoss,elite:isElite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,
  burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
  ranged:isRanged,attackInterval:isRanged?3:1,attackCooldown:isRanged?3:1,loot:src.loot||[]};
+}
+/* Each 10-floor block contains exactly one elite: 5–9, 15–19, 25–29, etc.
+   Location-specific schedule is saved, making reloads/revisits deterministic. */
+function isEliteFloor(){
+ if(r.floor<5)return false;
+ var window=Math.floor((r.floor-5)/10),start=5+10*window,end=start+4;
+ r.eliteSchedule=r.eliteSchedule||{};r.eliteClears=r.eliteClears||{};
+ if(r.eliteSchedule[window]==null)r.eliteSchedule[window]=rand(Math.min(end,Math.max(start,r.floor)),end);
+ return r.eliteSchedule[window]===r.floor&&!r.eliteClears[r.floor];
 }
 function distributeTiles(){
  var types=Array.from({length:25},function(){return 'empty';});
@@ -152,22 +161,23 @@ function distributeTiles(){
  types[startId]='start';
  var pos=0;
  function insert(kind,count){for(var x=0;x<count&&pos<indices.length;x++)types[indices[pos++]]=kind;}
- var boss=isBossFloor()&&!r.bossClears[r.floor];
- insert('exit',1);
- insert('enemy',boss?5:Math.min(6,3+Math.floor(r.floor/6)));
+ var boss=isBossFloor()&&!r.bossClears[r.floor],elite=isEliteFloor();
+ var total=boss?6:Math.min(6,3+Math.floor(r.floor/6));
+ insert('exit',1);insert('enemy',total-(boss?1:0)-(elite?1:0));
+ if(elite)insert('elite',1);
  if(boss)insert('boss',1);
  insert('chest',2);insert('trap',1);insert('altar',1);insert('shop',1);
  insert('event',1);insert('puzzle',1);insert('secret',1);insert('coin',2);insert('potion',1);
  insert('corpse',r.floor%2===0?1:0);insert('chamber',r.floor%3===0?1:0);
  var ranged=r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
- var tiles=types.map(function(kind,id){var enemy=kind==='enemy'||kind==='boss'||kind==='ranged';
+ var tiles=types.map(function(kind,id){var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
   return {id:id,kind:kind==='ranged'?'enemy':kind,
    revealed:kind==='start'||kind==='ranged',cleared:kind==='start',
-   foe:enemy?mkEnemy(kind==='boss',kind==='ranged'):null,
+   foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'):null,
    drops:null,hasKey:false,corpseId:kind==='corpse'?pick(CORPSE_STORIES).id:null,room:null};
  });
- var carrier=tiles.find(function(t){return t.kind==='boss';})||pick(tiles.filter(function(t){return t.foe&&!t.foe.ranged;}));
+ var carrier=tiles.find(function(t){return t.kind==='boss';})||tiles.find(function(t){return t.kind==='elite';})||pick(tiles.filter(function(t){return t.foe&&!t.foe.ranged;}));
  if(carrier)carrier.hasKey=true;
  r.heroTile=startId;
  return tiles;
@@ -205,7 +215,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},portalReady:false,materials:{},diamonds:0,questItems:[],floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},portalReady:false,materials:{},diamonds:0,questItems:[],floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -239,6 +249,8 @@ function load(){
   if(v.run.actIndex==null)v.run.actIndex=0;
   if(v.run.locationIndex==null)v.run.locationIndex=0;
   if(!v.run.bossClears)v.run.bossClears={};
+  if(!v.run.eliteSchedule)v.run.eliteSchedule={};
+  if(!v.run.eliteClears)v.run.eliteClears={};
   if(!Array.isArray(v.run.questItems))v.run.questItems=[];
   if(!v.run.materials)v.run.materials={};
   if(v.run.diamonds==null)v.run.diamonds=0;
@@ -309,7 +321,7 @@ function activeTileView(t){
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+
   '" data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
@@ -358,7 +370,7 @@ function renderMaze(){
  var sceneTitle=maxFloorLabel();
  var footer=foe?
    '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
-   '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':'')+'</strong>'+
+   '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':foe.elite?' · ЭЛИТНЫЙ':'')+'</strong>'+
    '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.ranged?foe.attackCooldown:(foe.cooldown||EX.monster(foe.visual||foe.id).every))+'</small>'+
    '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+'</small></div>'+
    '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
@@ -616,7 +628,7 @@ function safePortal(){
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
   carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
-  carry.bossClears={};carry.key=false;carry.summon=null;carry.summonTile=null;carry.chamberActive=null;carry.shield=0;
+  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.key=false;carry.summon=null;carry.summonTile=null;carry.chamberActive=null;carry.shield=0;
   carry.poisonTurns=0;carry.blessed=0;carry.log=[];
   s.meta.activeExpedition=carry;
  }else{
@@ -640,7 +652,7 @@ function resumeExpedition(){
  if(r||!carry)return;
  if(!DN.location(carry.actIndex,carry.locationIndex)){toast('Ошибка следующей локации.');return;}
  r=s.run=carry;s.meta.activeExpedition=null;
- r.floor=1;r.portalReady=false;r.bossClears={};r.key=false;r.summon=null;r.summonTile=null;
+ r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
  r.mp=Math.min(stats().mp,r.mp+Math.floor(stats().mp*.35));
@@ -804,6 +816,7 @@ function consumeTurn(){
 function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
+ if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[],soul:null};
@@ -1049,7 +1062,7 @@ function reveal(id){
  if(!access.ok){toast(access.reason);return;}
  t.revealed=true;
  var k=t.kind;
- if(k==='enemy'||k==='boss')log('Открыта плита: '+t.foe.name+'.');
+ if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
  else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
  else if(k==='start'){t.cleared=true;}

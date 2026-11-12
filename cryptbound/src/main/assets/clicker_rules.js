@@ -73,7 +73,7 @@ function openPath(tiles){
  if(!start)return new Set();
  var seen=new Set([start.id]),queue=[start.id];
  while(queue.length){var id=queue.shift();for(const n of near(id)){var t=tiles[n];
-  if(seen.has(n)||!t||!t.revealed||(t.foe&&t.foe.hp>0))continue;
+  if(seen.has(n)||!t||!t.revealed||(t.foe&&t.foe.hp>0&&!t.foe.ranged))continue;
   seen.add(n);queue.push(n);
  }}
  return seen;
