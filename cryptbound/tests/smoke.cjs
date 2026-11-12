@@ -243,4 +243,82 @@ test('Saves remain local and APK has no Internet permission',()=>{
  const manifest=fs.readFileSync(path.resolve(__dirname,'../src/main/AndroidManifest.xml'),'utf8');
  assert.ok(!manifest.includes('android.permission.INTERNET'));
 });
+
+test('Three-location expedition: only boss portals bank loot and preserve talent/equipment',()=>{
+ A('begin','necromancer');let run=state.run;
+ const firstStock=state.meta.materials['Экспедиционный образец']||0;
+ const firstDiamond=state.meta.diamonds||0,firstRainbow=state.meta.rainbowDiamonds||0;
+ run.materials['Экспедиционный образец']=20;run.diamonds=3;run.gold=88;
+ run.talents.fortune=1;run.scrolls.bolt=7;
+ const equippedIds=Object.values(run.equip).filter(Boolean);
+ A('safe-portal');assert.equal(state.run,run);
+ for(let stage=0;stage<3;stage++){
+  run=state.run;assert.ok(run);
+  assert.equal(run.locationIndex,stage);
+  assert.equal(run.floor,1);
+  run.floor=29;run.hp=5000;run.mp=5000;run.key=true;
+  run.tiles.find(t=>t.kind==='exit').revealed=true;
+  A('descend');assert.equal(run.floor,30);
+  const boss=run.tiles.find(t=>t.kind==='boss');assert.ok(boss);
+  assert.equal(boss.foe.name,DN.location(0,stage).boss.name);
+  run.tiles.forEach(t=>{if(t.foe&&t!==boss)t.foe.hp=0;});
+  boss.foe.hp=1;boss.revealed=true;A('strike',boss.id);
+  assert.equal(run.portalReady,true);
+  assert.match(el('content').innerHTML,/safe-portal/);
+  assert.ok(run.questItems.includes(DN.location(0,stage).questItem));
+  A('safe-portal');
+  assert.equal(state.run,null);
+  if(stage<2){
+   const carry=state.meta.activeExpedition;assert.ok(carry);
+   assert.equal(carry.locationIndex,stage+1);
+   assert.equal(carry.gold,88);
+   assert.equal(carry.scrolls.bolt,7);
+   assert.equal(carry.talents.fortune,1);
+   for(const id of equippedIds)assert.ok(carry.items.some(i=>i.id===id));
+   assert.equal(state.meta.materials['Экспедиционный образец'],firstStock+20);
+   assert.ok(state.meta.diamonds>=firstDiamond+3);
+   A('resume-expedition');run=state.run;
+   assert.equal(run.floor,1);assert.equal(run.locationIndex,stage+1);
+   assert.equal(run.questItems.length,stage+1);
+  }
+ }
+ assert.equal(state.meta.activeExpedition,null);
+ assert.ok(state.meta.completedActs[0]>0);
+ assert.ok(state.meta.unlockedAct>=1);
+ assert.ok((state.meta.materials['Металлолом']||0)>0);
+ assert.ok(state.meta.rainbowDiamonds>firstRainbow);
+ A('select-act','1');
+ assert.match(el('overlay').innerHTML,/Разломы второго тира/);
+ A('begin','scout');
+ assert.equal(state.run.actIndex,1);
+ assert.equal(state.run.locationIndex,0);
+});
+test('Escape returns only the agreed unsaved fraction; old stock survives',()=>{
+ const stock=state.meta.materials['Незакреплённая руда']||0;
+ let run=state.run;run.materials['Незакреплённая руда']=20;
+ A('escape-25');assert.equal(state.run,null);
+ assert.equal(state.meta.materials['Незакреплённая руда'],stock+5);
+ A('begin','scout');run=state.run;run.materials['Незакреплённая руда']=20;
+ A('escape-ad');assert.equal(state.run,null);
+ assert.equal(state.meta.materials['Незакреплённая руда'],stock+15);
+ assert.match(el('overlay').innerHTML,/Спасибо за попытку/);
+});
+test('Ten acts can each generate their correct regional boss',()=>{
+ const oldUnlocked=state.meta.unlockedAct;
+ state.meta.unlockedAct=9;
+ for(let act=0;act<10;act++){
+  state.meta.selectedAct=act;A('begin','necromancer');
+  let run=state.run;assert.ok(run);
+  assert.equal(run.actIndex,act);
+  assert.equal(run.locationIndex,0);
+  run.floor=29;run.key=true;
+  run.tiles.find(t=>t.kind==='exit').revealed=true;
+  A('descend');
+  const boss=run.tiles.find(t=>t.kind==='boss');
+  assert.ok(boss);assert.equal(boss.foe.name,DN.location(act,0).boss.name);
+  A('escape-25');assert.equal(state.run,null);
+ }
+ state.meta.selectedAct=0;state.meta.unlockedAct=oldUnlocked;
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
