@@ -53,6 +53,9 @@ jobs:
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
+          node --check cryptbound/src/main/assets/systems.js
+          node --check cryptbound/src/main/assets/boss_scripts.js
+          node --check cryptbound/src/main/assets/story_events.js
           node cryptbound/tests/smoke.cjs
 
       - name: Compile playable Android app
@@ -61,8 +64,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.5.1-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.5.1-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.6.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.6.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -75,7 +78,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.5.1 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.5.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.5.1 — исследование, элитники и боссы" --notes "Продолжение 10 актов × 3 локации. Элитник ровно раз за десять этажей между 5-м и 9-м, свободный косметический маршрут героя по исследованным клеткам, 3×3 побочные комнаты, три фазы боссов с предупреждением, призывы, отображение дальников и бонус за зачистку. Поздние арты, уникальные сценарии 30 боссов и баланс ещё дорабатываются."
+          if ! gh release view cryptbound-v0.6.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.6.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.6.0 — задания деревни, магия и алхимия" --notes "Новые механики: 30 постоянных заданий и совет деревни, десять глав памяти, 30 уникальных сюжетных событий, 30 пар особых атак боссов, 36 свитков по шести школам включая 6★, алхимия с восемью рецептами и двумя слотами, комплекты из 3–4 частей и 6★ уникальные вещи, полноценный бой в побочных комнатах со свитками и спутниками. Графика намеренно оставлена на последнюю стадию; баланс временный."
           fi
-          gh release upload cryptbound-v0.5.1 dist/Cryptbound-v0.5.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.6.0 dist/Cryptbound-v0.6.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
