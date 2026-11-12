@@ -13,7 +13,10 @@ var MOB_SKILLS={
 var HERO_MASTERY={
  necromancer:{title:'Заветы некроманта',effect:'Скелет: +3 атаки, +9 HP за ранг; магия +1.',feature:'Повелитель костей'},
  executioner:{title:'Дисциплина палача',effect:'Атака +2 и броня +1 за ранг.',feature:'Железная воля'},
- scout:{title:'Путь следопыта',effect:'Здоровье +5 и дополнительное золото +5% за ранг.',feature:'Тихий охотник'}
+ scout:{title:'Путь следопыта',effect:'Здоровье +5 и дополнительное золото +5% за ранг.',feature:'Тихий охотник'},
+ sorceress:{title:'Печать стихий',effect:'Магия +2 и MP +6 за ранг.',feature:'Волшебство стихий'},
+ guardian:{title:'Стальная дисциплина',effect:'Здоровье +9 и броня +1 за ранг.',feature:'Нерушимая защита'},
+ assassin:{title:'Теневой клинок',effect:'Атака +2 и крит +1% за ранг.',feature:'Тихое лезвие'}
 };
 var RELICS=[
  {id:'ash-seal',name:'Печать пепельного судьи',icon:'✥',desc:'Реликвия подземного суда',bonus:'Атака +1'},
@@ -35,6 +38,9 @@ function mastery(meta,hero){return ((meta.heroRanks||{})[hero]||0);}
 function masteryStat(meta,hero,stat){
  var n=mastery(meta,hero);
  if(hero==='necromancer'){return stat==='pow'?n:0;}
+ if(hero==='sorceress')return stat==='pow'?2*n:stat==='mp'?6*n:0;
+ if(hero==='guardian')return stat==='hp'?9*n:stat==='def'?n:0;
+ if(hero==='assassin')return stat==='atk'?2*n:stat==='crit'?n:0;
  if(hero==='executioner')return stat==='atk'?2*n:stat==='def'?n:0;
  if(hero==='scout')return stat==='hp'?5*n:0;
  return 0;
