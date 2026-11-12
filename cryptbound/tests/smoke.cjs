@@ -193,20 +193,18 @@ test('Permanent T1 material drops are sourced from the imported monster table',(
  A('pickup',t.id);
  assert.ok(r.materials[got.name]>=before+got.qty);
 });
-test('Fixed catalog set gear and 2/4/6 bonuses function',()=>{
- const chest=r.items.find(x=>x.slot==='armor'),relic=r.items.find(x=>x.slot==='relic');
- assert.ok(chest.fixed&&relic.fixed);
- assert.equal(chest.setId,relic.setId);
- assert.equal(CR.counts(r.equip,r.items)[chest.setId],2);
- const a=CR.gear('helm',1,0),b=CR.gear('shoulders',1,0);
- r.items.push(Object.assign({id:++state.seq,plus:0,floor:1},a));
- r.items.push(Object.assign({id:++state.seq,plus:0,floor:1},b));
- const hp=api.debug.stats().hp;
- r.equip.helm=r.items[r.items.length-2].id;r.equip.shoulders=r.items[r.items.length-1].id;
- assert.equal(CR.counts(r.equip,r.items)[chest.setId],4);
- assert.ok(api.debug.stats().hp>hp);
+test('3/4-piece sets use real slots and situational effects instead of Clicker bonuses',()=>{
+ const previous=api.debug.stats().def;
+ const four=['helm','armor','bracer','boots'].map(slot=>Object.assign({
+  id:++state.seq,plus:0,floor:1,fixed:true},CR.gear(slot,1,0)));
+ four.forEach(item=>{r.items.push(item);r.equip[item.slot]=item.id;});
+ assert.equal(CR.counts(r.equip,r.items).stone_oath,4);
+ assert.deepEqual(Array.from(CR.thresholds('stone_oath')),[2,4]);
+ assert.ok(CR.bonuses(r.equip,r.items).entryShield>0);
+ assert.ok(api.debug.stats().def>previous);
  r.tab='hero';api.debug.draw();
  assert.match(el('content').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
+ assert.match(el('content').innerHTML,/4 предмета/);
 });
 test('Compact modal compares fixed equipment with set bonuses',()=>{
  A('inspect-slot','helm');
