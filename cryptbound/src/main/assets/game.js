@@ -284,10 +284,11 @@ function renderMaze(){
  var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed;
  var sceneTitle=maxFloorLabel();
  var footer=foe?
-   '<div class="dungeon-foe-icon">'+icon('enemy',foe.id)+'</div><div class="dungeon-foe-info"><strong>'+esc(foe.name)+(foe.boss?' · БОСС':'')+'</strong>'+
-    '<div class="mini-meter"><i style="width:'+pct(foe.hp,foe.maxHp)+'%"></i></div>'+
-    '<small>'+foe.hp+'/'+foe.maxHp+' HP · '+foe.atk+' ATK · '+foe.def+' DEF</small></div>'+
-    '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
+   '<div class="dungeon-foe-icon">'+icon('enemy',foe.id)+'</div><div class="dungeon-foe-info">'+
+   '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':'')+'</strong>'+
+   '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.cooldown||EX.monster(foe.id).every)+'</small>'+
+   '<small>'+esc((foe.skill||EX.monster(foe.id)).name)+'</small></div>'+
+   '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
    :'<div class="dungeon-quiet"><b>✥ '+(r.log[0]?esc(r.log[0]):'Здесь царит тишина')+'</b><small>Открывайте плитки и забирайте найденное повторным нажатием</small></div>';
  var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
  return '<div class="dungeon-root">'+
