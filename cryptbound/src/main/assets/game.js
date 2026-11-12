@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -34,17 +34,8 @@ var ITEM_NAMES={
  boots:['Сапоги скитальца','Погребальные ботфорты','Сапоги следопыта'],
  relic:['Глаз ночного ворона','Кровавая печать','Ключ без двери','Обсидиановое сердце','Пепельный медальон']
 };
-var RARITY=['Обычный','Необычный','Редкий','Эпический','Легендарный'];
-var SPELLS=[
- {id:'bolt',name:'Костяная стрела',icon:'✧',cost:5,kind:'attack',base:17,description:'Магический урон одной цели. Сила растёт от мощи магии.'},
- {id:'flame',name:'Зов пламени',icon:'♨',cost:8,kind:'burn',base:22,description:'Сильный урон и горение на 3 хода.'},
- {id:'frost',name:'Ледяные оковы',icon:'❄',cost:8,kind:'stun',base:12,description:'Наносит урон и оглушает на один ход.'},
- {id:'heal',name:'Слово жизни',icon:'✚',cost:9,kind:'heal',base:31,description:'Восстанавливает здоровье.'},
- {id:'ward',name:'Каменная кожа',icon:'⬡',cost:9,kind:'shield',base:28,description:'Даёт временный щит, поглощающий урон.'},
- {id:'chain',name:'Раскаты грома',icon:'ϟ',cost:12,kind:'chain',base:19,description:'Поражает до трёх найденных врагов.'},
- {id:'sight',name:'Око забвения',icon:'◉',cost:8,kind:'reveal',base:3,description:'Раскрывает три случайные скрытые клетки.'},
- {id:'leech',name:'Жажда крови',icon:'☽',cost:11,kind:'drain',base:23,description:'Вытягивает здоровье из врага и лечит героя.'}
-];
+var RARITY=['Обычный','Необычный','Редкий','Эпический','Легендарный','Уникальный','Мифический'];
+var SPELLS=SYS.spells;
 var TALENTS=window.CryptTitles||[];
 
 var CORPSE_STORIES=[
@@ -223,7 +214,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -232,9 +223,10 @@ function begin(hero){
   var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
  });
  r.hp=stats().hp;r.mp=stats().mp;
+ fillPreparedPotions(r);
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
@@ -249,6 +241,9 @@ function load(){
  if(meta.activeExpedition===undefined)meta.activeExpedition=null;
  if(!meta.completedActs)meta.completedActs={};
  if(!meta.achievements)meta.achievements={};
+ if(!meta.potionStock)meta.potionStock={};
+ if(!Array.isArray(meta.preparedLoadout))meta.preparedLoadout=[null,null];
+ if(meta.city&&meta.city.alchemist==null)meta.city.alchemist=0;
  if(meta.activeExpedition&&!Array.isArray(meta.activeExpedition.questItems))meta.activeExpedition.questItems=[];
  if(meta.diamonds==null)meta.diamonds=0;
  if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
@@ -260,6 +255,11 @@ function load(){
   if(!v.run.eliteSchedule)v.run.eliteSchedule={};
   if(!v.run.eliteClears)v.run.eliteClears={};
   if(!Array.isArray(v.run.questItems))v.run.questItems=[];
+  if(!Array.isArray(v.run.preparedPotions))v.run.preparedPotions=[null,null];
+  if(v.run.guardCharges==null)v.run.guardCharges=0;
+  if(v.run.ghost===undefined)v.run.ghost=null;
+  if(v.run.resurrection==null)v.run.resurrection=0;
+  if(v.run.timeStopTurns==null)v.run.timeStopTurns=0;
   if(!v.run.materials)v.run.materials={};
   if(v.run.diamonds==null)v.run.diamonds=0;
   if(v.run.heroTile==null){var origin=v.run.tiles.find(function(t){return t.kind==='start';});v.run.heroTile=origin?origin.id:12;}
@@ -637,7 +637,7 @@ function safePortal(){
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
   carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
-  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.chamberActive=null;carry.shield=0;
+  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.ghost=null;carry.chamberActive=null;carry.shield=0;
   carry.poisonTurns=0;carry.blessed=0;carry.log=[];
   s.meta.activeExpedition=carry;
  }else{
@@ -662,7 +662,8 @@ function resumeExpedition(){
  if(!DN.location(carry.actIndex,carry.locationIndex)){toast('Ошибка следующей локации.');return;}
  r=s.run=carry;s.meta.activeExpedition=null;
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
- r.materials={};r.diamonds=0;r.tiles=[];r.chamberActive=null;r.fx=null;
+ r.materials={};r.diamonds=0;r.tiles=[];
+ fillPreparedPotions(r);r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
  r.mp=Math.min(stats().mp,r.mp+Math.floor(stats().mp*.35));
  startFloor();save();draw();close();
@@ -1503,6 +1504,7 @@ function camp(){
 }
 var BUILDINGS={
  forge:{title:'Кузница',desc:'+2 атаки за уровень для всех героев',icon:'⚒'},
+ alchemist:{title:'Алхимическая лаборатория',desc:'Расширяет доступные рецепты зелий.',icon:'⚗'},
  barracks:{title:'Казармы',desc:'+12 максимального HP за уровень',icon:'♜'},
  library:{title:'Библиотека',desc:'+8 максимальной маны за уровень',icon:'✣'}
 };
