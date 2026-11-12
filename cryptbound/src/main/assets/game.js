@@ -228,6 +228,35 @@ function activateEntranceEquipment(room){
  }
 }
 
+
+/* Original chatty companion, always optional and never interrupts turn actions. */
+var FAIRY_LINES={
+ floor:['О, новый этаж. Кажется, я уже здесь была. Или это совершенно другой камень?',
+ 'Совет дня: если монстр страшный, просто не смотри на него. Хотя нет, смотри.',
+ 'Я бы помогла, но у меня крайне важная работа — светиться.',
+ 'Мы уже близко к выходу. Я это говорю каждый раз, и когда-нибудь угадаю.',
+ 'Если найдём сундук, ты открывай, а я буду руководить издалека.'],
+ elite:['Ой! Этот монстр выглядит как начальник остальных. Ты попробуй с ним договориться.',
+ 'У него явно есть что-то ценное. Наверное, неприятный характер.',
+ 'Я помогла! Я отвлекала его своим присутствием.'],
+ boss:['Вот и босс. Я пойду… внимательно осматривать потолок.',
+ 'Я знала, что ты справишься. Да-да, ещё до того, как он появился.',
+ 'Главное — не умереть. Не благодари, лучший совет за сегодня.'],
+ corpse:['Неловко. Я хотела спросить его дорогу, но он как-то неразговорчив.',
+ 'Вот почему надо записывать, куда идёшь. Хотя я свою карту тоже потеряла.'],
+ secret:['О, тайник! Мне казалось, что там обычная стена, но я почти угадала.',
+ 'Это точно было секретом. Я совершенно не собиралась тебе подсказывать.'],
+ rest:['Дом! Может, теперь мы наконец поедим? Я, правда, не ем.'],
+ die:['Это был очень смелый план. Жаль, что я не успела придумать другой.']
+};
+function fairyRemark(kind){
+ if(!r||s.meta.fairyMuted)return;
+ if(kind==='floor'&&r.floor!==1&&r.floor%5!==1)return;
+ var options=FAIRY_LINES[kind]||FAIRY_LINES.floor;
+ var offset=(r.floor+r.turn+(r.actIndex||0)*3+(r.locationIndex||0))%options.length;
+ log('✦ Светлячок: «'+options[offset]+'»');
+}
+
 function startFloor(){
  heroMoveToken++;
  r.chamberActive=null;
@@ -250,6 +279,7 @@ function startFloor(){
   var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='empty')chosen.cleared=true;
  }
  log('Этаж '+r.floor+' · '+maxFloorLabel()+'. Герой начинает исследование со случайной клетки.');
+ fairyRemark('floor');
 }
 function begin(hero){
  var meta=s.meta;
@@ -267,7 +297,7 @@ function begin(hero){
  fillPreparedPotions(r);
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},fairyMuted:false,potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 
 /* Move v0.5 save equipment to the 4 physical + 4 magical + weapon slots. */
 function migrateEquipSlots(saved){
@@ -297,6 +327,7 @@ function load(){
  if(meta.activeExpedition===undefined)meta.activeExpedition=null;
  if(!meta.completedActs)meta.completedActs={};
  if(!meta.achievements)meta.achievements={};
+ if(meta.fairyMuted==null)meta.fairyMuted=false;
  if(!meta.potionStock)meta.potionStock={};
  if(!Array.isArray(meta.preparedLoadout))meta.preparedLoadout=[null,null];
  if(meta.city&&meta.city.alchemist==null)meta.city.alchemist=0;
@@ -748,6 +779,7 @@ function safePortal(){
  if(r.bossClears[50])rainbow+=awardAchievement(locKey+'-deep-50',2);
  var loot=bankExpeditionLoot(1),scrap=0;
  s.meta.best=Math.max(s.meta.best,r.floor);
+ fairyRemark('rest');
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
   carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
@@ -854,7 +886,7 @@ function renderBase(){
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
  '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
- frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
+ '<button class="btn alt wide space-top" data-action="fairy-toggle">'+(s.meta.fairyMuted?'Включить комментарии светлячка':'Скрыть комментарии светлячка')+'</button>'+frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
 function draw(){
@@ -1046,7 +1078,7 @@ function consumeTurn(){
 function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
- if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');}
+ if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');fairyRemark('elite');}
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
@@ -1061,7 +1093,7 @@ function kill(t){
   var q=currentRegion().questItem;
   if(q&&r.questItems.indexOf(q)<0){r.questItems.push(q);log('Получен квестовый предмет: '+q+'.');}
   drop.diamonds=Math.max(1,Math.floor(depthMultiplier()*(1+Math.floor((r.actIndex||0)/3))));
-  log('Босс повержен! Безопасный портал открыт на этом этаже.');
+  log('Босс повержен! Безопасный портал открыт на этом этаже.');fairyRemark('boss');
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
   if(r.floor>=40&&Math.random()<.025)drop.scroll=rollSpell(6).id;
   drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
@@ -1464,7 +1496,7 @@ function discoverCorpse(t){
   if(lvl('navigator')>0){r.ep+=3;lines.push('Анатом: +3 очка исследования.');}
   if(lvl('pathfinder')>0){r.journalNotes.push('Воспоминание: '+story.name+' знал часть пути к забытой деревне.');lines.push('Открыт фрагмент воспоминаний.');}
  }else{var money=addGold(8+Math.floor(r.floor/2));lines.push('Здесь уже искали улики. Найдено '+money+' монет.');}
- log('Осмотрены останки: '+story.name+'.');finishAction();
+ log('Осмотрены останки: '+story.name+'.');fairyRemark('corpse');finishAction();
  if(r)dialog('<div class="emblem">☽</div><div class="subhead">ОСТАНКИ ИССЛЕДОВАТЕЛЯ</div><h2>'+esc(story.name)+'</h2>'+
  '<p>'+esc(story.note)+'</p><div class="reward-rows">'+lines.map(function(x){return '<div class="reward-entry">'+esc(x)+'</div>';}).join('')+'</div>'+
  '<button class="btn wide" data-action="close">Продолжить</button>');
@@ -1586,7 +1618,7 @@ function chamberSecret(id){
  t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
  if(lvl('phantom'))addItem('amulet',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
- log('В боковой стене найдена тайная ниша.');
+ log('В боковой стене найдена тайная ниша.');fairyRemark('secret');
  finishAction();close();
 }
 function gainSecret(e){
@@ -1970,6 +2002,7 @@ function action(name,id){
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='dungeon-achievements'){dungeonAchievements();return;}
+ if(name==='fairy-toggle'){s.meta.fairyMuted=!s.meta.fairyMuted;save();draw();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
  if(name==='select-act'){selectAct(id);return;}
  if(name==='resume-expedition'){resumeExpedition();return;}
