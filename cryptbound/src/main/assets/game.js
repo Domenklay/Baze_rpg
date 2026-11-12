@@ -140,7 +140,7 @@ function mkEnemy(boss,ranged,forcedElite){
  {name:src.skillName||EX.monster(visual).name,every:isBoss?3:isElite?4:3,description:src.role||'Особый приём.',kind:kind};
  var rewards=Math.max(1,Math.round(depthMultiplier()*(isBoss?60:isElite?20:7)));
  return {id:src.id,name:src.name,visual:visual,hp:hp,maxHp:hp,atk:atk,def:def,
- ep:isBoss?10:isElite?5:2,gold:rewards,boss:isBoss,elite:isElite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,
+ ep:isBoss?10:isElite?5:2,gold:rewards,boss:isBoss,elite:isElite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,bossStyle:((r.actIndex||0)*3+(r.locationIndex||0))%6,
  burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
  ranged:isRanged,attackInterval:isRanged?3:1,attackCooldown:isRanged?3:1,loot:src.loot||[]};
 }
@@ -163,13 +163,13 @@ function distributeTiles(){
  function insert(kind,count){for(var x=0;x<count&&pos<indices.length;x++)types[indices[pos++]]=kind;}
  var boss=isBossFloor()&&!r.bossClears[r.floor],elite=isEliteFloor();
  var total=boss?6:Math.min(6,3+Math.floor(r.floor/6));
- insert('exit',1);insert('enemy',total-(boss?1:0)-(elite?1:0));
+ insert('exit',1);insert('enemy',boss?3:total-(elite?1:0));
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
- insert('chest',2);insert('trap',1);insert('altar',1);insert('shop',1);
- insert('event',1);insert('puzzle',1);insert('secret',1);insert('coin',2);insert('potion',1);
- insert('corpse',r.floor%2===0?1:0);insert('chamber',r.floor%3===0?1:0);
- var ranged=r.floor<6?0:r.floor<16?1:2;
+ insert('chest',boss?1:2);insert('trap',boss?0:1);insert('altar',boss?0:1);insert('shop',boss?0:1);
+ insert('event',boss?0:1);insert('puzzle',boss?0:1);insert('secret',boss?0:1);insert('coin',boss?1:2);insert('potion',1);
+ insert('corpse',!boss&&r.floor%2===0?1:0);insert('chamber',!boss&&r.floor%3===0?1:0);
+ var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
  var tiles=types.map(function(kind,id){var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
   return {id:id,kind:kind==='ranged'?'enemy':kind,
@@ -344,6 +344,7 @@ function inspectUnit(kind,id){
  dialog('<div class="emblem">⚔</div><div class="subhead">'+(e.boss?'ПОВЕЛИТЕЛЬ ЭТАЖА':'ОБИТАТЕЛЬ ПОДЗЕМЕЛЬЯ')+'</div>'+
   '<h2>'+esc(e.name)+'</h2>'+
   '<div class="unit-profile">'+monsterVisual(e)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
+  (e.boss?'<p class="golden">Фаза '+(e.phase||1)+'/3'+(e.telegraph?' — готовится опасный удар!':'')+'</p>':'')+
   '<div class="unit-skill"><strong>Обычная атака</strong><p>Атакует каждый свой ход. Урон уменьшается вашей бронёй.</p></div>'+
   '<div class="unit-skill"><strong>'+esc(special.name)+' · ◷ '+(e.cooldown||special.every)+'</strong>'+
   '<p>'+esc(special.description)+' Следующее применение через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
@@ -373,7 +374,7 @@ function renderMaze(){
    '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
    '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':foe.elite?' · ЭЛИТНЫЙ':'')+'</strong>'+
    '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.ranged?foe.attackCooldown:(foe.cooldown||EX.monster(foe.visual||foe.id).every))+'</small>'+
-   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+'</small></div>'+
+   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+(foe.boss?' · фаза '+(foe.phase||1)+'/3'+(foe.telegraph?' · ⚠ готовится удар':''):'')+'</small></div>'+
    '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
    :'<div class="dungeon-quiet"><b>✥ '+(r.log[0]?esc(r.log[0]):'Здесь царит тишина')+'</b><small>Открывайте плитки и забирайте найденное повторным нажатием</small></div>';
  var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
@@ -756,6 +757,54 @@ function choose(){
  '<button class="btn dark wide" data-action="close">Закрыть</button>');
 }
 function upgradeCost(i){return 9+(i.plus+1)*7+i.rarity*4;}
+
+/* Bosses use three HP phases. Special attacks are warned a turn in advance.
+   Spawning respects occupied tiles and cannot replace keys or mandatory exits. */
+function bossCallsBackup(e){
+ if(e.bossAdds>=4)return;
+ var cells=r.tiles.filter(function(t){return t.kind==='empty'&&!t.foe&&!t.drops&&!t.summon&&t.id!==r.heroTile;});
+ if(!cells.length){log('Нет места для подкрепления босса.');return;}
+ var cell=pick(cells);cell.kind='enemy';cell.revealed=true;cell.cleared=false;
+ cell.foe=mkEnemy(false,false,false);
+ cell.foe.hp=Math.max(5,Math.round(cell.foe.hp*.6));cell.foe.maxHp=cell.foe.hp;
+ cell.foe.atk=Math.max(2,Math.round(cell.foe.atk*.6));
+ e.bossAdds++;log('Босс призывает подкрепление: '+cell.foe.name+'.');
+}
+function bossAttack(t,e,damage,ready){
+ var phase=e.hp<=e.maxHp*.35?3:e.hp<=e.maxHp*.70?2:1;
+ var style=e.bossStyle==null?((r.actIndex||0)*3+(r.locationIndex||0))%6:e.bossStyle;
+ e.phaseTurn=(e.phaseTurn||0)+1;
+ if(phase>(e.phase||1)){
+  e.phase=phase;e.phaseTurn=0;e.telegraph={phase:phase};
+  log('⚠ '+e.name+' переходит в фазу '+phase+'/3 и готовит мощный удар.');
+  return null;
+ }
+ if(e.telegraph){
+  var move=e.telegraph.phase;e.telegraph=null;
+  log('Особый приём босса: '+e.name+'!');
+  if(style===0||style===3)bossCallsBackup(e);
+  if(style===1)e.guard=4+Math.floor(r.floor/7);
+  if(style===2)r.poisonTurns=Math.max(r.poisonTurns,move+1);
+  if(style===4){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.045));log('Босс поглощает жизненную силу.');}
+  if(style===5)r.shield=Math.max(0,r.shield-(10+move*5));
+  return Math.max(2,Math.round(damage*(move===3?2.4:1.75)));
+ }
+ if(ready&&phase>=2&&(e.phaseTurn%6===0)){
+  e.telegraph={phase:phase};
+  log('⚠ Босс предупреждает об опасной атаке на следующем ходу.');
+  return null;
+ }
+ if(ready){
+  if(style===0&&phase>=2&&e.bossAdds<4&&e.phaseTurn%5===0)bossCallsBackup(e);
+  if(style===1)e.guard=Math.max(e.guard||0,2+phase);
+  if(style===2&&phase>=2)r.poisonTurns=Math.max(r.poisonTurns,2);
+  if(style===3&&phase>=2&&e.phaseTurn%4===0)bossCallsBackup(e);
+  if(style===4&&phase>=2)e.hp=Math.min(e.maxHp,e.hp+Math.max(1,Math.round(e.maxHp*.012)));
+  if(style===5&&phase>=2)damage*=2;
+ }
+ return damage;
+}
+
 function consumeTurn(){
  if(!r)return false;
  r.turn++;
@@ -771,7 +820,7 @@ function consumeTurn(){
  if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
   r.hp=Math.max(0,r.hp-poison);log('Яд: −'+poison+' HP.');}
  alive=r.chamberActive!=null?[]:enemies();
- alive.slice(0,4).forEach(function(t){
+ alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
@@ -797,6 +846,7 @@ function consumeTurn(){
    if(special.kind==='slam')amount=Math.ceil(amount*1.85);
    if(special.kind==='shot')amount=Math.max(2,Math.ceil(e.atk*.85));
   }
+  if(e.boss){amount=bossAttack(t,e,amount,ready);if(amount==null)return;}
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.summon&&r.summon.hp>0&&Math.random()<.72){
    var summonDamage=Math.max(1,amount-(r.summon.def||0));
