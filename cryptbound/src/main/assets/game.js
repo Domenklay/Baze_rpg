@@ -1776,12 +1776,18 @@ function roomSecretAvailable(room){
 }
 function newSideRoom(){
  var reg=currentRegion(),count=r.floor>=35?4:3,slots=[1,3,5,2],guards=[];
+ var available=reg.mobs.slice();
  for(var i=0;i<count;i++){
-  var m=pick(reg.mobs),scale=1+Math.floor(r.floor/10)*.1;
-  var hp=Math.max(8,Math.round((m.hp||14)*.6*scale));
-  guards.push({name:m.name,visual:CR.visualId(m.name),slot:slots[i],hp:hp,maxHp:hp,
-   atk:Math.max(2,Math.round((m.atk||6)*.55*scale)),cooldown:2+i%3,
-   skill:m.skillName||'Особый удар'});
+  var at=rand(0,available.length-1),m=available.splice(at,1)[0];
+  var role=BAL.role(m,false),spec=BAL.ability(m,role);
+  var scaled=BAL.combat(r.actIndex||0,r.locationIndex||0,r.floor,role,false,false,m.id);
+  var hp=Math.max(8,Math.ceil(scaled.hp*.56));
+  guards.push({id:m.id,name:m.name,visual:CR.visualId(m.name),role:role,
+   roleName:BAL.roles[role].name,ability:spec.id,abilityName:spec.name,abilityDescription:spec.description,
+   slot:slots[i],hp:hp,maxHp:hp,def:Math.max(0,scaled.def-1),
+   atk:Math.max(2,Math.ceil(scaled.atk*.68)),cooldown:3,
+   guard:0,guardTurns:0,evadeCharges:0,summons:0,stun:0,burn:0,poison:0,
+   skill:{name:m.skillName||spec.name,every:3,description:spec.description,kind:spec.id}});
  }
  return {guards:guards,guardHp:guards.reduce(function(n,g){return n+g.hp;},0),
   rewardTaken:false,secretTaken:false,secret:Math.random()<.45,turns:0};
@@ -1836,15 +1842,18 @@ function chamberEnemyPhase(frozen){
  room.turns++;
  room.guards.forEach(function(g){
   if(g.hp<=0||r.hp<=0)return;
+  if(g.guardTurns>0){g.guardTurns--;if(!g.guardTurns)g.guard=0;}
   if(g.burn>0){g.burn--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().pow*.45)));}
   if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
   if(g.hp<=0)return;
   if(g.stun>0){g.stun--;return;}
   if(frozen)return;
   g.cooldown=Math.max(0,(g.cooldown||3)-1);
-  if(g.cooldown>0)return;g.cooldown=3;
+  if(g.cooldown>0)return;
+  g.cooldown=3;
+  var damage=Math.max(1,g.atk+rand(-1,1)-Math.max(0,stats().def-(r.armorBreakPower||0)));
+  damage=monsterSpecial(g,damage,room);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
-  var damage=Math.max(1,g.atk+rand(-1,1)-stats().def);
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
    if(Math.random()*100<r.ghost.dodge){log('Призрак уклонился от '+g.name+'.');return;}
@@ -1871,8 +1880,10 @@ function fightChamber(id){
  var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
  if(!g)return;
  r.chamberActive=t.id;r.fx='attack';r.fxUntil=Date.now()+420;
- var dmg=Math.max(1,stats().atk+rand(0,3)-Math.max(0,Math.floor(r.floor/15)));
- g.hp=Math.max(0,g.hp-dmg);
+ if(g.evadeCharges>0){g.evadeCharges--;
+  if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
+ var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
+ g.guard=0;g.hp=Math.max(0,g.hp-dmg);
  room.guardHp=room.guards.reduce(function(sum,x){return sum+x.hp;},0);
  if(room.guardHp===0)log('Все стражи побочной комнаты побеждены.');
  else log('Удар по '+g.name+': '+dmg+' урона.');
