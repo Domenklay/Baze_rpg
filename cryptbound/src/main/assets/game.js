@@ -2051,12 +2051,19 @@ function commonMaterialCount(){
  return Object.entries(s.meta.materials||{}).reduce(function(n,e){
   return n+(e[0]==='Металлолом'?0:Math.max(0,Number(e[1])||0));},0);
 }
-function consumeRecipeMaterials(count){
- if(commonMaterialCount()<count)return false;
- var names=Object.keys(s.meta.materials).filter(function(x){return x!=='Металлолом'&&s.meta.materials[x]>0;})
-  .sort(function(a,b){return s.meta.materials[b]-s.meta.materials[a];});
- for(var name of names){var spent=Math.min(count,s.meta.materials[name]);s.meta.materials[name]-=spent;count-=spent;if(count<=0)break;}
- return count===0;
+function alchemyHasIngredients(recipe){
+ if(!recipe||!Array.isArray(recipe.ingredients)||!recipe.ingredients.length)return false;
+ return recipe.ingredients.every(function(pair){return (s.meta.materials[pair[0]]||0)>=pair[1];});
+}
+function consumeAlchemyIngredients(recipe){
+ if(!alchemyHasIngredients(recipe))return false;
+ recipe.ingredients.forEach(function(pair){s.meta.materials[pair[0]]-=pair[1];});
+ return true;
+}
+function alchemyRecipeText(recipe){
+ return recipe.ingredients.map(function(pair){
+  return pair[0]+' '+(s.meta.materials[pair[0]]||0)+'/'+pair[1];
+ }).join(' · ');
 }
 function fillPreparedPotions(exp){
  if(!exp)return;
@@ -2073,9 +2080,9 @@ function alchemyMenu(){
  if(r){toast('Алхимик находится на базе.');return;}
  var level=s.meta.city.alchemist||0;
  var recipes=SYS.potions.map(function(p){
-  var available=p.level<=level&&commonMaterialCount()>=p.cost;
+  var available=p.level<=level&&alchemyHasIngredients(p);
   return '<div class="meta-upgrade"><div><strong>'+esc(p.icon+' '+p.name)+'</strong>'+
-   '<small>'+esc(p.description)+'</small><small>Лаборатория: '+p.level+' · ресурсы: '+p.cost+' · запас: '+(s.meta.potionStock[p.id]||0)+'</small></div>'+
+   '<small>'+esc(p.description)+'</small><small>Лаборатория: '+p.level+' · ингредиенты: '+esc(alchemyRecipeText(p))+' · запас: '+(s.meta.potionStock[p.id]||0)+'</small></div>'+
    '<button class="btn small" data-action="brew-potion" data-id="'+p.id+'"'+(available?'':' disabled')+'>'+
    (p.level>level?'Закрыто':'Сварить')+'</button></div>';
  }).join('');
@@ -2097,7 +2104,7 @@ function alchemyMenu(){
 function brewPotion(id){
  if(r)return;
  var recipe=SYS.byPotion[id];
- if(!recipe||recipe.level>(s.meta.city.alchemist||0)||!consumeRecipeMaterials(recipe.cost)){
+ if(!recipe||recipe.level>(s.meta.city.alchemist||0)||!consumeAlchemyIngredients(recipe)){
   toast('Недостаточно ресурсов или уровня алхимика.');return;
  }
  s.meta.potionStock[id]=(s.meta.potionStock[id]||0)+1;
