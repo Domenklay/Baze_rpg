@@ -1048,9 +1048,9 @@ function renderBase(){
  var exp=s.meta.activeExpedition;
  var acts=DN.acts.map(function(a,i){
   var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0;
-  var current=exp&&exp.actIndex===i;
+  var current=exp&&exp.actIndex===i,profile=BAL.actProfile(i);
   return '<div class="meta-upgrade"><div><strong>'+(done?'✓ ':'')+(i+1)+'. '+esc(a.name)+'</strong>'+
-   '<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small><small>'+esc(a.story||'')+'</small></div>'+
+   '<small>Опасность '+(i+1)+'/10 · '+esc(profile.threat)+' · враги: ♥ '+profile.normalHp+' / ⚔ '+profile.normalAtk+'</small>'+'<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small><small>'+esc(a.story||'')+'</small></div>'+
    '<button class="btn small" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+
    (current?'Продолжить':unlocked?'Войти':'Закрыто')+'</button></div>';
  }).join('');
@@ -1089,8 +1089,8 @@ function choose(){
   var c=C[k];return '<button class="class-option" data-action="begin" data-id="'+k+'">'+window.CryptArt.hero(k)+
  '<span><strong>'+c.icon+' '+c.name+'</strong><small>'+c.description+'</small></span></button>';
  }).join('');
- dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.5.1</div><h2>ВЫБОР ПУТИ</h2>'+
- '<p>Выбранное подземелье: <b>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</b>. Начните первую локацию экспедиции.</p>'+opts+
+ dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.6.2</div><h2>ВЫБОР ПУТИ</h2>'+
+ '<p>Выбранное подземелье: <b>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</b>. Опасность '+((s.meta.selectedAct||0)+1)+'/10 — '+esc(BAL.actProfile(s.meta.selectedAct||0).threat)+'. Начните первую локацию экспедиции.</p>'+opts+
  '<p class="fine muted">Скрытые клетки · Пошаговый бой · Магия · Призыв · Древа титулов</p>'+
  '<button class="btn dark wide" data-action="close">Закрыть</button>');
 }
