@@ -339,6 +339,11 @@ function renderHero(){
   '<div class="gear-slots gear-right">'+right.map(gearSlotButton).join('')+'</div></div>'+
   '<p class="fine muted space-top">Нажмите ячейку экипировки, чтобы открыть сумку с подходящими предметами.</p>')+
  frame('ХАРАКТЕРИСТИКИ',statsHtml)+
+ frame('АКТИВНЫЕ КОМПЛЕКТЫ',Object.entries(CR.counts(r.equip,r.items)).filter(function(e){return e[1]>0;}).map(function(e){
+  var set=CR.setDefinition(e[0]),desc=CR.descriptions(e[0]);
+  return '<div class="set-status"><strong>'+esc(set?set.name:e[0])+' · '+e[1]+'/8</strong>'+
+   desc.map(function(t,i){return '<small class="'+(e[1]>=[2,4,6][i]?'set-on':'')+'">'+t+'</small>';}).join('')+'</div>';
+ }).join('')||'<p class="fine muted">Соберите хотя бы две части одного комплекта.</p>')+
  '<button class="btn gold wide space-top space-bottom" data-action="hero-stats" data-id="'+r.class+'">✥ Постоянное развитие '+C[r.class].name+'</button>'+frame('ОТРЯД И ПУТЬ','<div class="kpis"><div><b>'+r.floor+'</b><small>Этаж</small></div><div><b>'+r.kills+'</b><small>Убийств</small></div><div><b>'+r.secrets+'</b><small>Тайн</small></div></div>'+
  (r.summon?'<p class="fine golden space-top">☠ Ваш скелет: '+r.summon.hp+' HP, '+r.summon.atk+' ATK</p>':'')+
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>')+
@@ -396,12 +401,13 @@ function gearComparison(slot,selectedId){
  var available=r.items.filter(function(it){return it.slot===slot;}).sort(function(a,b){return b.rarity-a.rarity||b.floor-a.floor;});
  if(!candidate)candidate=available.find(function(it){return !equipped(it.id);})||current||available[0]||null;
  r.inspectSlot=slot;r.inspectItem=candidate?candidate.id:null;
+ var compareKeys=['atk','def','hp','mp','pow','crit'].filter(function(k){return current&&current[k]||candidate&&candidate[k];});
  function card(title,i,other,side){
   var img=i?window.CryptArt.item(i.slot,i.rarity):window.CryptArt.item(slot,0);
   var html='<div class="gear-compare-card '+side+'"><div class="gear-compare-title">'+title+'</div><div class="gear-compare-icon">'+img+'</div>'+
    '<strong class="'+(i?'c'+i.rarity:'muted')+'">'+(i?esc(i.name)+(i.plus?' +'+i.plus:''):'Нет предмета')+'</strong>'+
-   '<small>'+(i?RARITY[i.rarity]+' · +'+i.plus:'Ячейка свободна')+'</small>';
-  for(var k of ['atk','def','hp','mp','pow','crit']){
+   '<small>'+(i?(i.setName||RARITY[i.rarity])+' · +'+i.plus:'Ячейка свободна')+'</small>';
+  for(var k of compareKeys){
    var val=i?(i[k]||0):0,oldVal=other?(other[k]||0):0,delta=side==='current'?oldVal-val:val-oldVal;
    var lost=side==='current'&&val>0&&oldVal===0,positive=side==='new'&&delta>0;
    var negative=side==='new'&&delta<0;
@@ -419,10 +425,19 @@ function gearComparison(slot,selectedId){
    window.CryptArt.item(it.slot,it.rarity)+'<span>'+esc(it.name)+(it.plus?' +'+it.plus:'')+'</span></button>';
  }).join('');
  var canSelect=selected&&!equipped(selected.id);
+ var nextEquip=Object.assign({},r.equip);
+ if(selected)nextEquip[slot]=selected.id;
+ var setCounts=CR.counts(nextEquip,r.items);
+ var setHelp=selected&&selected.setId?
+  '<div class="compact-set-help"><b>Комплект: '+esc(selected.setName)+' · '+(setCounts[selected.setId]||0)+'/8</b>'+
+  CR.descriptions(selected.setId).map(function(txt,i){
+   var need=[2,4,6][i],active=(setCounts[selected.setId]||0)>=need;
+   return '<small class="'+(active?'set-on':'')+'">'+(active?'✓ ':'○ ')+txt+'</small>';
+  }).join('')+'</div>':'<div class="fine muted compact-set-help">Оружие имеет собственный фиксированный эффект.</div>';
  var cost=selected?upgradeCost(selected):0;
  dialog('<div class="subhead">ОСМОТР СНАРЯЖЕНИЯ · '+esc(SLOT[slot])+'</div><h2>СРАВНЕНИЕ</h2>'+
   '<div class="gear-two-columns">'+card('СЛЕВА · НАДЕТО',oldGear,selected,'current')+card('СПРАВА · ВЫБРАНО',selected,oldGear,'new')+'</div>'+
-  '<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(canSelect?'':'disabled')+'>Надеть</button>'+
+  setHelp+'<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(canSelect?'':'disabled')+'>Надеть</button>'+
   '<button class="btn alt small" data-action="modal-upgrade" '+(selected&&r.gold>=cost&&selected.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
   '<button class="btn dark small" data-action="modal-scrap" '+(canSelect?'':'disabled')+'>Разобрать</button></div>'+
   '<div class="frame-title gear-available-title">СУМКА · '+available.length+' ПРЕДМ.</div>'+
