@@ -30,3 +30,15 @@
 /* Open ranged archetypes rise one after the other at the start of an exploration floor. */
 .dungeon-board .tile-ranged-emerge{animation:ranged-rise .48s ease-out both}
 @keyframes ranged-rise{0%{opacity:0;transform:translateY(24%) scale(.75)}65%{opacity:1;transform:translateY(-5%) scale(1.04)}100%{opacity:1;transform:none}}
+
+/* Compact accessible consumables ABOVE the board, not hidden in the footer. */
+.dungeon-potion-bar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;position:sticky;top:0;z-index:12;margin:7px 0 9px;padding:5px;border:1px solid #695949;border-radius:7px;background:rgba(29,24,25,.97);box-shadow:0 2px 7px rgba(0,0,0,.35)}
+.dungeon-potion-slot{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:40px;padding:4px 5px;border:1px solid #695b49;border-radius:5px;background:linear-gradient(180deg,#443631,#30282a);color:#ead7b9;font:inherit;cursor:pointer}
+.dungeon-potion-slot.potion-heal{border-color:#9a6663;background:linear-gradient(180deg,#563432,#3b2829)}
+.dungeon-potion-slot:disabled{opacity:.46;cursor:default}
+.dungeon-potion-slot:focus-visible{outline:2px solid #e2cb96;outline-offset:1px}
+.dungeon-potion-slot .potion-symbol{flex:none;color:#edd29c;font-size:17px}
+.dungeon-potion-slot.potion-heal .potion-symbol{color:#f29b9b}
+.dungeon-potion-slot .potion-caption{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-align:center;line-height:1.15}
+.dungeon-potion-slot small{flex:none;font-size:10px;color:#d1b892}
+@media(max-width:360px){.dungeon-potion-slot{gap:2px;padding:3px}.dungeon-potion-slot .potion-symbol{font-size:15px}.dungeon-potion-slot .potion-caption{font-size:9px}.dungeon-potion-slot small{font-size:9px}}
