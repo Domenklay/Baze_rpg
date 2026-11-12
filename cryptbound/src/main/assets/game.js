@@ -757,7 +757,7 @@ function choose(){
   var c=C[k];return '<button class="class-option" data-action="begin" data-id="'+k+'">'+window.CryptArt.hero(k)+
  '<span><strong>'+c.icon+' '+c.name+'</strong><small>'+c.description+'</small></span></button>';
  }).join('');
- dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.4</div><h2>ВЫБОР ПУТИ</h2>'+
+ dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.5.1</div><h2>ВЫБОР ПУТИ</h2>'+
  '<p>Выбранное подземелье: <b>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</b>. Начните первую локацию экспедиции.</p>'+opts+
  '<p class="fine muted">Скрытые клетки · Пошаговый бой · Магия · Призыв · Древа титулов</p>'+
  '<button class="btn dark wide" data-action="close">Закрыть</button>');

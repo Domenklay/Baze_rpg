@@ -380,7 +380,7 @@ test('Visible ranged enemies are a single archetype and emerge sequentially',()=
  const archers=run.tiles.filter(t=>t.foe&&t.foe.ranged);
  assert.equal(archers.length,2);
  assert.equal(new Set(archers.map(t=>t.foe.id)).size,1);
- assert.deepEqual(archers.map(t=>t.spawnIntro).sort(),[1,2]);
+ assert.deepEqual(Array.from(archers,t=>t.spawnIntro).sort(),[1,2]);
  assert.match(el('content').innerHTML,/tile-ranged-emerge/);
 });
 

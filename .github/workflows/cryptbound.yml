@@ -52,6 +52,7 @@ jobs:
           node --check cryptbound/src/main/assets/titles.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
+          node --check cryptbound/src/main/assets/clicker_rules.js
           node cryptbound/tests/smoke.cjs
 
       - name: Compile playable Android app
@@ -60,8 +61,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.5.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.5.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.5.1-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.5.1-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -74,7 +75,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.5.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.5.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.5.0 — экспедиции 10 актов" --notes "Первая игровая реализация 10 актов × 3 локации, боссов на 30/40/50+ этажах, безопасных порталов, переноса временного инвентаря между локациями, постоянного склада и одноразовых достижений. Поздние арт/боссовые фазы и окончательный баланс остаются в разработке."
+          if ! gh release view cryptbound-v0.5.1 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.5.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.5.1 — исследование, элитники и боссы" --notes "Продолжение 10 актов × 3 локации. Элитник ровно раз за десять этажей между 5-м и 9-м, свободный косметический маршрут героя по исследованным клеткам, 3×3 побочные комнаты, три фазы боссов с предупреждением, призывы, отображение дальников и бонус за зачистку. Поздние арты, уникальные сценарии 30 боссов и баланс ещё дорабатываются."
           fi
-          gh release upload cryptbound-v0.5.0 dist/Cryptbound-v0.5.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.5.1 dist/Cryptbound-v0.5.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
