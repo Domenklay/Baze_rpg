@@ -2,6 +2,9 @@
 
 ## Пепельный лабиринт (Cryptbound) · новая игра
 
+**Актуальная сборка v0.5.0:** [APK/релиз](https://github.com/Domenklay/Baze_rpg/releases/tag/cryptbound-v0.5.0) · [Каталог 10 актов × 3 локации](cryptbound/docs/DUNGEONS_IMPLEMENTATION_2026-11-12.ru.md). Старое описание v0.4.0 ниже сохранено для истории.
+
+
 **Новая самостоятельная игра:** пошаговый offline roguelike с исследованием скрытых плит в духе Gumballs & Dungeons, но со своими персонажами, названиями, сюжетными событиями и готическим визуальным оформлением.
 
 **[Скачать установочный APK](https://github.com/Domenklay/Baze_rpg/releases/download/cryptbound-v0.4.0/Cryptbound-v0.4.0-offline-Android.apk)** · [Релиз](https://github.com/Domenklay/Baze_rpg/releases/tag/cryptbound-v0.4.0) · [Исходный код](cryptbound/).
