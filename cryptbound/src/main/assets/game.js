@@ -171,7 +171,7 @@ function mkEnemy(boss,ranged,forcedElite){
   bossStyle:((r.actIndex||0)*3+(r.locationIndex||0))%6,
   role:boss?'boss':role,roleName:boss?'Босс':BAL.roles[role].name,ability:signature.id,
   abilityName:signature.name,abilityDescription:signature.description,
-  specialUses:0,summons:0,guardTurns:0,evadeCharges:0,
+  specialUses:0,summons:0,guardTurns:0,evadeCharges:0,enraged:false,stunImmunityTurns:0,
   burn:0,stun:0,poison:0,skill:skill,cooldown:scaled.cooldown,guard:0,
   ranged:!!ranged,attackInterval:ranged?3:1,attackCooldown:ranged?3:1,loot:src.loot||[]};
 }
@@ -511,7 +511,7 @@ function renderMaze(){
    '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
    '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':foe.elite?' · ЭЛИТНЫЙ':'')+'</strong>'+
    '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.ranged?foe.attackCooldown:(foe.cooldown||EX.monster(foe.visual||foe.id).every))+'</small>'+
-   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+(foe.boss?' · фаза '+(foe.phase||1)+'/3'+(foe.telegraph?' · ⚠ готовится удар':''):'')+'</small></div>'+
+   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+(foe.elite&&foe.enraged?' · ЯРОСТЬ':'')+(foe.boss?' · фаза '+(foe.phase||1)+'/3'+(foe.telegraph?' · ⚠ готовится удар':''):'')+'</small></div>'+
    '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
    :'<div class="dungeon-quiet"><b>✥ '+(r.log[0]?esc(r.log[0]):'Здесь царит тишина')+'</b><small>Открывайте плитки и забирайте найденное повторным нажатием</small></div>';
  var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
@@ -1275,7 +1275,17 @@ function consumeTurn(){
  alive=r.chamberActive!=null?[]:enemies();
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
-  if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
+  if(e.elite&&!e.enraged&&e.hp<=e.maxHp*.50){
+   e.enraged=true;e.atk=Math.ceil(e.atk*1.20);
+   e.cooldown=Math.min(e.cooldown||3,2);e.guard=Math.max(e.guard||0,1+Math.floor((r.actIndex||0)/3));
+   log('Элитный противник '+e.name+' впадает в ярость при 50% HP!');
+  }
+  if(e.stunImmunityTurns>0)e.stunImmunityTurns--;
+  if(e.stun>0){
+   e.stun=0;
+   if(e.boss&&e.stunImmunityTurns>0){log(e.name+' сопротивляется повторному оглушению.');}
+   else{if(e.boss)e.stunImmunityTurns=3;log(e.name+' оглушён.');return;}
+  }
   if(e.guardTurns>0){e.guardTurns--;if(!e.guardTurns)e.guard=0;}
   if(r.sunBurnTurns>0&&e.hp>0){e.hp-=Math.max(3,Math.ceil(e.maxHp*.06));if(e.hp<=0){kill(t);return;}}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
