@@ -2,67 +2,85 @@
 (function(){
 'use strict';
 var DB=window.ClickerData;
+
+/* Dungeon gear has only 3/4 slots and situational triggers.
+   Original Clicker item artwork/names are retained; big 2/4/6 bonuses are not. */
 var ROLES=[
- {key:'stone_oath',two:{def:3},four:{hp:16},six:{shieldFloor:14}},
- {key:'hunters_trail',two:{crit:6},four:{atk:4},six:{dodge:6}},
- {key:'mana_whisper',two:{pow:4},four:{mp:14},six:{spellDamage:13}},
- {key:'roots_of_life',two:{hp:20},four:{killHeal:5},six:{def:3}},
- {key:'ancestors_fury',two:{atk:5},four:{critDamage:13},six:{bossDamage:16}},
- {key:'swamp_seals',two:{pow:4},four:{spellDamage:10},six:{dodge:5}},
- {key:'mirage_trail',two:{dodge:7},four:{crit:7},six:{atk:7}},
- {key:'obelisk_oath',two:{def:6},four:{hp:34},six:{shieldFloor:24}},
- {key:'prismatic_guardian',two:{hp:28},four:{def:5},six:{dodge:5}},
- {key:'resonance_song',two:{mp:23},four:{pow:8},six:{spellDamage:18}},
- {key:'obsidian_harvest',two:{atk:9},four:{bossDamage:20},six:{critDamage:18}},
- {key:'ash_fortress',two:{def:7},four:{hp:38},six:{shieldFloor:30}}
+{id:'stone_oath',slots:['helm','armor','bracer','boots'],two:{entryShield:12},complete:{def:2,entryShield:10}},
+{id:'hunters_trail',slots:['helm','ring','boots'],two:{lootChance:8},complete:{bossDamage:10}},
+{id:'mana_whisper',slots:['ring','amulet','cloak','gloves'],two:{pow:3},complete:{scrollFloor:1}},
+{id:'roots_of_life',slots:['helm','armor','bracer','boots'],two:{healFloor:9},complete:{healFloor:9}},
+{id:'ancestors_fury',slots:['armor','gloves','boots'],two:{crit:4},complete:{bossDamage:10}},
+{id:'swamp_seals',slots:['ring','amulet','cloak','gloves'],two:{mp:8},complete:{entryShield:18}},
+{id:'mirage_trail',slots:['helm','cloak','boots'],two:{dodge:4},complete:{ghostFloor:1}},
+{id:'obelisk_oath',slots:['helm','armor','bracer','boots'],two:{def:2},complete:{entryShield:22}},
+{id:'prismatic_guardian',slots:['ring','amulet','cloak','gloves'],two:{pow:4},complete:{guardFloor:1}},
+{id:'resonance_song',slots:['ring','cloak','boots'],two:{mp:8},complete:{scrollFloor:1}},
+{id:'obsidian_harvest',slots:['armor','bracer','boots','gloves'],two:{killHeal:2},complete:{burnChance:15}},
+{id:'ash_fortress',slots:['helm','armor','bracer','boots'],two:{def:2},complete:{entryShield:28}}
 ];
-var BY_SET={};for(var i=0;i<ROLES.length;i++)BY_SET[ROLES[i].key]=ROLES[i];
-var ATTR={atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',pow:'Магия',crit:'Крит',dodge:'Уклонение',shieldFloor:'Щит при спуске',spellDamage:'Урон магии %',critDamage:'Крит. урон %',killHeal:'Лечение с убийств',bossDamage:'Урон боссам %'};
+var BY_SET={};for(var i=0;i<ROLES.length;i++)BY_SET[ROLES[i].id]=ROLES[i];
+var ATTR={atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',pow:'Магия',crit:'Крит',dodge:'Уклонение',
+ entryShield:'Щит на 10 ходов при входе в этаж или комнату',healFloor:'Лечение за этаж',scrollFloor:'Свиток за этаж',
+ ghostFloor:'Спутник с перепризывом на каждом этаже',guardFloor:'Защитных зарядов за этаж',
+ burnChance:'Шанс горения при ударе',lootChance:'Шанс дополнительной добычи',killHeal:'Лечение за убийство',bossDamage:'Урон по боссу %'};
+var sourceSlot={bracer:'shoulders',ring:'belt',cloak:'legs',amulet:'relic'};
 function region(floor){return DB.regions[(Math.floor((floor-1)/4))%DB.regions.length];}
 function regionIndex(floor){return (Math.floor((floor-1)/4))%DB.regions.length;}
 function group(floor){var index=regionIndex(floor);return DB.sets.slice(index*2,index*2+2);}
-function setDefinition(id){return DB.sets.find(function(x){return x.id===id;})||null;}
+function dungeonSet(id){
+ var found=/^dungeon:(\d+):(\d+)$/.exec(id||'');if(!found)return null;
+ var act=Number(found[1]),loc=Number(found[2]),details=window.CryptDungeons&&window.CryptDungeons.location(act,loc);
+ if(!details)return null;
+ return {id:id,name:'Реликвии «'+details.name+'»',slots:['helm','ring','gloves'],two:{lootChance:5},complete:{scrollFloor:1}};
+}
+function setDefinition(id){return DB.sets.find(function(x){return x.id===id;})||dungeonSet(id)||null;}
+function setRules(id){return BY_SET[id]||dungeonSet(id)||null;}
+function thresholds(id){var spec=setRules(id);return spec?[2,spec.slots.length]:[];}
 function gearFromCatalog(slot,floor,variant){
- var reg=region(floor),options=group(floor),one=options[(variant||0)%options.length]||DB.sets[0];
- var existing=DB.gear.find(function(x){return x.set===one.id&&x.slot===slot;});
+ var reg=region(floor),options=group(floor),one=options[Math.abs(variant||0)%options.length]||DB.sets[0];
+ var classic=sourceSlot[slot]||slot;
+ var spec=setRules(one.id);
+ var existing=DB.gear.find(function(x){return x.set===one.id&&x.slot===classic;});
  if(slot==='weapon'){
-   var weapons=DB.weapons.filter(function(x){return x.tier===reg.tier;});
-   var src=weapons[(variant||0)%weapons.length]||weapons[0];
-   return {catalogId:src.id,name:src.name,setId:null,setName:null,tier:src.tier,
-    trait:src.trait||'Стандартная атака',slot:'weapon',rarity:reg.tier===2?2:1,
-    atk:4+Math.round((Math.abs(src.damage)||12)/14)+(src.tier-1)*5,
-    def:0,hp:0,mp:0,pow:src.name.indexOf('Жезл')>=0||src.name.indexOf('Посох')>=0?4+(src.tier-1)*3:0,crit:0};
+  var weapons=DB.weapons.filter(function(x){return x.tier===reg.tier;});
+  var src=weapons[Math.abs(variant||0)%weapons.length]||weapons[0];
+  return {catalogId:src.id,name:src.name,setId:null,setName:null,tier:src.tier,
+   trait:src.trait||'Базовая атака',slot:'weapon',rarity:1,
+   atk:4+Math.round((Math.abs(src.damage)||12)/14)+(src.tier-1)*3,def:0,hp:0,mp:0,
+   pow:/Жезл|Посох/.test(src.name)?3+(src.tier-1)*2:0,crit:0};
  }
- var custom={belt:'Пояс «'+one.name+'»',boots:'Сапоги «'+one.name+'»'};
- var display=existing?existing.name:custom[slot]||('Предмет «'+one.name+'»');
- var defense=existing?existing.base_armor:slot==='belt'?10:8;
- var protection=existing?existing.base_shield:slot==='boots'?4:2;
- var n=reg.tier===2?1.8:1;
- var hp=Math.round((slot==='armor'?12:slot==='helm'?9:slot==='legs'?8:slot==='belt'?11:4)*n);
- var def=Math.max(1,Math.round((defense/11)*n));
+ var inSet=!!spec&&spec.slots.indexOf(slot)>=0;
+ var display=existing&&inSet?existing.name:({'bracer':'Наручи','ring':'Кольцо','amulet':'Амулет','cloak':'Плащ','gloves':'Перчатки','armor':'Доспех','helm':'Шлем','boots':'Обувь'}[slot]||'Предмет')+' «'+one.name+'»';
+ var scale=reg.tier===2?1.35:1;
+ var defense=existing?existing.base_armor:10;
+ var hp=Math.max(2,Math.round((slot==='armor'?8:slot==='helm'?5:slot==='bracer'?4:3)*scale));
  return {catalogId:existing?existing.id:'adapted_'+one.id+'_'+slot,
-  name:display,setId:one.id,setName:one.name,tier:reg.tier,
-  trait:existing?existing.trait:'Часть полного комплекта «'+one.name+'»',
-  slot:slot,rarity:reg.tier===2?2:1,atk:slot==='gloves'?2*reg.tier:0,
-  def:def,hp:hp,mp:Math.round((protection/2)*n),pow:slot==='relic'?2*reg.tier:0,crit:0};
+  name:display,setId:inSet?one.id:null,setName:inSet?one.name:null,tier:reg.tier,
+  trait:inSet?'Часть комплекта «'+one.name+'»':'Самостоятельная находка',
+  slot:slot,rarity:1,atk:slot==='gloves'?2:0,def:Math.max(1,Math.round(defense/13*scale)),
+  hp:hp,mp:slot==='cloak'||slot==='amulet'?4*reg.tier:0,
+  pow:slot==='ring'||slot==='amulet'?2*reg.tier:0,crit:0};
 }
 function counts(equip,items){
  var count={};Object.keys(equip).forEach(function(slot){
-  var id=equip[slot],item=items.find(function(x){return x.id===id;});
-  if(item&&item.setId)count[item.setId]=(count[item.setId]||0)+1;
+  var id=equip[slot],it=items.find(function(x){return x.id===id;});
+  if(it&&it.setId)count[it.setId]=(count[it.setId]||0)+1;
  });return count;
 }
 function bonuses(equip,items){
- var count=counts(equip,items),all={};
- for(var id in count){var b=BY_SET[id];if(!b)continue;
-  for(var stage of ['two','four','six']){if(count[id]<Number({two:2,four:4,six:6}[stage]))continue;
-   var level=b[stage];for(var stat in level)all[stat]=(all[stat]||0)+level[stat];}}
- return all;
+ var count=counts(equip,items),total={};
+ for(var id in count){var b=setRules(id);if(!b)continue;
+  for(var stage of [{min:2,bonus:b.two},{min:b.slots.length,bonus:b.complete}]){
+   if(count[id]<stage.min)continue;
+   for(var stat in stage.bonus)total[stat]=(total[stat]||0)+stage.bonus[stat];
+  }
+ }return total;
 }
 function descriptions(id){
- var b=BY_SET[id];if(!b)return [];
- return [['2',b.two],['4',b.four],['6',b.six]].map(function(row){
-  return row[0]+' предмета: '+Object.entries(row[1]).map(function(x){return (ATTR[x[0]]||x[0])+' +'+x[1];}).join(', ');
+ var spec=setRules(id);if(!spec)return [];
+ return [{min:2,data:spec.two},{min:spec.slots.length,data:spec.complete}].map(function(stage){
+  return stage.min+' предмета: '+Object.entries(stage.data).map(function(x){return (ATTR[x[0]]||x[0])+(x[1]===1?'':' +'+x[1]);}).join(', ');
  });
 }
 function near(id){var x=id%5,y=Math.floor(id/5),r=[];
@@ -125,6 +143,6 @@ function rangedSource(){
  return {id:'ranger',name:'Разбойник-лучник',hp:39,atk:8,def:1,loot:[]};
 }
 window.ClickerRules={region:region,regionIndex:regionIndex,group:group,setDefinition:setDefinition,gear:gearFromCatalog,
- counts:counts,bonuses:bonuses,descriptions:descriptions,near:near,openPath:openPath,exploreStatus:exploreStatus,
+ counts:counts,bonuses:bonuses,descriptions:descriptions,thresholds:thresholds,setRules:setRules,near:near,openPath:openPath,exploreStatus:exploreStatus,
  summonSpot:summonSpot,walkPath:walkPath,visualId:visualId,rangedSource:rangedSource};
 })();
