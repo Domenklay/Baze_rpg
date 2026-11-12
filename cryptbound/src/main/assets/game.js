@@ -227,6 +227,21 @@ function begin(hero){
  startFloor();save();draw();close();
 }
 function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+
+/* Move v0.5 save equipment to the 4 physical + 4 magical + weapon slots. */
+function migrateEquipSlots(saved){
+ if(!saved||!saved.equip||!Array.isArray(saved.items))return;
+ var replacement={shoulders:'bracer',belt:'ring',legs:'cloak',relic:'amulet'};
+ for(var old in replacement){
+  var newer=replacement[old];
+  if(saved.equip[newer]===undefined)saved.equip[newer]=saved.equip[old]||null;
+  delete saved.equip[old];
+ }
+ for(var it of saved.items){if(replacement[it.slot])it.slot=replacement[it.slot];
+  if(it.rarity==null||it.rarity===0)it.rarity=1;}
+ for(var slot of Object.keys(SLOT))if(saved.equip[slot]===undefined)saved.equip[slot]=null;
+}
+
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
@@ -247,7 +262,8 @@ function load(){
  if(meta.activeExpedition&&!Array.isArray(meta.activeExpedition.questItems))meta.activeExpedition.questItems=[];
  if(meta.diamonds==null)meta.diamonds=0;
  if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
- if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
+ if(meta.activeExpedition)migrateEquipSlots(meta.activeExpedition);
+ if(v.run){migrateEquipSlots(v.run);for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';if(!v.run.spellSchool)v.run.spellSchool='all';
   if(v.run.actIndex==null)v.run.actIndex=0;
   if(v.run.locationIndex==null)v.run.locationIndex=0;
@@ -434,8 +450,8 @@ function renderHero(){
  frame('ХАРАКТЕРИСТИКИ',statsHtml)+
  frame('АКТИВНЫЕ КОМПЛЕКТЫ',Object.entries(CR.counts(r.equip,r.items)).filter(function(e){return e[1]>0;}).map(function(e){
   var set=CR.setDefinition(e[0]),desc=CR.descriptions(e[0]);
-  return '<div class="set-status"><strong>'+esc(set?set.name:e[0])+' · '+e[1]+'/8</strong>'+
-   desc.map(function(t,i){return '<small class="'+(e[1]>=[2,4,6][i]?'set-on':'')+'">'+t+'</small>';}).join('')+'</div>';
+  return '<div class="set-status"><strong>'+esc(set?set.name:e[0])+' · '+e[1]+'/'+(CR.setRules(e[0])?.slots.length||4)+'</strong>'+
+   desc.map(function(t,i){return '<small class="'+(e[1]>=CR.thresholds(e[0])[i]?'set-on':'')+'">'+t+'</small>';}).join('')+'</div>';
  }).join('')||'<p class="fine muted">Соберите хотя бы две части одного комплекта.</p>')+
  '<button class="btn gold wide space-top space-bottom" data-action="hero-stats" data-id="'+r.class+'">✥ Постоянное развитие '+C[r.class].name+'</button>'+frame('ОТРЯД И ПУТЬ','<div class="kpis"><div><b>'+r.floor+'</b><small>Этаж</small></div><div><b>'+r.kills+'</b><small>Убийств</small></div><div><b>'+r.secrets+'</b><small>Тайн</small></div></div>'+
  (r.summon?'<p class="fine golden space-top">☠ Ваш скелет: '+r.summon.hp+' HP, '+r.summon.atk+' ATK</p>':'')+
@@ -562,9 +578,9 @@ function gearComparison(slot,selectedId){
  if(selected)nextEquip[slot]=selected.id;
  var setCounts=CR.counts(nextEquip,r.items);
  var setHelp=selected&&selected.setId?
-  '<div class="compact-set-help"><b>Комплект: '+esc(selected.setName)+' · '+(setCounts[selected.setId]||0)+'/8</b>'+
+  '<div class="compact-set-help"><b>Комплект: '+esc(selected.setName)+' · '+(setCounts[selected.setId]||0)+'/'+(CR.setRules(selected.setId)?.slots.length||4)+'</b>'+
   CR.descriptions(selected.setId).map(function(txt,i){
-   var need=[2,4,6][i],active=(setCounts[selected.setId]||0)>=need;
+   var need=CR.thresholds(selected.setId)[i],active=(setCounts[selected.setId]||0)>=need;
    return '<small class="'+(active?'set-on':'')+'">'+(active?'✓ ':'○ ')+txt+'</small>';
   }).join('')+'</div>':'<div class="fine muted compact-set-help">Оружие имеет собственный фиксированный эффект.</div>';
  var cost=selected?upgradeCost(selected):0;
