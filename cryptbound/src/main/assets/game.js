@@ -41,7 +41,7 @@ var TALENTS=window.CryptTitles||[];
 var CORPSE_STORIES=[
  {id:'storm-smith',name:'Павший механик',note:'«Катушка искрила. Если найдёте мою кирасу — берегите левую перчатку».',slot:'armor',gear:'Кираса павшего механика',soul:'Душа механика',prize:'Грозовая перчатка'},
  {id:'lost-surveyor',name:'Пропавший землемер',note:'На мокрой карте отмечен проход. Рядом приписка: «Не слушай огонёк».',slot:'boots',gear:'Сапоги землемера',soul:'Душа землемера',prize:'Перчатка путеводной искры'},
- {id:'ash-scholar',name:'Сгоревший летописец',note:'«Вспомнил название деревни, но светлячок сказал, что это неважно...»',slot:'relic',gear:'Печать летописца',soul:'Душа летописца',prize:'Перчатка шепчущих рун'}
+ {id:'ash-scholar',name:'Сгоревший летописец',note:'«Вспомнил название деревни, но светлячок сказал, что это неважно...»',slot:'amulet',gear:'Печать летописца',soul:'Душа летописца',prize:'Перчатка шепчущих рун'}
 ];
 var SECRET_EVENTS=[
  {title:'Кот в чёрном капюшоне',text:'На ступенях сидит костлявый кот и смотрит прямо в душу. На шее — ключ, который он явно не собирается отдавать.',reward:'На полу остаётся редкая реликвия.',type:'relic'},
@@ -1584,7 +1584,7 @@ function chamberSecret(id){
  var t=tile(id);
  if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||!roomSecretAvailable(t.room))return;
  t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
- if(lvl('phantom'))addItem('relic',2);
+ if(lvl('phantom'))addItem('amulet',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
  log('В боковой стене найдена тайная ниша.');
  finishAction();close();
@@ -1597,7 +1597,7 @@ function gainSecret(e){
   r.journalNotes.push('Археолог: найдено древнее свидетельство о реликвии «'+e.title+'».');
  }
  switch(e.type){
-  case'relic':addItem('relic',Math.max(2,rarityRoll()));break;
+  case'relic':addItem('amulet',Math.max(2,rarityRoll()));break;
   case'ep':r.ep+=4;break;
   case'scroll':var sp=rollSpell(4);grantScroll(sp.id,2,'secret');break;
   case'shield':r.shield+=30+r.floor*3;break;
