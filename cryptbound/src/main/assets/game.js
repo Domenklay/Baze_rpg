@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -1772,7 +1772,48 @@ function discoverSecret(){
  dialog('<div class="emblem">✧</div><div class="subhead">СЕКРЕТ ЛАБИРИНТА</div><h2>'+e.title+'</h2><p>'+e.text+'</p>'+
  '<p class="golden">'+e.reward+'</p><button class="btn wide" data-action="close">ЗАПОМНИТЬ</button>');
 }
+function storyChoice(answer){
+ if(!r||!r.pendingStory)return;
+ var data=r.pendingStory,scene=STORY.at(data.act,data.loc);
+ r.pendingStory=null;
+ if(!scene||answer!=='investigate'){close();return;}
+ var reg=DN.location(data.act,data.loc);
+ var key='scene:'+data.act+':'+data.loc;
+ if(r.uniqueFinds[key+':claimed']){close();return;}
+ r.uniqueFinds[key+':claimed']=true;
+ r.journalNotes.push(reg.name+': '+scene[0]+'. '+scene[1]);
+ var gained='Фрагмент свидетельства';
+ if(scene[2]==='memory'){r.ep+=6;gained='+6 очков исследования';}
+ else if(scene[2]==='resource'){
+  var name=reg.boss.loot&&reg.boss.loot[0]?reg.boss.loot[0].name:'Обломок из '+reg.name;
+  var amount=1+Math.floor(data.act/3);
+  r.materials[name]=(r.materials[name]||0)+amount;gained=name+' ×'+amount;
+ }else if(scene[2]==='scroll'){
+  var spell=rollSpell(Math.min(5,3+Math.floor(data.act/3)));
+  grantScroll(spell.id,1,'story');gained='Свиток «'+spell.name+'»';
+ }else if(scene[2]==='shield'){
+  r.shield+=15+data.act*4;gained='Защитный щит +'+(15+data.act*4);
+ }
+ log('Исследовано место «'+scene[0]+'». '+gained+'.');
+ finishAction();
+ if(r)dialog('<h2>'+esc(scene[0])+'</h2><p>В журнал добавлено свидетельство из локации «'+esc(reg.name)+'».</p>'+
+ '<p class="golden">Награда: '+esc(gained)+'</p>'+
+ '<button class="btn wide" data-action="close">Вернуться к исследованию</button>');
+}
+
 function eventRandom(){
+ var sceneKey='scene:'+(r.actIndex||0)+':'+(r.locationIndex||0);
+ var scene=STORY.at(r.actIndex||0,r.locationIndex||0);
+ if(scene&&!r.uniqueFinds[sceneKey]){
+  r.uniqueFinds[sceneKey]=true;
+  r.pendingStory={act:r.actIndex||0,loc:r.locationIndex||0};
+  dialog('<div class="emblem">✥</div><div class="subhead">СЮЖЕТНОЕ СОБЫТИЕ · '+esc(currentRegion().name)+'</div>'+
+   '<h2>'+esc(scene[0])+'</h2><p>'+esc(scene[1])+'</p>'+
+   '<p class="fine muted">Светлячок: «Только не говори, что мы снова будем читать. Хотя... вдруг там про меня?»</p>'+
+   '<div class="btnrow"><button class="btn" data-action="story-choice" data-id="investigate">Исследовать · 1 ход</button>'+
+   '<button class="btn alt" data-action="story-choice" data-id="leave">Не трогать</button></div>');
+  return;
+ }
  var choices=[
  {name:'Могильщик без лопаты',text:'Седой могильщик просит помочь закончить работу. Он обещает не спрашивать, кого вы ищете.',event:'grave'},
  {name:'Колонна шепотов',text:'На каменной колонне проступает ваше имя, хотя вы его ещё никому не называли.',event:'whisper'},
@@ -2128,11 +2169,12 @@ function permanent(id){
 }
 function action(name,id){
  if(name!=='move-hero'&&name!=='close')heroMoveToken++;
- if(name==='close'){if(r)r.chamberActive=null;close();return;}
+ if(name==='close'){if(r){r.chamberActive=null;r.pendingStory=null;}close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='dungeon-achievements'){dungeonAchievements();return;}
  if(name==='quest-board'){questBoard();return;}
+ if(name==='story-choice'){storyChoice(id);return;}
  if(name==='claim-quest'){claimQuestReport(id);return;}
  if(name==='fairy-toggle'){s.meta.fairyMuted=!s.meta.fairyMuted;save();draw();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
