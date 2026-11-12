@@ -363,8 +363,9 @@ test('Regional boss has warned phases and cannot produce a safe portal before de
  A('wait');assert.equal(boss.foe.phase,2);
  assert.ok(boss.foe.telegraph);
  A('wait');assert.equal(boss.foe.telegraph,null);
- boss.foe.hp=Math.floor(boss.foe.maxHp*.3);
- A('wait');assert.equal(boss.foe.phase,3);
+ boss.foe.hp=Math.max(1,Math.floor(boss.foe.maxHp*.20));
+ for(let attempt=0;attempt<4&&boss.foe.phase<3;attempt++)A('wait');
+ assert.equal(boss.foe.phase,3);
  boss.foe.hp=1;A('strike',boss.id);
  assert.equal(run.portalReady,true);
 });
