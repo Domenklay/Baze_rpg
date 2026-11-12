@@ -459,8 +459,9 @@ function inspectUnit(kind,id){
   '<div class="unit-profile">'+monsterVisual(e)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
   (e.boss?'<p class="golden">Фаза '+(e.phase||1)+'/3'+(e.telegraph?' — готовится опасный удар!':'')+'</p>':'')+
   '<div class="unit-skill"><strong>Обычная атака</strong><p>Атакует каждый свой ход. Урон уменьшается вашей бронёй.</p></div>'+
+  (!e.boss?'<p class="fine golden">Роль: '+esc(e.roleName||'Неизвестная')+' · угроза '+(r.actIndex+1)+'/10</p>':'')+
   '<div class="unit-skill"><strong>'+esc(special.name)+' · ◷ '+(e.cooldown||special.every)+'</strong>'+
-  '<p>'+esc(special.description)+' Следующее применение через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
+  '<p>'+esc(e.abilityDescription||special.description)+' Особая атака: '+esc(e.abilityName||special.name)+'; следующая через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
   '<button class="btn wide space-top" data-action="close">Продолжить бой</button>');
 }
 
@@ -1157,6 +1158,63 @@ function bossAttack(t,e,damage,ready){
  return damage;
 }
 
+
+/* Each monster has a stable signature move derived from its role and actual
+   bestiary entry. One ability is performed at its cooldown, never every turn. */
+function callMonsterMinion(e){
+ if(!e||e.summons>=1)return false;
+ var cells=r.tiles.filter(function(t){return t.kind==='empty'&&!t.foe&&!t.drops&&!t.summon&&t.id!==r.heroTile;});
+ if(!cells.length)return false;
+ var cell=pick(cells);
+ cell.kind='enemy';cell.revealed=true;cell.cleared=false;
+ cell.foe=mkEnemy(false,false,false);
+ cell.foe.hp=Math.max(5,Math.ceil(cell.foe.hp*.42));
+ cell.foe.maxHp=cell.foe.hp;cell.foe.atk=Math.max(2,Math.ceil(cell.foe.atk*.48));
+ cell.foe.gold=Math.max(1,Math.floor(cell.foe.gold*.25));
+ cell.foe.ep=1;cell.foe.summoned=true;cell.foe.summons=1;
+ e.summons++;log(e.name+' призывает прислужника: '+cell.foe.name+'.');
+ return true;
+}
+function monsterSpecial(e,damage,room){
+ var k=e.ability;if(!k)return damage;
+ var level=r.actIndex||0,shieldDamage=Math.max(2,Math.ceil(e.atk*.65));
+ var allies=room?room.guards.filter(function(g){return g.hp>0;})
+  :enemies().map(function(t){return t.foe;}).filter(function(g){return g.hp>0;});
+ var target=allies.filter(function(g){return g!==e&&g.hp<g.maxHp;})
+  .sort(function(a,b){return a.hp/a.maxHp-b.hp/b.maxHp;})[0]||e;
+ log(e.name+' применяет «'+(e.abilityName||e.skill.name)+'».');
+ if(k==='crush')return Math.ceil(damage*1.65);
+ if(k==='bleed'){r.bleedTurns=Math.max(r.bleedTurns||0,2+(level>=6?1:0));return damage;}
+ if(k==='shatter'){r.shield=Math.max(0,r.shield-shieldDamage);
+  r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-shieldDamage);return Math.ceil(damage*1.18);}
+ if(k==='fortify'){e.guard=Math.max(e.guard||0,2+Math.ceil(e.atk*.23));e.guardTurns=3;return Math.ceil(damage*.6);}
+ if(k==='shieldbash'){r.shield=Math.max(0,r.shield-shieldDamage);return Math.ceil(damage*1.28);}
+ if(k==='guardally'){
+  target.guard=Math.max(target.guard||0,2+Math.ceil(e.atk*.28));target.guardTurns=3;
+  return Math.ceil(damage*.65);
+ }
+ if(k==='flurry')return Math.ceil(damage*1.50);
+ if(k==='evade'){e.evadeCharges=1;return Math.ceil(damage*.85);}
+ if(k==='poison'){r.poisonTurns=Math.max(r.poisonTurns||0,2+(level>=4?1:0));return damage;}
+ if(k==='corrode'){
+  r.armorBreakPower=Math.max(r.armorBreakPower||0,1+Math.floor((level+2)/3));
+  r.armorBreakTurns=Math.max(r.armorBreakTurns||0,3);return damage;
+ }
+ if(k==='toxicmana'){r.poisonTurns=Math.max(r.poisonTurns||0,2);
+  r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.55)));return Math.ceil(damage*.8);}
+ if(k==='manaburn'){r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.75)));return Math.ceil(damage*.7);}
+ if(k==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,level>=6?2:1);return Math.ceil(damage*.75);}
+ if(k==='burn'){r.burnTurns=Math.max(r.burnTurns||0,level>=4?3:2);return damage;}
+ if(k==='healally'){target.hp=Math.min(target.maxHp,target.hp+Math.max(3,Math.ceil(target.maxHp*.15)));
+  log('Восстановлено здоровье: '+target.name+'.');return Math.ceil(damage*.45);}
+ if(k==='regenerate'){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.12));return Math.ceil(damage*.6);}
+ if(k==='pierce')return Math.max(Math.ceil(e.atk*1.12),Math.ceil(damage*1.3));
+ if(k==='venomshot'){r.poisonTurns=Math.max(r.poisonTurns||0,2);return Math.ceil(damage*1.05);}
+ if(k==='silenceshot'){r.silenceTurns=Math.max(r.silenceTurns||0,1);return damage;}
+ if(k==='call'){if(!room)callMonsterMinion(e);return Math.ceil(damage*.65);}
+ return damage;
+}
+
 function consumeTurn(){
  if(!r)return false;
  r.turn++;
@@ -1166,6 +1224,7 @@ function consumeTurn(){
  if(r.rageTurns>0)r.rageTurns--;
  if(r.reflectionTurns>0)r.reflectionTurns--;
  if(r.barrierTurns>0)r.barrierTurns--;
+ if(r.armorBreakTurns>0){r.armorBreakTurns--;if(!r.armorBreakTurns)r.armorBreakPower=0;}
  if(r.regenTurns>0){r.regenTurns--;r.hp=Math.min(stats().hp,r.hp+Math.max(1,Math.ceil(stats().hp*.05)));}
  if(r.burnWardTurns>0)r.burnWardTurns--;
  var frozen=!!(r.timeStopTurns>0);
@@ -1211,32 +1270,27 @@ function consumeTurn(){
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
+  if(e.guardTurns>0){e.guardTurns--;if(!e.guardTurns)e.guard=0;}
   if(r.sunBurnTurns>0&&e.hp>0){e.hp-=Math.max(3,Math.ceil(e.maxHp*.06));if(e.hp<=0){kill(t);return;}}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
   if(e.poison>0){e.poison--;e.hp-=Math.max(2,Math.floor(stats().atk*.24));if(e.hp<=0){kill(t);return;}}
+  if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
   var ready=false;
   if(e.ranged){
    e.attackCooldown=Math.max(0,(e.attackCooldown||3)-1);
    e.cooldown=e.attackCooldown||3;
-   if(e.attackCooldown>0)return; // Ranged creature fires only every 3 turns.
+   if(e.attackCooldown>0)return;
    e.attackCooldown=3;e.cooldown=3;ready=true;
   }else{
-   ready=(e.cooldown||special.every)<=1;
-   e.cooldown=ready?special.every:(e.cooldown||special.every)-1;
+   var interval=Math.max(1,(special&&special.every)||3);
+   ready=(e.cooldown||interval)<=1;
+   e.cooldown=ready?interval:(e.cooldown||interval)-1;
   }
-  var amount=Math.max(1,e.atk+rand(-2,2)-stats().def-bonus('damageFlat')-Math.floor(r.blessed));
-  if(ready){
-   log(e.name+' применяет «'+special.name+'».');
-   if(special.kind==='bite')amount=Math.ceil(amount*1.65);
-   if(special.kind==='guard')e.guard=3+Math.ceil(r.floor/5);
-   if(special.kind==='curse')amount=Math.max(3,Math.ceil(e.atk*.95));
-   if(special.kind==='double')amount=Math.max(2,amount*2);
-   if(special.kind==='poison')r.poisonTurns=2;
-   if(special.kind==='slam')amount=Math.ceil(amount*1.85);
-   if(special.kind==='shot')amount=Math.max(2,Math.ceil(e.atk*.85));
-  }
-  if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
-  if(e.boss){amount=bossAttack(t,e,amount,ready);if(amount==null)return;}
+  var effectiveDefense=Math.max(0,stats().def-(r.armorBreakPower||0));
+  var amount=Math.max(1,e.atk+rand(-2,2)-effectiveDefense-bonus('damageFlat')-Math.floor(r.blessed));
+  if(e.boss){
+   amount=bossAttack(t,e,amount,ready);if(amount==null)return;
+  }else if(ready){amount=monsterSpecial(e,amount,false);}
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
    if(Math.random()*100<r.ghost.dodge){log('Призрак увернулся от удара '+e.name+'.');return;}
@@ -1317,6 +1371,11 @@ function kill(t){
 function strike(tid){
  if(r){r.fx='attack';r.fxUntil=Date.now()+420;}
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
+ if(t.foe.evadeCharges>0){
+  t.foe.evadeCharges--;if(Math.random()<.45){
+   log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
+  }
+ }
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-t.foe.def-(t.foe.guard||0));
  t.foe.guard=0;
