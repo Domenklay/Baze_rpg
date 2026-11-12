@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
 const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 let checks=0;
@@ -382,6 +382,36 @@ test('Visible ranged enemies are a single archetype and emerge sequentially',()=
  assert.equal(new Set(archers.map(t=>t.foe.id)).size,1);
  assert.deepEqual(Array.from(archers,t=>t.spawnIntro).sort(),[1,2]);
  assert.match(el('content').innerHTML,/tile-ranged-emerge/);
+});
+
+
+test('Alchemy stock consumes permanent resources and fills exactly two prepared slots',()=>{
+ let m=state.meta;
+ A('escape-25');assert.equal(state.run,null);
+ const before=m.materials['Алхимический ингредиент']||0;
+ m.materials['Алхимический ингредиент']=80;
+ m.potionStock={};
+ A('brew-potion','ghost');A('brew-potion','aegis');
+ assert.equal(m.potionStock.ghost,1);assert.equal(m.potionStock.aegis,1);
+ assert.equal(m.materials['Алхимический ингредиент'],68);
+ m.preparedLoadout=['ghost','aegis'];
+ A('begin','necromancer');let run=state.run;
+ assert.deepEqual(Array.from(run.preparedPotions),['ghost','aegis']);
+ assert.equal(m.potionStock.ghost,0);
+ let previous=run.turn;A('use-prepared','0');assert.ok(run.ghost&&run.ghost.hp>0);
+ assert.equal(run.turn,previous+1);assert.equal(run.preparedPotions[0],null);
+ previous=run.turn;A('use-prepared','1');assert.equal(run.guardCharges,3);
+ assert.equal(run.turn,previous+1);
+ assert.equal(run.preparedPotions[1],null);
+ A('wait');assert.equal(run.guardCharges,3);
+ A('escape-25');assert.equal(state.run,null);
+ m.materials['Алхимический ингредиент']=before;
+});
+test('Spell catalog has 6 schools × 6 ranks, with 6-star rarity isolated',()=>{
+ const sys=win.CryptSystems;
+ assert.equal(sys.spells.length,36);
+ for(const school of sys.schools)assert.deepEqual(
+  Array.from(sys.spells.filter(x=>x.school===school.id),x=>x.rank).sort(),[1,2,3,4,5,6]);
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
