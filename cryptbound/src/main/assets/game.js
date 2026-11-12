@@ -131,7 +131,7 @@ function mkEnemy(boss,ranged){
  {name:'Дальний выстрел',every:3,description:'Стреляет издалека раз в три хода и не блокирует соседние клетки.',kind:'shot'}:EX.monster(visual);
  return {id:src.id,name:src.name,visual:visual,hp:hp,maxHp:hp,atk:atk,def:def,
  ep:isBoss?9:src.elite?4:2,gold:isBoss?32:src.elite?15:7,
- boss:isBoss,burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
+ boss:isBoss,elite:!!src.elite,burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
  ranged:isRanged,attackInterval:isRanged?3:1,attackCooldown:isRanged?3:1,loot:src.loot||[]};
 }
 function distributeTiles(){
@@ -169,6 +169,10 @@ function startFloor(){
  r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
+ if(lvl('seeker')>0&&Math.random()<Math.min(.6,.15*lvl('seeker'))){
+  var hintTile=r.tiles.find(function(t){return t.kind==='secret';});
+  if(hintTile)hintTile.hinted=true;
+ }
  var st=stats();
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));r.ep+=bonus('epFloor');
  r.poisonTurns=0;
@@ -257,7 +261,7 @@ function activeTileView(t){
  if(!t.revealed){
   var access=CR.exploreStatus(t,r.tiles);
   return access.ok?
-   '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">✥</span></button>':
+   '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">'+(t.hinted?'✦':'✥')+'</span></button>':
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
@@ -565,7 +569,7 @@ function consumeTurn(){
  if(!r)return false;
  r.turn++;
  if(r.blessed>0)r.blessed--;
- var alive=enemies();
+ var alive=r.chamberActive!=null?[]:enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
@@ -575,7 +579,7 @@ function consumeTurn(){
  }
  if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
   r.hp=Math.max(0,r.hp-poison);log('Яд: −'+poison+' HP.');}
- alive=enemies();
+ alive=r.chamberActive!=null?[]:enemies();
  alive.slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
@@ -798,7 +802,8 @@ function claimTile(t){
    if(relic){s.meta.relics[relic.id]=(s.meta.relics[relic.id]||0)+1;
     lines.push('<strong>'+esc(relic.icon+' '+relic.name)+'</strong>');
     labels.push(relic.icon+' '+relic.name);
-    log('В реликварий добавлено: '+relic.name+'.');}}
+    log('В реликварий добавлено: '+relic.name+'.');
+    if(lvl('reliclord')>0){r.shield+=8*lvl('reliclord');log('Хранитель реликвий получает защиту при исследовании артефакта.');}}}
   t.drops=null;t.cleared=true;log('Награды подобраны с клетки.');
   finishAction();if(r)floatLoot(t.id,labels);return;
  }
@@ -811,6 +816,10 @@ function claimTile(t){
     '<span><strong>'+esc(i.name)+'</strong><small>'+RARITY[i.rarity]+' · '+SLOT[i.slot]+'</small></span></div>');
     labels.push(i.name+' ×1');}
   }else{r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');}
+  if(lvl('vault')>0&&Math.random()<Math.min(.5,.1*lvl('vault'))){
+   var extra=pick(SPELLS);r.scrolls[extra.id]=(r.scrolls[extra.id]||0)+1;
+   lines.push('<strong>✣ Дополнительный свиток «'+esc(extra.name)+'»</strong>');
+  }
   t.cleared=true;log('Сундук вскрыт.');
   finishAction();
   if(r){if(lines.length>1)rewardDialog('Старинный сундук',lines);else floatLoot(t.id,labels);}
@@ -900,6 +909,7 @@ function discoverCorpse(t){
   var gear=addItem(story.slot,1);
   if(gear){gear.name=story.gear;gear.rarity=2;gear.setId=null;gear.setName=null;lines.push('Найден предмет: '+gear.name+'.');}
   r.journalNotes.push(story.name+': '+story.note);lines.push('Найдена записка исследователя.');
+  if(lvl('explorer')>0){var coins=addGold(4*lvl('explorer'));lines.push('Мародёр нашёл дополнительные '+coins+' монет.');}
   if(lvl('cartographer')>0){var soul=addSpiritSoul({kind:'unique',name:story.soul,storyId:story.id});
    if(soul)lines.push('Извлечена особая душа: '+soul.name+'.');}
   if(lvl('navigator')>0){r.ep+=3;lines.push('Анатом: +3 очка исследования.');}
@@ -918,6 +928,7 @@ function openChamber(t){
  var enter=!t.entered;
  if(!t.room)t.room={guardHp:Math.max(14,Math.floor(16+r.floor*1.7)),rewardTaken:false,secretTaken:false,secret:Math.random()<.45};
  t.entered=true;
+ r.chamberActive=t.id;
  if(enter){log('Найдена пещера с одиноким стражем и наградой в центре.');finishAction();}
  if(r)showChamber(t);
 }
@@ -925,7 +936,8 @@ function showChamber(t){
  if(!r||!t||!t.room||t.kind!=='chamber')return;
  var room=t.room,secret=!!(lvl('scavenger')||lvl('phantom'))&&(room.secret||lvl('phantom')>0);
  var html='<div class="emblem">⌂</div><div class="subhead">ПОБОЧНОЕ ПОМЕЩЕНИЕ</div><h2>ПОТЕРЯННЫЙ ПРИДЕЛ</h2>'+
- '<p>Страж охраняет сундук в центре. Вдоль стены тянется потрескавшаяся кладка.</p>'+
+ '<p>Страж охраняет сундук в центре. Вдоль стены тянется потрескавшаяся кладка.</p>'+ 
+ (lvl('stealth')>0?(room.secret?'<p class="golden">Следопыт ощущает подозрительный холод у края помещения.</p>':'<p class="fine muted">Следопыт не заметил тайного прохода.</p>'):'')+
  '<div class="unit-skill"><strong>'+(room.guardHp>0?'Страж комнаты: '+room.guardHp+' HP':'Страж побеждён')+'</strong></div>';
  if(room.guardHp>0)html+='<button class="btn wide" data-action="chamber-fight" data-id="'+t.id+'">⚔ Атаковать стража · 1 ход</button>';
  else if(!room.rewardTaken)html+='<button class="btn wide" data-action="chamber-reward" data-id="'+t.id+'">Забрать центральную награду · 1 ход</button>';
@@ -951,7 +963,7 @@ function chamberReward(id){
  log('Найдена награда в побочной комнате: '+coins+' монет.');
  var secret=!!(lvl('scavenger')||lvl('phantom'))&&(t.room.secret||lvl('phantom')>0);
  if(!secret){t.cleared=true;t.kind='empty';}
- finishAction();if(r&&secret)showChamber(t);else close();
+ finishAction();if(r&&secret)showChamber(t);else {if(r)r.chamberActive=null;close();}
 }
 function chamberSecret(id){
  var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||
@@ -960,11 +972,15 @@ function chamberSecret(id){
  if(lvl('phantom'))addItem('relic',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
  log('Тайновед обнаружил дополнительный тайник в дальней стене.');
- finishAction();close();
+ finishAction();if(r)r.chamberActive=null;close();
 }
 function gainSecret(e){
  r.secrets++;r.ep+=bonus('secretEp');
  if(s.meta.secrets.indexOf(e.title)===-1)s.meta.secrets.push(e.title);
+ if(lvl('secretkeeper')>0&&e.type==='relic'&&!r.uniqueFinds['relic-lore:'+e.title]){
+  r.uniqueFinds['relic-lore:'+e.title]=true;r.ep+=2*lvl('secretkeeper');
+  r.journalNotes.push('Археолог: найдено древнее свидетельство о реликвии «'+e.title+'».');
+ }
  switch(e.type){
   case'relic':addItem('relic',Math.max(2,rarityRoll()));break;
   case'ep':r.ep+=4;break;
@@ -1229,7 +1245,7 @@ function permanent(id){
  save();camp();draw();
 }
 function action(name,id){
- if(name==='close'){close();return;}
+ if(name==='close'){if(r)r.chamberActive=null;close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
