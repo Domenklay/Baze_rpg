@@ -489,7 +489,7 @@ function renderMenu(){
  '<p>Игра работает без интернета. Автосохранение остаётся на этом устройстве.</p>'+
  '<button class="btn wide space-top" data-action="close">Продолжить спуск</button>'+
  '<button class="btn gold wide space-top" data-action="chronicles">✥ Хроники, реликвии, испытания</button>'+
- '<button class="btn alt wide space-top" data-action="camp">Постоянное развитие героев</button>'+
+ '<button class="btn alt wide space-top" data-action="camp">Постоянное развитие героев</button>'+ '<button class="btn alt wide space-top" data-action="town">⚒ Поселение</button>'+
  '<button class="btn dark wide space-top" data-action="abandon">Завершить забег</button>';
 }
 
@@ -975,9 +975,49 @@ function camp(){
   '<div class="frame-title">ОБЩИЕ УЛУЧШЕНИЯ</div>'+
   line('hp','Крепкое тело','HP +12')+line('atk','Стальное наследие','Атака +2')+line('mp','Тайная мудрость','Мана +8')+
   '<div class="frame-title space-top">РАЗВИТИЕ ГЕРОЕВ</div>'+heroes+
-  '<button class="btn gold wide space-top" data-action="chronicles">✥ Реликварий, бестиарий и испытания</button>'+
+  '<button class="btn gold wide space-top" data-action="town">⚒ Поселение и материалы</button>'+ '<button class="btn alt wide space-top" data-action="chronicles">✥ Реликварий, бестиарий и испытания</button>'+
   '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
+var BUILDINGS={
+ forge:{title:'Кузница',desc:'+2 атаки за уровень для всех героев',icon:'⚒'},
+ barracks:{title:'Казармы',desc:'+12 максимального HP за уровень',icon:'♜'},
+ library:{title:'Библиотека',desc:'+8 максимальной маны за уровень',icon:'✣'}
+};
+function materialCount(){return Object.values(s.meta.materials||{}).reduce(function(n,v){return n+Math.max(0,Number(v)||0);},0);}
+function town(){
+ var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=materialCount();
+ var builds=Object.keys(BUILDINGS).map(function(id){
+  var b=BUILDINGS[id],level=city[id]||0,cost=6+level*8;
+  return '<div class="meta-upgrade"><div><strong>'+b.icon+' '+b.title+' · '+level+'/5</strong><small>'+b.desc+'</small></div>'+
+  '<button class="btn small" data-action="town-upgrade" data-id="'+id+'" '+
+   (level>=5||available<cost?'disabled':'')+'>'+cost+' мат.</button></div>';
+ }).join('');
+ var resources=Object.entries(mat).filter(function(v){return v[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,32);
+ dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
+ '<p>Запас материалов: <b class="golden">'+available+'</b>. Они добываются у врагов шести регионов и остаются после смерти героя. В мастерской используем ресурсы вместо золота.</p>'+
+ '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
+ '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
+ '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span>'+esc(e[0])+' <b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
+ '<button class="btn alt wide space-top" data-action="camp">Память предков</button>'+
+ '<button class="btn dark wide space-top" data-action="close">Выйти</button>');
+}
+function townUpgrade(id){
+ if(!Object.prototype.hasOwnProperty.call(BUILDINGS,id))return;
+ var city=s.meta.city,level=city[id]||0,cost=6+level*8;
+ if(level>=5||materialCount()<cost)return;
+ var remaining=cost;
+ var names=Object.keys(s.meta.materials).sort(function(a,b){return (s.meta.materials[b]||0)-(s.meta.materials[a]||0);});
+ for(var key of names){
+  var used=Math.min(remaining,s.meta.materials[key]||0);
+  s.meta.materials[key]-=used;remaining-=used;
+  if(!remaining)break;
+ }
+ if(remaining!==0)throw Error('Material budget invariant violation');
+ city[id]=level+1;
+ if(r){if(id==='barracks')r.hp+=12;if(id==='library')r.mp+=8;}
+ save();draw();town();
+}
+
 function rankHero(id){
  if(!Object.prototype.hasOwnProperty.call(C,id))return;
  var m=s.meta,rank=m.heroRanks[id]||0,cost=EX.upgradeCost(rank);
@@ -1048,6 +1088,8 @@ function action(name,id){
  if(name==='choose'){choose();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
  if(name==='camp'){camp();return;}
+ if(name==='town'){town();return;}
+ if(name==='town-upgrade'){townUpgrade(id);return;}
  if(name==='permanent'){permanent(id);return;}
  if(name==='abandon'){abandon();return;}
  if(name==='confirm-end'){die();return;}
