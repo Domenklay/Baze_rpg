@@ -1,0 +1,50 @@
+/* Cryptbound v0.4 — compact set gear, imported hero art, spatial exploration */
+.small-portrait .clicker-hero-art{width:100%;height:100%;object-fit:contain;object-position:center bottom;image-rendering:auto;filter:drop-shadow(1px 2px 2px #000)}
+.class-option .clicker-hero-art{width:68px;height:74px;object-fit:contain;object-position:center bottom;flex:none;background:radial-gradient(#4a3430,#0d0b0c)}
+.hero-portrait .clicker-hero-art{width:100%;height:100%;object-fit:contain;object-position:center bottom}
+.gear-portrait .clicker-hero-art{width:100%;height:100%;object-fit:contain;object-position:center bottom;filter:drop-shadow(2px 5px 2px #000)}
+.meta-hero-portrait .clicker-hero-art{width:100%;height:100%;object-fit:contain}
+.class-option .clicker-hero-art{max-height:74px}
+.dungeon-board .tile.tile-origin{background:radial-gradient(ellipse at 50% 50%,#564b38,#1a1517 66%);border:1px solid #a2825b;box-shadow:inset 0 0 17px #ab885266}
+.origin-dot{display:grid;place-items:center;position:relative;width:42%;height:42%;border-radius:50%;background:radial-gradient(#9a6e41,#3b2422);border:1px solid #e5c992;color:#ffe2a6;font-size:clamp(14px,3.8vw,25px);text-shadow:0 1px 3px #000;box-shadow:0 0 12px #ecae7588}
+.origin-dot:after{content:'';position:absolute;inset:-5px;border:1px dotted #b69b72;border-radius:50%;opacity:.65}
+.dungeon-board .tile.tile-locked{background:linear-gradient(135deg,#282225,#181519);border-color:#30262a;opacity:.59;pointer-events:none;box-shadow:inset 0 0 14px #090708}
+.dungeon-board .tile.tile-locked .slab-face{font-size:19px;color:#534040;opacity:.5}
+.dungeon-board .tile.tile-locked:after{border:1px dashed #413332}
+.dungeon-board .tile.tile-frontier{border-color:#a28b6d;box-shadow:inset 1px 1px #bb9c73,0 0 6px #d79a6465}
+.dungeon-board .tile.tile-frontier .slab-face{color:#a2856a}
+.dungeon-board .tile.tile-ranged{background:radial-gradient(#413b5b,#18131f);border-color:#9c8ab5;box-shadow:inset 0 0 12px #594e8b}
+.dungeon-board .tile.tile-ranged:after{content:'➶';position:absolute;top:1px;right:1px;color:#cfb2df;font:bold 11px Georgia;background:#1b1127b5;padding:0 2px}
+.dungeon-key,.dungeon-progress{font-size:10px}
+.dungeon-encounter .dungeon-foe-info{min-width:0}
+.dungeon-foe-info small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dungeon-action small{font-size:9px;white-space:normal;max-height:24px;overflow:hidden;line-height:1.1}
+.dialog:has(.gear-two-columns){max-width:530px;padding:8px 10px}
+.dialog:has(.gear-two-columns)>h2{font-size:18px;margin:4px 0}
+.dialog:has(.gear-two-columns) .gear-two-columns{gap:6px;margin:6px 0}
+.gear-compare-card{padding:5px;min-height:auto}
+.gear-compare-title{padding-bottom:4px;margin-bottom:2px;font:700 9px Arial}
+.gear-compare-icon{height:41px;width:58px;max-width:unset;margin:2px auto}
+.gear-compare-icon svg{height:37px;width:37px}
+.gear-compare-card>strong{font-size:11px;line-height:1.15;min-height:23px}
+.gear-compare-card>small{font:9px Arial;line-height:1.1;margin:2px 0 5px;min-height:11px}
+.gear-compare-stat{min-height:20px;padding:2px 0;gap:2px;font:10px Arial}
+.gear-compare-stat b{font-size:10px}
+.gear-compare-stat em{font-size:10px}
+.gear-dialog-actions{margin:7px 0}
+.gear-available-title{padding-bottom:4px;margin-bottom:3px}
+.gear-picker{max-height:130px;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.gear-picker .item{min-height:61px}
+.gear-picker .item svg{height:33px;width:33px}
+.gear-picker .item span{font-size:8px}
+.compact-set-help{display:grid;gap:2px;text-align:left;border-top:1px solid #5a3e36;background:#1a1315;padding:5px 8px;margin:6px 0;font:10px Arial}
+.compact-set-help>b{color:#f3d4a2}
+.compact-set-help>small,.set-status>small{font:10px/1.25 Arial;color:#9b9186;display:block}
+.compact-set-help .set-on,.set-status .set-on{color:#a5d5a0}
+.set-status{display:grid;gap:3px;border-bottom:1px solid #45322b;padding:5px 3px;text-align:left}
+.set-status strong{color:#dec59a;font-size:12px}
+.town-resources{max-height:185px;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;text-align:left}
+.town-resources span{font:10px/1.25 Arial;color:#c6b4a3;padding:6px;border:1px solid #594039;background:#211719}
+.town-resources span b{color:#eac58d}
+.gear-two-columns+.compact-set-help{margin:4px 0}
+@media(max-width:365px){.gear-picker{grid-template-columns:repeat(4,minmax(0,1fr))}.gear-compare-stat{font-size:9px}.dungeon-key{font-size:9px}}
