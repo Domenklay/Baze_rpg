@@ -557,9 +557,14 @@ function consumeTurn(){
 function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
+ s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0};
- if(e.boss){drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};drop.potion=1;r.ep+=4;}
+ if(e.boss){
+  drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
+  drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
+  r.ep+=4;s.meta.bossKills=(s.meta.bossKills||0)+1;
+ }
  else {
   if(Math.random()<.23+bonus('lootChance')*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
   else if(Math.random()<.33){drop.scroll=pick(SPELLS).id;}
@@ -654,42 +659,66 @@ function rewardDialog(title,lines){
   '<div class="reward-rows">'+lines.map(function(line){return '<div class="reward-entry">'+line+'</div>';}).join('')+'</div>'+
   '<button class="btn wide space-top" data-action="close">ЗАБРАТЬ</button>');
 }
+function floatLoot(tileId,labels){
+ if(!labels||!labels.length)return;
+ var maze=document.querySelector('.dungeon-board .maze');
+ if(!maze||!document.createElement)return;
+ var pop=document.createElement('div');pop.className='pickup-float';
+ pop.style.left=((Number(tileId)%5+.5)*20)+'%';
+ pop.style.top=((Math.floor(Number(tileId)/5)+.48)*20)+'%';
+ pop.textContent=labels.join('  ·  ');maze.appendChild(pop);
+ setTimeout(function(){if(pop.parentNode)pop.parentNode.removeChild(pop);},1650);
+}
 function claimTile(t){
  if(!t||!t.revealed||t.cleared)return;
- var kind=t.kind,lines=[],pending=t.drops||null;
+ var kind=t.kind,lines=[],labels=[],pending=t.drops||null;
  if(pending){
-   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');}
-   if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');}
-   if(pending.potion){r.potions+=pending.potion;lines.push('<strong>✚ '+pending.potion+' целебный эликсир</strong>');}
-   if(pending.scroll){r.scrolls[pending.scroll]=(r.scrolls[pending.scroll]||0)+1;
-    var spell=SPELLS.find(function(sp){return sp.id===pending.scroll;});
-    lines.push('<strong>✣ Свиток «'+esc(spell.name)+'»</strong>');}
-   if(pending.gear){var drop=addItem(pending.gear.slot,pending.gear.rarity);
-    if(drop)lines.push('<div class="loot-gear">'+window.CryptArt.item(drop.slot,drop.rarity)+
-     '<span><strong>'+esc(drop.name)+'</strong><small>'+RARITY[drop.rarity]+' · '+SLOT[drop.slot]+'</small></span></div>');}
-   t.drops=null;t.cleared=true;log('Награды подобраны с клетки.');finishAction();
-   if(r)rewardDialog('Трофеи битвы',lines);return;
+  if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');labels.push('⚿ Ключ');}
+  if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');labels.push('◈ +'+found);}
+  if(pending.potion){r.potions+=pending.potion;lines.push('<strong>✚ '+pending.potion+' эликсир</strong>');labels.push('✚ Эликсир ×'+pending.potion);}
+  if(pending.scroll){r.scrolls[pending.scroll]=(r.scrolls[pending.scroll]||0)+1;
+   var sp=SPELLS.find(function(x){return x.id===pending.scroll;});
+   lines.push('<strong>✣ Свиток «'+esc(sp.name)+'»</strong>');labels.push('✣ '+sp.name+' ×1');}
+  if(pending.gear){var loot=addItem(pending.gear.slot,pending.gear.rarity);
+   if(loot){lines.push('<div class="loot-gear">'+window.CryptArt.item(loot.slot,loot.rarity)+
+     '<span><strong>'+esc(loot.name)+'</strong><small>'+RARITY[loot.rarity]+' · '+SLOT[loot.slot]+'</small></span></div>');
+    labels.push('▣ '+loot.name+' ×1');}}
+  if(pending.relic){
+   var relic=EX.relics.find(function(x){return x.id===pending.relic;});
+   if(relic){s.meta.relics[relic.id]=(s.meta.relics[relic.id]||0)+1;
+    lines.push('<strong>'+esc(relic.icon+' '+relic.name)+'</strong>');
+    labels.push(relic.icon+' '+relic.name);
+    log('В реликварий добавлено: '+relic.name+'.');}}
+  t.drops=null;t.cleared=true;log('Награды подобраны с клетки.');
+  finishAction();if(r)floatLoot(t.id,labels);return;
  }
  if(kind==='chest'){
   var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+bonus('chestGold')*.01)));
-  lines.push('<strong>◈ '+money+' монет</strong>');
-  if(Math.random()<.8){var item=addItem(pick(Object.keys(SLOT)),null);
-   if(item)lines.push('<div class="loot-gear">'+window.CryptArt.item(item.slot,item.rarity)+
-     '<span><strong>'+esc(item.name)+'</strong><small>'+RARITY[item.rarity]+' · '+SLOT[item.slot]+'</small></span></div>');
-  }else{r.potions++;lines.push('<strong>✚ Лечебный эликсир</strong>');}
-  t.cleared=true;log('Сундук открыт. Содержимое отправлено в сумку.');finishAction();
-  if(r)rewardDialog('Старинный сундук',lines);return;
+  lines.push('<strong>◈ '+money+' монет</strong>');labels.push('◈ +'+money);
+  if(Math.random()<.8){
+   var i=addItem(pick(Object.keys(SLOT)),null);
+   if(i){lines.push('<div class="loot-gear">'+window.CryptArt.item(i.slot,i.rarity)+
+    '<span><strong>'+esc(i.name)+'</strong><small>'+RARITY[i.rarity]+' · '+SLOT[i.slot]+'</small></span></div>');
+    labels.push(i.name+' ×1');}
+  }else{r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');}
+  t.cleared=true;log('Сундук вскрыт.');
+  finishAction();
+  if(r){if(lines.length>1)rewardDialog('Старинный сундук',lines);else floatLoot(t.id,labels);}
+  return;
  }
- if(kind==='coin'){var gold=addGold(rand(9,18)+r.floor*2);lines.push('<strong>◈ '+gold+' монет</strong>');
-   t.cleared=true;finishAction();if(r)rewardDialog('Монеты под плитой',lines);return;}
- if(kind==='potion'){r.potions++;lines.push('<strong>✚ Целебный эликсир</strong>');
-   t.cleared=true;finishAction();if(r)rewardDialog('Запечатанный флакон',lines);return;}
+ if(kind==='coin'){
+  var gold=addGold(rand(9,18)+r.floor*2);t.cleared=true;log('Подобрано '+gold+' монет.');
+  finishAction();if(r)floatLoot(t.id,['◈ Монеты +'+gold]);return;
+ }
+ if(kind==='potion'){
+  r.potions++;t.cleared=true;log('Получен целебный эликсир.');
+  finishAction();if(r)floatLoot(t.id,['✚ Эликсир ×1']);return;
+ }
  if(kind==='trap'){
-   t.cleared=true;
-   var reduction=clamp(1-bonus('trapReduce')*.01,0,.95);
-   var dmg=Math.max(0,Math.floor((7+r.floor*2)*reduction*(r.class==='scout'?.55:1)));
-   r.hp=Math.max(0,r.hp-dmg);log('Вы обезвредили ловушку, но получили '+dmg+' урона.');
-   finishAction();return;
+  t.cleared=true;var reduction=clamp(1-bonus('trapReduce')*.01,0,.95);
+  var dmg=Math.max(0,Math.floor((7+r.floor*2)*reduction*(r.class==='scout'?.55:1)));
+  r.hp=Math.max(0,r.hp-dmg);log('Ловушка наносит '+dmg+' урона.');
+  finishAction();if(r)floatLoot(t.id,['−'+dmg+' HP']);return;
  }
  if(kind==='secret'){t.cleared=true;discoverSecret();finishAction();return;}
  if(kind==='altar'){t.cleared=true;showAltar();finishAction();return;}
