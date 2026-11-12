@@ -480,7 +480,7 @@ function renderHero(){
   '<span>Здоровье</span><b>'+r.hp+' / '+st.hp+'</b><span>Мана</span><b>'+r.mp+' / '+st.mp+'</b>'+
   '<span>Атака</span><b>'+st.atk+'</b><span>Броня</span><b>'+st.def+'</b>'+
   '<span>Мощь магии</span><b>'+st.pow+'</b><span>Крит. шанс</span><b>'+st.crit+'%</b>'+
-  '<span>Уклонение</span><b>'+st.dodge+'%</b><span>Щит</span><b>'+r.shield+'</b></div>';
+  '<span>Уклонение</span><b>'+st.dodge+'%</b><span>Щит</span><b>'+(r.shield+(r.setShieldRemaining||0))+'</b></div>';
  return section('Экипировка',c.type)+
  frame('ГЕРОЙ И ПРЕДМЕТЫ','<div class="gear-layout">'+
   '<div class="gear-slots gear-left">'+left.map(gearSlotButton).join('')+'</div>'+
@@ -1016,6 +1016,7 @@ function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
  if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');}
+ if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[],soul:null};
@@ -1036,7 +1037,7 @@ function kill(t){
   r.ep+=4;s.meta.bossKills=(s.meta.bossKills||0)+1;
  }
  else {
-  if(Math.random()<.23+bonus('lootChance')*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
+  if(Math.random()<.23+(bonus('lootChance')+setBonus('lootChance'))*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
   else if(Math.random()<.33){drop.scroll=rollSpell(e.boss&&r.floor>=40?6:e.elite?5:4).id;}
  }
  t.drops=drop;
@@ -1068,6 +1069,7 @@ function strike(tid){
   var spark=Math.max(4,Math.ceil(st.pow*.7)+2);
   t.foe.hp-=spark;log('Грозовая перчатка выпускает разряд: '+spark+' магического урона.');
  }
+ if(setBonus('burnChance')>0&&Math.random()*100<setBonus('burnChance'))t.foe.burn=Math.max(t.foe.burn||0,2);
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
  finishAction();
