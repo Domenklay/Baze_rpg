@@ -183,7 +183,7 @@ function placeSummon(){
 function startFloor(){
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
- r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
+ r.tiles=distributeTiles();r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
  if(lvl('seeker')>0&&Math.random()<Math.min(.6,.15*lvl('seeker'))){
@@ -283,14 +283,15 @@ function frame(title,content,side){return '<section class="frame"><div class="fr
 function monsterVisual(e){return icon('enemy',e.visual||CR.visualId(e.name));}
 function activeTileView(t){
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
- if(t.revealed&&t.kind==='start')return '<div class="tile tile-origin" aria-label="Начальная точка героя"><span class="origin-dot">◆</span></div>';
+ var hero=r.heroTile===t.id?'<span class="hero-on-board">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
+ if(t.revealed&&t.kind==='start')return '<button class="tile tile-origin" data-action="move-hero" data-id="'+t.id+'" aria-label="Стартовая клетка">'+hero+'<span class="origin-dot">◆</span></button>';
  if(r.summon&&r.summon.hp>0&&r.summonTile===t.id)
   return '<button class="tile tile-summon" data-action="inspect-summon" data-hold="summon" aria-label="Скелет: удерживайте для изучения">'+
    icon('enemy','skeleton')+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
-  return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
+  return '<button class="tile tile-bare" data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
   var access=CR.exploreStatus(t,r.tiles);
   return access.ok?
@@ -793,6 +794,17 @@ function kill(t){
  t.drops=drop;
  if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
+ if(!r.floorCleared&&hiddenEnemies().length===0){
+  r.floorCleared=true;
+  var opened=0;
+  r.tiles.forEach(function(t){
+   if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
+    t.revealed=true;if(t.kind==='empty')t.cleared=true;opened++;
+   }
+  });
+  var bonusGold=Math.max(1,Math.round(6*depthMultiplier()));addGold(bonusGold);
+  log('Полная зачистка: '+opened+' обычных клеток раскрыто, +'+bonusGold+' монет.');
+ }
 }
 function strike(tid){
  if(r){r.fx='attack';r.fxUntil=Date.now()+420;}
@@ -1430,6 +1442,7 @@ function action(name,id){
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
  if(name==='reveal'){reveal(id);return;}
+ if(name==='move-hero'){var t=tile(id);if(t&&t.revealed&&t.cleared&&!t.foe&&!t.drops&&(t.kind==='start'||t.kind==='empty')){r.heroTile=t.id;draw();save();}return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}
