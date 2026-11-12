@@ -297,7 +297,7 @@ function begin(hero){
  fillPreparedPotions(r);
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},fairyMuted:false,diamondUpgrades:{},cosmetics:{default:true},fairyCosmetic:'default',potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},questReports:{},memoryChapters:{},fairyMuted:false,diamondUpgrades:{},cosmetics:{default:true},fairyCosmetic:'default',potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 
 /* Move v0.5 save equipment to the 4 physical + 4 magical + weapon slots. */
 function migrateEquipSlots(saved){
@@ -327,6 +327,8 @@ function load(){
  if(meta.activeExpedition===undefined)meta.activeExpedition=null;
  if(!meta.completedActs)meta.completedActs={};
  if(!meta.achievements)meta.achievements={};
+ if(!meta.questReports)meta.questReports={};
+ if(!meta.memoryChapters)meta.memoryChapters={};
  if(!meta.diamondUpgrades)meta.diamondUpgrades={};
  if(!meta.cosmetics)meta.cosmetics={default:true};
  if(!meta.fairyCosmetic)meta.fairyCosmetic='default';
@@ -770,9 +772,73 @@ function localAchievement(kind,reward,title){
  return awarded;
 }
 
+
+/* Town quest contracts are tied to boss portals, not arbitrary exits.
+   An account can report each region only once and can claim it much later. */
+function submitRegionReport(act,location,floor,questItems){
+ var loc=DN.location(act,location);if(!loc)return false;
+ var key='act'+(act+1)+'-location'+(location+1);
+ if(s.meta.questReports[key])return false;
+ var itemName=loc.questItem||'Неизвестная печать';
+ if(!Array.isArray(questItems)||questItems.indexOf(itemName)<0)return false;
+ s.meta.questReports[key]={act:act,location:location,floor:floor,
+  key:key,item:itemName,claimed:false};
+ return true;
+}
+function claimQuestReport(id){
+ if(r)return;
+ var entry=s.meta.questReports[id];if(!entry||entry.claimed)return;
+ var loc=DN.location(entry.act,entry.location);if(!loc)return;
+ entry.claimed=true;
+ var diamonds=2+entry.act*2+entry.location;
+ var essence=4+entry.act*2;
+ s.meta.diamonds+=diamonds;s.meta.souls+=essence;
+ s.meta.materials['Осколок воспоминания']=(s.meta.materials['Осколок воспоминания']||0)+1;
+ var actKey='act'+(entry.act+1),completed=DN.acts[entry.act].locations.every(function(z,i){
+  var k=actKey+'-location'+(i+1);return s.meta.questReports[k]&&s.meta.questReports[k].claimed;
+ });
+ var chapter=false;
+ if(completed&&!s.meta.memoryChapters[actKey]){
+  s.meta.memoryChapters[actKey]=true;
+  s.meta.diamonds+=5+entry.act;
+  chapter=true;
+ }
+ save();draw();
+ var textResult='<h2>Отчёт принят</h2><p>Задание «'+esc(loc.quest||loc.name)+'» закрыто.</p>'+
+  '<p>Постоянно получено: '+diamonds+' алмазов, '+essence+' памяти, 1 осколок воспоминания.</p>'+
+  (chapter?'<p class="golden">Три печати акта собраны. Открыта глава памяти: '+esc(DN.acts[entry.act].story)+
+   '. Дополнительная награда: '+(5+entry.act)+' алмазов.</p>':'')+
+  '<button class="btn wide" data-action="quest-board">Продолжить изучение хроник</button>';
+ dialog(textResult);
+}
+function questBoard(){
+ if(r){toast('Совет деревни доступен между походами.');return;}
+ var reports=s.meta.questReports||{},chapterCount=Object.keys(s.meta.memoryChapters||{}).length;
+ var pending=Object.keys(reports).filter(function(k){return !reports[k].claimed;}).length;
+ var rows=DN.acts.map(function(a,act){
+  var quests=a.locations.map(function(loc,i){
+   var key='act'+(act+1)+'-location'+(i+1),report=reports[key];
+   var label=report?(report.claimed?'Отчёт сдан':'Отчёт готов'):'Не пройдено';
+   var action=report&&!report.claimed?'<button class="btn small" data-action="claim-quest" data-id="'+key+'">Сдать</button>':'';
+   return '<div class="meta-upgrade"><div><strong>'+(i+1)+'. '+esc(loc.name)+'</strong>'+
+    '<small>'+esc(loc.quest||'Победить местного босса и вынести печать')+'</small>'+
+    '<small>Статус: '+label+(report?' · глубина '+report.floor:'')+'</small></div>'+action+'</div>';
+  }).join('');
+  return '<div class="frame-title space-top">'+(act+1)+'. '+esc(a.name)+
+   (s.meta.memoryChapters['act'+(act+1)]?' · Глава памяти открыта':'')+'</div>'+
+   '<p class="fine muted">'+esc(a.story||'')+'</p>'+quests;
+ }).join('');
+ dialog('<div class="emblem">✥</div><h2>СОВЕТ ДЕРЕВНИ</h2>'+
+ '<p>Задания объединяют три локации каждого подземелья. После победы над боссом безопасно вернитесь с печатью и передайте отчёт. Отчёт не пропадает при повторном походе или смене акта.</p>'+
+ '<p>Восстановлено глав памяти: '+chapterCount+'/10 · несданных отчётов: '+pending+'.</p>'+
+ '<div class="scroll-spells" style="max-height:59dvh;overflow:auto">'+rows+'</div>'+
+ '<button class="btn alt wide space-top" data-action="close">Вернуться на базу</button>');
+}
+
 function safePortal(){
  if(!r||!r.portalReady||!isBossFloor()||!r.bossClears[r.floor]){toast('Безопасный портал открывается только после победы над боссом.');return;}
  var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex;
+ submitRegionReport(oldAct,oldLocation,r.floor,r.questItems);
  var locKey='act'+(oldAct+1)+'-location'+(oldLocation+1);
  var rainbow=awardAchievement(locKey+'-first-boss',1);
  if(r.bossClears[50])rainbow+=awardAchievement(locKey+'-deep-50',2);
@@ -936,7 +1002,7 @@ function renderBase(){
  frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
+ '<button class="btn gold wide space-top" data-action="quest-board">Совет деревни · общие задания</button><button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
  '<button class="btn alt wide space-top" data-action="fairy-toggle">'+(s.meta.fairyMuted?'Включить комментарии светлячка':'Скрыть комментарии светлячка')+'</button>'+frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
@@ -1972,6 +2038,7 @@ function town(){
  dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
  '<p>Запас материалов: <b class="golden">'+available+'</b>. Они добываются у врагов шести регионов и остаются после смерти героя. В мастерской используем ресурсы вместо золота.</p>'+
  '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
+ '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
  '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
  '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
  '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span>'+esc(e[0])+' <b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
@@ -2065,6 +2132,8 @@ function action(name,id){
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='dungeon-achievements'){dungeonAchievements();return;}
+ if(name==='quest-board'){questBoard();return;}
+ if(name==='claim-quest'){claimQuestReport(id);return;}
  if(name==='fairy-toggle'){s.meta.fairyMuted=!s.meta.fairyMuted;save();draw();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
  if(name==='select-act'){selectAct(id);return;}
