@@ -1273,10 +1273,19 @@ function wait(){log('Вы затаились, собираясь с силами
 
 /* Six-school combat and exploration magic. The sixth tier alters the entire
    floor; boss HP is protected from instant kills and one-shot quest loss. */
+
+function spellPower(sp,st){
+ var amount=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ if(sp.school==='dark'&&Math.random()*100<bonus('darkCrit'))amount*=2;
+ if(sp.school==='fire'&&Math.random()*100<bonus('fireProc'))amount=Math.ceil(amount*1.65);
+ if(sp.school==='light'&&Math.random()*100<bonus('lightEcho'))amount=Math.ceil(amount*1.55);
+ return amount;
+}
+
 function advancedCast(sp){
- var st=stats(),magic=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ var st=stats(),magic=spellPower(sp,st);
  var foes=enemies(),key=sp.kind;
- var heal=function(v){r.hp=Math.min(st.hp,r.hp+v);};
+ var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
   if(!t||!t.foe||t.foe.hp<=0)return;
   var n=Math.max(1,dmg-(t.foe.def||0));
@@ -1304,12 +1313,12 @@ function advancedCast(sp){
   });
   if(key==='drainall')heal(Math.ceil(magic*Math.min(foes.length,5)*.3));
   if(key==='earthquake')log('Землетрясение открыло '+revealConnected(3)+' соседних клеток.');
- }else if(key==='healshield'){heal(magic);r.shield+=Math.ceil(magic*.7);r.poisonTurns=0;
+ }else if(key==='healshield'){heal(magic);r.shield+=Math.ceil(magic*.7*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.poisonTurns=0;
  }else if(key==='holy'||key==='weakness'){
   var t=target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
    if(key==='weakness'&&t.foe.hp>0)t.foe.guard=-Math.min(12,Math.floor(st.pow*.5));}
  }else if(key==='lastlight'){heal(magic);r.shield+=Math.floor(magic*.65);r.resurrection=(r.resurrection||0)+1;
- }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5);
+ }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus'));
  }else if(key==='sunfall'){
   foes.slice().forEach(function(t){
    if(t.foe.boss){t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
@@ -1337,7 +1346,7 @@ function advancedCast(sp){
   r.materials['Кристалл переписанной материи']=(r.materials['Кристалл переписанной материи']||0)+5;
   log('Материя перестроена. Обязательные ключи и выходы остались на месте.');
  }else if(key==='timeloop'){
-  r.timeStopTurns=Math.max(r.timeStopTurns||0,13);
+  r.timeStopTurns=Math.max(r.timeStopTurns||0,13+bonus('timeBonus'));
   foes.slice().forEach(function(t){if(!t.foe.boss)t.foe.stun=Math.max(t.foe.stun||0,3);});
   log('Причинность разорвана. Враги лишены права действовать на следующие ходы.');
  }else if(key==='firstlight'){
@@ -1366,9 +1375,9 @@ function cast(id){
  }
  if(advancedCast(sp))return;
  var tar=target(),st=stats();
- var magic=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
- if(sp.kind==='heal'){r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
- else if(sp.kind==='shield'){r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
+ var magic=spellPower(sp,st);
+ if(sp.kind==='heal'){magic=Math.ceil(magic*(1+bonus('healPower')*.01));r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
+ else if(sp.kind==='shield'){magic=Math.ceil(magic*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
  else if(sp.kind==='reveal'){
   var count=0;
   for(var j=0;j<sp.base;j++){
