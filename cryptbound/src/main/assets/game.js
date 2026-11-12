@@ -2,12 +2,15 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0;
-var EX=window.CryptExpansion,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
- necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает верного скелета, который сражается и принимает удары вместо хозяина.',hp:76,mp:59,atk:10,def:1,pow:11,crit:5,icon:'☠'},
- executioner:{name:'Палач',type:'Битва',title:'Клинок возмездия',description:'Мощный боец с тяжёлыми ударами и защитной стойкой.',hp:110,mp:34,atk:16,def:5,pow:5,crit:8,icon:'⚔'},
- scout:{name:'Следопыт',type:'Приключение',title:'Зоркий странник',description:'Вскрывает тайники, избегает ловушек и находит больше добычи.',hp:89,mp:42,atk:13,def:3,pow:8,crit:13,icon:'✦'}
+ necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
+ executioner:{name:'Воин',type:'Битва',title:'Клинок возмездия',description:'Двуручный удар и защитная стойка.',hp:112,mp:33,atk:16,def:5,pow:5,crit:8,icon:'⚔'},
+ scout:{name:'Лучник',type:'Приключение',title:'Зоркий следопыт',description:'Разведывает доступные клетки, избегает ловушек.',hp:90,mp:44,atk:13,def:3,pow:7,crit:12,icon:'➶'},
+ sorceress:{name:'Волшебница',type:'Магия',title:'Проводница стихий',description:'Наносит магический урон всем обнаруженным врагам.',hp:77,mp:68,atk:9,def:1,pow:14,crit:6,icon:'✣'},
+ guardian:{name:'Воительница',type:'Битва',title:'Стальная клятва',description:'Проводит мощный удар и укрепляет защиту.',hp:120,mp:36,atk:15,def:6,pow:5,crit:7,icon:'♜'},
+ assassin:{name:'Кинжальщица',type:'Приключение',title:'Отравленный клинок',description:'Отравляет врагов и наносит повышенный урон.',hp:86,mp:46,atk:14,def:3,pow:7,crit:15,icon:'☽'}
 };
 var THEMES=[['Костяная крипта','Плач забытых','Влажный склеп, где безымянные стражи не желают покоя.'],['Затонувшая библиотека','Шёпот пергамента','Книги и заклятия гниют в ледяном камне.'],['Кровавый монастырь','Алые катакомбы','Под алтарями слышны удары чужого сердца.'],['Чертоги бездны','Нижние ворота','Осколки древних богов дышат под землёй.']];
 var MOBS=[
@@ -60,8 +63,8 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function pct(a,b){return Math.floor(100*(b?clamp(a,0,b)/b:0));}
 function esc(v){return String(v).replace(/[&<>"']/g,function(a){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[a];});}
 function log(t){r.log.unshift(t);r.log=r.log.slice(0,12);}
-function levelTheme(){return Math.floor((r.floor-1)/4)%4;}
-function maxFloorLabel(){return THEMES[levelTheme()][0];}
+function levelTheme(){return CR.regionIndex(r.floor);}
+function maxFloorLabel(){return CR.region(r.floor).name;}
 function lvl(n){return (r.talents[n]||0);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
 function levelCost(t){var main=r.class==='necromancer'?1:r.class==='executioner'?0:2;
@@ -73,45 +76,31 @@ function talentsByTree(tree){return TALENTS.filter(function(x){return x.tree===t
 function equipped(id){return Object.values(r.equip).some(function(v){return v===Number(id);});}
 function item(id){return r.items.find(function(x){return x.id===Number(id);})||null;}
 function equippedItem(slot){return item(r.equip[slot]);}
+function setBonus(k){var obj=CR.bonuses(r.equip,r.items);return obj[k]||0;}
 function stats(){
  var c=C[r.class],e=r.equip;
- var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk');
- var def=c.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def');
- var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp');
- var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.relicStat(s.meta,'mp');
- var pow=c.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow');
- var crit=c.crit+bonus('crit')+EX.relicStat(s.meta,'crit');
+ var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
+ var def=c.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def')+setBonus('def');
+ var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
+ var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.relicStat(s.meta,'mp')+setBonus('mp');
+ var pow=c.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
+ var crit=c.crit+bonus('crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
  });
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge'),0,50)};
+ var city=s.meta.city||{};
+ a+=(city.forge||0)*2;hp+=(city.barracks||0)*12;mp+=(city.library||0)*8;
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge'),0,50)};
 }
-function newItem(slot,floor,rarity){
- var z=rarity==null?rarityRoll():rarity;
- var mul=1+z*.38,scale=1+floor*.34;
- var i={id:++s.seq,slot:slot,rarity:z,name:pick(ITEM_NAMES[slot]),plus:0,floor:floor,atk:0,def:0,hp:0,mp:0,pow:0,crit:0};
- function n(base){return Math.max(1,Math.round(base*mul*scale));}
- switch(slot){
-  case'weapon':i.atk=n(4+rand(0,2));if(z>=2)i.pow=n(z);break;
-  case'helm':i.hp=n(8);i.def=n(1.2);break;
-  case'shoulders':i.def=n(2);i.hp=n(5);break;
-  case'armor':i.def=n(3);i.hp=n(10);break;
-  case'gloves':i.atk=n(2);if(z>=1)i.crit=z;break;
-  case'belt':i.hp=n(12);i.mp=n(4);break;
-  case'legs':i.def=n(2.2);i.hp=n(8);break;
-  case'boots':i.def=n(1);i.mp=n(6);break;
-  case'relic':i.pow=n(3);i.mp=n(9);if(z>=2)i.crit=z;break;
- }
- return i;
+function newItem(slot,floor,variant){
+ var src=CR.gear(slot,floor,variant==null?rand(0,1):variant);
+ return Object.assign({id:++s.seq,plus:0,floor:floor,fixed:true},src);
 }
-function rarityRoll(){
- var n=rand(1,100),boost=bonus('rarityBoost');
- return n<=2+boost*.1?4:n<=9+boost*.35?3:n<=25+boost?2:n<=58+boost?1:0;
-}
+function rarityRoll(){var x=rand(1,100),chance=bonus('rarityBoost');return x<=20+chance?1:0;}
 function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
- if(r.items.length>=30){r.gold+=10+r.floor*2;log('Сумка переполнена. Добыча обменяна на монеты.');return null;}
+ if(r.items.length>=48){r.gold+=10+r.floor*2;log('Сумка переполнена. Добыча обменяна на монеты.');return null;}
  r.items.push(i);log('Найдено: '+i.name+' ('+RARITY[i.rarity]+').');return i;
 }
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
@@ -162,17 +151,17 @@ function startFloor(){
 function begin(hero){
  var meta=s.meta;
  r=s.run={class:hero,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
-    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'?1:hero==='scout'?2:0,key:false,
+    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',
-    skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0};
+    skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
  ['weapon','armor','relic'].forEach(function(slot){
   var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
  });
  r.hp=stats().hp;r.mp=stats().mp;
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
@@ -181,6 +170,7 @@ function load(){
  for(var hero of Object.keys(C)){if(!meta.heroRanks[hero])meta.heroRanks[hero]=0;if(!meta.heroEssence[hero])meta.heroEssence[hero]=0;}
  if(!meta.totalSecrets)meta.totalSecrets=0;
  if(!meta.bossKills)meta.bossKills=0;
+ if(!meta.materials)meta.materials={};if(!meta.city)meta.city={forge:0,barracks:0,library:0};
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
   if(!v.run.poisonTurns)v.run.poisonTurns=0;
