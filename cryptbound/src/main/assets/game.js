@@ -190,7 +190,9 @@ function load(){
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
   if(!v.run.poisonTurns)v.run.poisonTurns=0;
-  for(var enemyTile of v.run.tiles){if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=EX.monster(enemy.id);if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
+  for(var enemyTile of v.run.tiles){if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=enemy.ranged?{name:'Дальний выстрел',every:3,description:'Стреляет каждые три хода.',kind:'shot'}:EX.monster(enemy.visual||CR.visualId(enemy.name));
+  if(enemy.ranged&&enemy.attackCooldown==null)enemy.attackCooldown=3;
+  if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
   if(v.run.summon){if(v.run.summon.specialCooldown==null)v.run.summon.specialCooldown=4;if(!v.run.summon.def)v.run.summon.def=2;}
   if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
   if(!v.run.key&&!v.run.tiles.some(function(t){return t.hasKey||(t.drops&&t.drops.key);})){
@@ -297,8 +299,8 @@ function renderMaze(){
  var footer=foe?
    '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
    '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':'')+'</strong>'+
-   '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.cooldown||EX.monster(foe.id).every)+'</small>'+
-   '<small>'+esc((foe.skill||EX.monster(foe.id)).name)+'</small></div>'+
+   '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.ranged?foe.attackCooldown:(foe.cooldown||EX.monster(foe.visual||foe.id).every))+'</small>'+
+   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+'</small></div>'+
    '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
    :'<div class="dungeon-quiet"><b>✥ '+(r.log[0]?esc(r.log[0]):'Здесь царит тишина')+'</b><small>Открывайте плитки и забирайте найденное повторным нажатием</small></div>';
  var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
@@ -1189,6 +1191,7 @@ window.Crypt={save:save,back:function(){
  },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction}};
 s=load();
 if(!s)fresh();r=s.run;
+if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();
 if(!r)choose();
 window.addEventListener('pagehide',save);
