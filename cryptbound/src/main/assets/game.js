@@ -1509,6 +1509,94 @@ var BUILDINGS={
  library:{title:'Библиотека',desc:'+8 максимальной маны за уровень',icon:'✣'}
 };
 function materialCount(){return Object.values(s.meta.materials||{}).reduce(function(n,v){return n+Math.max(0,Number(v)||0);},0);}
+
+/* Prepared potions live in exactly two slots; no dungeon replenishment. */
+function commonMaterialCount(){
+ return Object.entries(s.meta.materials||{}).reduce(function(n,e){
+  return n+(e[0]==='Металлолом'?0:Math.max(0,Number(e[1])||0));},0);
+}
+function consumeRecipeMaterials(count){
+ if(commonMaterialCount()<count)return false;
+ var names=Object.keys(s.meta.materials).filter(function(x){return x!=='Металлолом'&&s.meta.materials[x]>0;})
+  .sort(function(a,b){return s.meta.materials[b]-s.meta.materials[a];});
+ for(var name of names){var spent=Math.min(count,s.meta.materials[name]);s.meta.materials[name]-=spent;count-=spent;if(count<=0)break;}
+ return count===0;
+}
+function fillPreparedPotions(exp){
+ if(!exp)return;
+ if(!Array.isArray(exp.preparedPotions))exp.preparedPotions=[null,null];
+ for(var i=0;i<2;i++){
+  if(exp.preparedPotions[i])continue;
+  var id=s.meta.preparedLoadout[i];
+  if(id&&SYS.byPotion[id]&&(s.meta.potionStock[id]||0)>0){
+   exp.preparedPotions[i]=id;s.meta.potionStock[id]--;
+  }
+ }
+}
+function alchemyMenu(){
+ if(r){toast('Алхимик находится на базе.');return;}
+ var level=s.meta.city.alchemist||0;
+ var recipes=SYS.potions.map(function(p){
+  var available=p.level<=level&&commonMaterialCount()>=p.cost;
+  return '<div class="meta-upgrade"><div><strong>'+esc(p.icon+' '+p.name)+'</strong>'+
+   '<small>'+esc(p.description)+'</small><small>Лаборатория: '+p.level+' · ресурсы: '+p.cost+' · запас: '+(s.meta.potionStock[p.id]||0)+'</small></div>'+
+   '<button class="btn small" data-action="brew-potion" data-id="'+p.id+'"'+(available?'':' disabled')+'>'+
+   (p.level>level?'Закрыто':'Сварить')+'</button></div>';
+ }).join('');
+ var slots=[0,1].map(function(i){
+  var selected=s.meta.preparedLoadout[i];
+  var options='<option value="">Пустая ячейка</option>'+SYS.potions.filter(function(p){return p.level<=level;}).map(function(p){
+   return '<option value="'+p.id+'"'+(p.id===selected?' selected':'')+'>'+esc(p.name)+' ('+(s.meta.potionStock[p.id]||0)+')</option>';
+  }).join('');
+  return '<div class="meta-upgrade"><div><strong>Слот '+(i+1)+'/2</strong><small>'+esc(selected&&SYS.byPotion[selected]?SYS.byPotion[selected].name:'Не выбран')+'</small></div>'+
+   '<select class="alchemy-choice" data-alchemy-slot="'+i+'">'+options+'</select></div>';
+ }).join('');
+ dialog('<div class="emblem">⚗</div><h2>АЛХИМИК</h2>'+
+ '<p>Зелья создаются из постоянных ресурсов, а затем подготавливаются в две ячейки. Между этажами они не восстанавливаются. На базе между локациями можно заново взять запас.</p>'+
+ '<p>Уровень лаборатории: '+level+' · доступных ресурсов '+commonMaterialCount()+'</p>'+
+ '<div class="frame-title">ДВЕ ЯЧЕЙКИ</div>'+slots+
+ '<div class="frame-title space-top">РЕЦЕПТЫ</div><div class="scroll-spells" style="max-height:45dvh;overflow:auto">'+recipes+'</div>'+
+ '<button class="btn alt wide space-top" data-action="close">Вернуться на базу</button>');
+}
+function brewPotion(id){
+ if(r)return;
+ var recipe=SYS.byPotion[id];
+ if(!recipe||recipe.level>(s.meta.city.alchemist||0)||!consumeRecipeMaterials(recipe.cost)){
+  toast('Недостаточно ресурсов или уровня алхимика.');return;
+ }
+ s.meta.potionStock[id]=(s.meta.potionStock[id]||0)+1;
+ save();draw();alchemyMenu();toast('Приготовлено: '+recipe.name+'.');
+}
+function choosePreparedPotion(index,id){
+ if(r)return;
+ index=Number(index);if(index!==0&&index!==1)return;
+ var p=id?SYS.byPotion[id]:null;
+ if(id&&(!p||p.level>(s.meta.city.alchemist||0)))return;
+ s.meta.preparedLoadout[index]=id||null;
+ save();alchemyMenu();
+}
+function usePreparedPotion(index){
+ if(!r)return;
+ index=Number(index);
+ var id=r.preparedPotions&&r.preparedPotions[index],p=SYS.byPotion[id];
+ if((index!==0&&index!==1)||!p)return;
+ r.preparedPotions[index]=null;
+ if(id==='ghost'){
+  if(!r.ghost||r.ghost.hp<=0){var hp=Math.round(32+r.floor*1.6);
+   r.ghost={hp:hp,maxHp:hp,atk:Math.round(8+r.floor*.8),cooldown:3,dodge:70};}
+  else r.ghost.hp=Math.min(r.ghost.maxHp,r.ghost.hp+Math.round(r.ghost.maxHp*.3));
+ }else if(id==='aegis'){r.guardCharges=(r.guardCharges||0)+3;
+ }else if(id==='cleanse'){r.poisonTurns=0;r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.2));
+ }else if(id==='fury'){r.rageTurns=Math.max(r.rageTurns||0,11);
+ }else if(id==='insight'){
+  for(var i=0;i<5;i++){var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+   if(!available.length)break;var t=pick(available);t.revealed=true;if(t.kind==='empty')t.cleared=true;}
+ }else if(id==='phoenix'){r.resurrection=(r.resurrection||0)+1;
+ }else if(id==='reflection'){r.reflectionTurns=Math.max(r.reflectionTurns||0,6);
+ }else if(id==='barrier'){r.shield+=Math.ceil(stats().hp*.65);r.barrierTurns=Math.max(r.barrierTurns||0,11);}
+ log('Алхимик: использовано «'+p.name+'».');finishAction();
+}
+
 function town(){
  var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=materialCount();
  var builds=Object.keys(BUILDINGS).map(function(id){
