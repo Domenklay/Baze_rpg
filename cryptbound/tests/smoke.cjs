@@ -425,4 +425,46 @@ test('Every regional boss has distinct phase abilities and script mapping',()=>{
  }
 });
 
+
+test('Town quest reports are one-time, survive runs and restore one memory chapter per act',()=>{
+ assert.ok(state.meta.questReports);
+ const keys=['act1-location1','act1-location2','act1-location3'];
+ for(const key of keys)assert.ok(state.meta.questReports[key],'Report missing: '+key);
+ assert.equal(state.run,null);
+ const diamonds=state.meta.diamonds,rainbow=state.meta.rainbowDiamonds;
+ const memory=state.meta.materials['Осколок воспоминания']||0;
+ A('quest-board');assert.match(el('overlay').innerHTML,/СОВЕТ ДЕРЕВНИ/);
+ for(const key of keys)A('claim-quest',key);
+ assert.ok(state.meta.memoryChapters.act1);
+ assert.equal(state.meta.materials['Осколок воспоминания'],memory+3);
+ assert.ok(state.meta.diamonds>diamonds);
+ assert.equal(state.meta.rainbowDiamonds,rainbow);
+ const after=state.meta.diamonds;
+ for(const key of keys)A('claim-quest',key);
+ assert.equal(state.meta.diamonds,after);
+ assert.equal(Object.keys(state.meta.memoryChapters).length,1);
+});
+test('One original story event per region contributes journal lore without repeating the reward',()=>{
+ const scenes=win.CryptStoryEvents.entries;assert.equal(scenes.length,30);
+ assert.equal(new Set(scenes.map(x=>x[0])).size,30);
+ A('begin','necromancer');
+ const run=state.run;run.hp=9999;
+ const point=run.tiles.find(x=>x.kind==='event');assert.ok(point);
+ point.revealed=true;A('pickup',point.id);
+ assert.equal(run.pendingStory.act,0);
+ assert.match(el('overlay').innerHTML,/СЮЖЕТНОЕ СОБЫТИЕ/);
+ const journal=run.journalNotes.length;
+ const turn=run.turn;
+ A('story-choice','investigate');
+ assert.equal(run.journalNotes.length,journal+1);
+ assert.equal(run.turn,turn+1);
+ const keys=Object.keys(run.uniqueFinds).filter(k=>k.startsWith('scene:0:0'));
+ assert.equal(keys.length,2);
+ point.kind='event';point.cleared=false;point.revealed=true;
+ const notes=run.journalNotes.length;
+ A('pickup',point.id);
+ assert.equal(run.pendingStory,null);
+ assert.equal(run.journalNotes.length,notes);
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
