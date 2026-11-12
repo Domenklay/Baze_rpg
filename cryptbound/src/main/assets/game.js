@@ -1282,9 +1282,11 @@ function consumeTurn(){
   }
   if(e.stunImmunityTurns>0)e.stunImmunityTurns--;
   if(e.stun>0){
-   e.stun=0;
-   if(e.boss&&e.stunImmunityTurns>0){log(e.name+' сопротивляется повторному оглушению.');}
-   else{if(e.boss)e.stunImmunityTurns=3;log(e.name+' оглушён.');return;}
+   if(e.boss){
+    e.stun=0;
+    if(e.stunImmunityTurns>0){log(e.name+' сопротивляется повторному оглушению.');}
+    else{e.stunImmunityTurns=3;log(e.name+' оглушён.');return;}
+   }else{e.stun--;log(e.name+' оглушён.');return;}
   }
   if(e.guardTurns>0){e.guardTurns--;if(!e.guardTurns)e.guard=0;}
   if(r.sunBurnTurns>0&&e.hp>0){e.hp-=Math.max(3,Math.ceil(e.maxHp*.06));if(e.hp<=0){kill(t);return;}}
