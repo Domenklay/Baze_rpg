@@ -682,6 +682,29 @@ test('Monster active special is applied only on its cooldown and saved with iden
   'One summoner cannot spam unlimited helpers');
 });
 
+
+test('Scheduled elite becomes enraged only under half HP',()=>{
+ const run=state.run;run.hp=999999;
+ const tile=run.tiles.find(t=>t.foe&&!t.foe.boss);assert.ok(tile);
+ run.tiles.forEach(t=>{if(t.foe&&!t.foe.boss&&t!==tile)t.foe.hp=0;});
+ const e=tile.foe;e.hp=45;e.maxHp=100;e.atk=14;e.enraged=false;e.elite=true;
+ e.stun=0;e.cooldown=3;tile.revealed=true;
+ A('wait');
+ assert.equal(e.enraged,true);assert.equal(e.atk,17);
+ const boost=e.atk;A('wait');assert.equal(e.atk,boost,'Enrage is one-time, not stacking');
+ e.elite=false;
+});
+test('Boss can be stunned once but resists successive stun-lock attempts',()=>{
+ const run=state.run;run.hp=999999;
+ const tile=run.tiles.find(t=>t.foe&&t.foe.boss);assert.ok(tile);
+ tile.revealed=true;
+ const boss=tile.foe;boss.stun=1;boss.stunImmunityTurns=0;
+ A('wait');assert.ok(boss.stunImmunityTurns>=2);
+ boss.stun=1;A('wait');
+ assert.equal(boss.stun,0);
+ assert.ok(boss.stunImmunityTurns>=1,'Boss is immune for a short period');
+});
+
 test('Disk-save roundtrip keeps expedition, quests, prepared loadout and new slot migration',()=>{
  const before=win.Crypt.state();
  before.meta.materials['Проверка сохранения']=13;
