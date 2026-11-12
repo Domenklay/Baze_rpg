@@ -385,15 +385,25 @@ test('Visible ranged enemies are a single archetype and emerge sequentially',()=
 });
 
 
-test('Alchemy stock consumes permanent resources and fills exactly two prepared slots',()=>{
+test('Alchemy requires real T1/T2 ingredients and fills exactly two prepared slots',()=>{
  let m=state.meta;
  A('escape-25');assert.equal(state.run,null);
- const before=m.materials['Алхимический ингредиент']||0;
- m.materials['Алхимический ингредиент']=80;
+ const names=['Болотные споры','Кожа нетопыря','древесина','Горный кристалл'];
+ const before=Object.fromEntries(names.map(name=>[name,m.materials[name]||0]));
+ names.forEach(name=>m.materials[name]=before[name]+20);
  m.potionStock={};
+ const sys=win.CryptSystems;
+ assert.deepEqual(Array.from(sys.byPotion.ghost.ingredients,x=>x[0]),['Болотные споры','Кожа нетопыря']);
  A('brew-potion','ghost');A('brew-potion','aegis');
  assert.equal(m.potionStock.ghost,1);assert.equal(m.potionStock.aegis,1);
- assert.equal(m.materials['Алхимический ингредиент'],68);
+ assert.equal(m.materials['Болотные споры'],before['Болотные споры']+17);
+ assert.equal(m.materials['Кожа нетопыря'],before['Кожа нетопыря']+18);
+ assert.equal(m.materials['древесина'],before['древесина']+16);
+ assert.equal(m.materials['Горный кристалл'],before['Горный кристалл']+18);
+ const current=m.materials['Болотные споры'];
+ m.materials['Болотные споры']=0;m.materials['Алхимический ингредиент']=10000;
+ A('brew-potion','ghost');assert.equal(m.potionStock.ghost,1,'Unrelated materials must not substitute for spores');
+ m.materials['Болотные споры']=current;
  m.preparedLoadout=['ghost','aegis'];
  A('begin','necromancer');let run=state.run;
  assert.deepEqual(Array.from(run.preparedPotions),['ghost','aegis']);
@@ -405,7 +415,8 @@ test('Alchemy stock consumes permanent resources and fills exactly two prepared 
  assert.equal(run.preparedPotions[1],null);
  A('wait');assert.equal(run.guardCharges,3);
  A('escape-25');assert.equal(state.run,null);
- m.materials['Алхимический ингредиент']=before;
+ for(const name of names)m.materials[name]=before[name];
+ delete m.materials['Алхимический ингредиент'];
 });
 test('Spell catalog has 6 schools × 6 ranks, with 6-star rarity isolated',()=>{
  const sys=win.CryptSystems;
