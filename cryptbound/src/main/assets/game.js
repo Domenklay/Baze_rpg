@@ -675,6 +675,23 @@ function selectAct(id){
  }
  s.meta.selectedAct=n;save();choose();
 }
+
+function dungeonAchievements(){
+ var claimed=s.meta.achievements||{};
+ var rows=DN.acts.map(function(a,i){
+  var list=a.locations.map(function(loc,j){
+   var prefix='act'+(i+1)+'-location'+(j+1);
+   return '<div class="row space-bottom"><div><strong>'+(claimed[prefix+'-first-boss']?'✓ ':'')+esc(loc.name)+'</strong>'+
+    '<small>Босс 30-го этажа: '+(claimed[prefix+'-first-boss']?'получено':'не получено')+' · Глубина 50: '+(claimed[prefix+'-deep-50']?'получено':'не получено')+'</small></div></div>';
+  }).join('');
+  return '<div class="frame-title space-top">'+(i+1)+'. '+esc(a.name)+(claimed['act'+(i+1)+'-complete']?' ✓':'')+'</div>'+list;
+ }).join('');
+ dialog('<div class="emblem">✧</div><h2>ДОСТИЖЕНИЯ ПОДЗЕМЕЛИЙ</h2>'+
+ '<p>У каждой из 30 локаций есть одноразовые награды за выход после первого босса и после победы на глубине 50. Полное прохождение трёх локаций награждается отдельно.</p>'+
+ '<p class="fine muted">Пробный баланс: +1 за первый портал, +2 за глубину 50, +3 за весь акт. Итоговые значения ещё будут согласованы.</p>'+
+ '<div class="log" style="max-height:57dvh;text-align:left;">'+rows+'</div>'+
+ '<button class="btn wide space-top" data-action="close">Закрыть</button>');
+}
 function renderBase(){
  var exp=s.meta.activeExpedition;
  var acts=DN.acts.map(function(a,i){
@@ -699,7 +716,7 @@ function renderBase(){
  frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button>')+
+ '<button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
  frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
@@ -1438,6 +1455,7 @@ function action(name,id){
  if(name==='close'){if(r)r.chamberActive=null;close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
+ if(name==='dungeon-achievements'){dungeonAchievements();return;}
  if(name==='begin'){if(C[id])begin(id);return;}
  if(name==='select-act'){selectAct(id);return;}
  if(name==='resume-expedition'){resumeExpedition();return;}
@@ -1460,7 +1478,7 @@ function action(name,id){
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
  if(name==='reveal'){reveal(id);return;}
- if(name==='move-hero'){var t=tile(id);if(t&&t.revealed&&t.cleared&&!t.foe&&!t.drops&&(t.kind==='start'||t.kind==='empty')){r.heroTile=t.id;draw();save();}return;}
+ if(name==='move-hero'){var t=tile(id);if(t&&t.revealed&&t.cleared&&(!t.foe||t.foe.hp<=0)&&!t.drops){r.heroTile=t.id;draw();save();}return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}
