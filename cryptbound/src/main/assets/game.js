@@ -22,7 +22,7 @@ var MOBS=[
  {id:'golem',name:'Проклятый истукан',hp:42,atk:10,def:4,ep:3,gold:12}
 ];
 var BOSSES=['Князь надгробий','Преподобный без лица','Король чернильного праха','Колокол Пустоты'];
-var SLOT={weapon:'Оружие',helm:'Голова',shoulders:'Плечи',armor:'Нагрудник',gloves:'Перчатки',belt:'Пояс',legs:'Поножи',boots:'Сапоги',relic:'Талисман'};
+var SLOT={weapon:'Оружие',helm:'Шлем',armor:'Доспех',bracer:'Наручи',boots:'Обувь',ring:'Кольцо',amulet:'Амулет',cloak:'Плащ',gloves:'Перчатки'};
 var ITEM_NAMES={
  weapon:['Сколотая сабля','Жертвенный клинок','Коса сборщика','Меч без присяги','Мрачный меч','Костяной посох'],
  helm:['Шлем дозорного','Личина печали','Шишак отступника','Капюшон ночи'],
@@ -34,7 +34,7 @@ var ITEM_NAMES={
  boots:['Сапоги скитальца','Погребальные ботфорты','Сапоги следопыта'],
  relic:['Глаз ночного ворона','Кровавая печать','Ключ без двери','Обсидиановое сердце','Пепельный медальон']
 };
-var RARITY=['Обычный','Необычный','Редкий','Эпический','Легендарный','Уникальный','Мифический'];
+var RARITY=['Неизвестный','Обычный','Необычный','Редкий','Эпический','Легендарный','Уникальный'];
 var SPELLS=SYS.spells;
 var TALENTS=window.CryptTitles||[];
 
@@ -215,11 +215,11 @@ function begin(hero){
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
-    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
+    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
- ['weapon','armor','relic'].forEach(function(slot){
+ ['weapon','armor','amulet'].forEach(function(slot){
   var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
  });
  r.hp=stats().hp;r.mp=stats().mp;
@@ -417,8 +417,8 @@ function gearSlotButton(slot){
 }
 function renderHero(){
  var c=C[r.class],st=stats();
- var left=['helm','shoulders','armor','gloves'];
- var right=['weapon','belt','legs','boots','relic'];
+ var left=['helm','armor','bracer','boots'];
+ var right=['ring','amulet','cloak','gloves','weapon'];
  var statsHtml='<div class="statlist">'+
   '<span>Здоровье</span><b>'+r.hp+' / '+st.hp+'</b><span>Мана</span><b>'+r.mp+' / '+st.mp+'</b>'+
   '<span>Атака</span><b>'+st.atk+'</b><span>Броня</span><b>'+st.def+'</b>'+

@@ -17,6 +17,7 @@ var colors=[
  ['#b58249','#f2cf8d']
 ];
 window.CryptArt.item=function(slot,rarity){
+ slot=({bracer:'shoulders',ring:'belt',amulet:'relic',cloak:'legs'})[slot]||slot;
  if(slot==='relic')return old('amulet',rarity);
  if(slot==='weapon'||slot==='armor'||slot==='helm')return old(slot,rarity);
  var tmpl=newSlots[slot];if(!tmpl)return old('armor',rarity);
