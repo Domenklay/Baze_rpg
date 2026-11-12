@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -139,8 +139,7 @@ function addItem(slot,rarity){
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
 function mkEnemy(boss,ranged,forcedElite){
- var reg=currentRegion();
- var elites=reg.elites||[],mobs=reg.mobs||[];
+ var reg=currentRegion(),elites=reg.elites||[],mobs=reg.mobs||[];
  var elite=!!forcedElite;
  var rangedPool=mobs.filter(function(m){return m.kind==='shot'||/лучник|арбалет|стрелок|пращник|дальник/i.test(m.name+' '+(m.role||''));});
  var availableRanged=rangedPool.length?rangedPool:mobs;
@@ -149,26 +148,26 @@ function mkEnemy(boss,ranged,forcedElite){
  var available=mobs.filter(function(x){return (r.floorMonsterTypes||[]).indexOf(x.id)<0;});
  var src=boss?reg.boss:elite?pick(elites):ranged?rangedChoice:pick(available.length?available:mobs);
  if(!boss&&!elite&&!ranged)(r.floorMonsterTypes||[]).push(src.id);
- var stage=(r.actIndex||0),location=(r.locationIndex||0);
- var difficulty=(1+Math.floor((r.floor-1)/10)*.20)*(1+stage*.12+location*.12);
- var isBoss=!!boss,isRanged=!!ranged,isElite=!!(elite&&!isBoss);
- // Original Clicker bosses use multi-thousand-HP raid values; Cryptbound
- // is a single-hero turn-based game and must not multiply those values by five.
- var originalHp=src.hp||26+stage*8+location*5;
- var originalAtk=src.atk||6+stage*1.4+location*1.5;
- var adjustedHp=isBoss?(src.hp?Math.round(Math.sqrt(src.hp)*10):145+stage*55+location*22):originalHp;
- var adjustedAtk=isBoss?Math.max(7,Math.round(Math.sqrt(originalAtk)*2)):originalAtk;
- var hp=Math.max(12,Math.round(adjustedHp*difficulty*(isElite?1.8:1)));
- var atk=Math.max(3,Math.round(adjustedAtk*difficulty*(isElite?1.2:1)));
- var def=Math.max(0,src.def||0);
- var visual=CR.visualId(src.name),kind=src.kind||EX.monster(visual).kind||'slam';
- var skill=isRanged?{name:'Дальний выстрел',every:3,description:'Стреляет каждый третий ход.',kind:'shot'}:
- {name:src.skillName||EX.monster(visual).name,every:isBoss?3:isElite?4:3,description:src.role||'Особый приём.',kind:kind};
- var rewards=Math.max(1,Math.round(depthMultiplier()*(isBoss?60:isElite?20:7)));
- return {id:src.id,name:src.name,visual:visual,hp:hp,maxHp:hp,atk:atk,def:def,
- ep:isBoss?10:isElite?5:2,gold:rewards,boss:isBoss,elite:isElite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,bossStyle:((r.actIndex||0)*3+(r.locationIndex||0))%6,
- burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
- ranged:isRanged,attackInterval:isRanged?3:1,attackCooldown:isRanged?3:1,loot:src.loot||[]};
+ var role=BAL.role(src,!!ranged);
+ var scaled=BAL.combat(r.actIndex||0,r.locationIndex||0,r.floor,role,elite,!!boss,src.id);
+ var signature=BAL.ability(src,role);
+ var visual=CR.visualId(src.name);
+ var skill={
+  name:src.skillName||signature.name,every:scaled.cooldown,
+  description:src.role?src.role+' · '+signature.description:signature.description,
+  kind:signature.id
+ };
+ return {id:src.id,name:src.name,visual:visual,
+  hp:scaled.hp,maxHp:scaled.hp,atk:scaled.atk,def:scaled.def,
+  ep:boss?10+2*(r.actIndex||0):elite?5+Math.floor((r.actIndex||0)/3):2,
+  gold:BAL.loot(r.actIndex||0,r.locationIndex||0,r.floor,elite,!!boss),
+  boss:!!boss,elite:elite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,
+  bossStyle:((r.actIndex||0)*3+(r.locationIndex||0))%6,
+  role:boss?'boss':role,roleName:boss?'Босс':BAL.roles[role].name,ability:signature.id,
+  abilityName:signature.name,abilityDescription:signature.description,
+  specialUses:0,summons:0,guardTurns:0,evadeCharges:0,
+  burn:0,stun:0,poison:0,skill:skill,cooldown:scaled.cooldown,guard:0,
+  ranged:!!ranged,attackInterval:ranged?3:1,attackCooldown:ranged?3:1,loot:src.loot||[]};
 }
 /* Each 10-floor block contains exactly one elite: 5–9, 15–19, 25–29, etc.
    Location-specific schedule is saved, making reloads/revisits deterministic. */
