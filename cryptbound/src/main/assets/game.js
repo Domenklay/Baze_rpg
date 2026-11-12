@@ -474,6 +474,23 @@ function summonView(){
 }
 function skillText(){return r.class==='necromancer'?'☠ Призвать скелета':r.class==='executioner'?'⚔ Казнящий удар':'◉ Вскрыть тайники';}
 function skillHint(){return r.class==='necromancer'?'8 маны, 5 ходов восстановления':r.class==='executioner'?'4 маны, 4 хода восстановления':'6 маны, 5 ходов восстановления';}
+/* Always-visible compact potion strip: healing + two separate alchemy slots. */
+function dungeonPotionBar(){
+ var slots=[0,1].map(function(index){
+  var id=r.preparedPotions&&r.preparedPotions[index],p=SYS.byPotion[id];
+  return '<button type="button" class="dungeon-potion-slot" data-action="use-prepared" data-id="'+index+'"'+(!p?' disabled':'')+
+   ' title="'+esc(p?p.name+' — '+p.description:'Алхимический слот '+(index+1)+' пуст')+'" aria-label="'+esc(p?p.name:'Пустой слот '+(index+1))+'">'+
+   '<b class="potion-symbol">'+(p?esc(p.icon):'◇')+'</b><span class="potion-caption">'+esc(p?p.name:'Зелье '+(index+1))+'</span>'+
+   '<small>'+(p?'×1':'×0')+'</small></button>';
+ }).join('');
+ var disabled=!r.potions||r.hp>=stats().hp;
+ return '<div class="dungeon-potion-bar" role="group" aria-label="Три зелья быстрого доступа">'+
+  '<button type="button" class="dungeon-potion-slot potion-heal" data-action="potion"'+(disabled?' disabled':'')+
+  ' title="Целебный эликсир — восстановить 45% HP" aria-label="Целебный эликсир, '+r.potions+' штук">'+
+  '<b class="potion-symbol">✚</b><span class="potion-caption">Лечение HP</span><small>×'+r.potions+'</small></button>'+
+  slots+'</div>';
+}
+
 function renderMaze(){
  var exposed=r.tiles.filter(function(t){return t.revealed;}).length;
  var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed,skill=SKILLS[r.class];
@@ -490,19 +507,18 @@ function renderMaze(){
  '<div class="dungeon-header"><div><span class="subhead">'+esc(DN.acts[r.actIndex||0].name)+' · '+(r.locationIndex+1)+'/3 · ЭТАЖ '+r.floor+' · '+sceneTitle+'</span>'+
  '<div class="dungeon-progress">Плит '+exposed+'/25 · Врагов '+hiddenEnemies().length+' · Ход '+r.turn+'</div><div class="fine muted">'+esc(currentRegion().story||'')+'</div></div>'+
  '<div class="dungeon-key '+(r.key?'found':'')+'">'+(r.key?'⚿ Ключ найден':'⚿ Найдите ключ')+'</div></div>'+
+ dungeonPotionBar()+
  '<div class="dungeon-board"><div class="dungeon-border"><div class="maze">'+r.tiles.map(activeTileView).join('')+'</div></div></div>'+
  '<div class="dungeon-footer">'+
  '<div class="dungeon-encounter">'+footer+'</div>'+summon+
  (r.ghost&&r.ghost.hp>0?'<div class="dungeon-summon">☽ Призрачный страж '+r.ghost.hp+'/'+r.ghost.maxHp+' HP · атака каждые 3 хода</div>':'')+
  (r.guardCharges?'<div class="fine golden">⬡ Защитных зарядов: '+r.guardCharges+'</div>':'')+
- '<div class="prepared-potions">'+[0,1].map(function(i){var id=r.preparedPotions&&r.preparedPotions[i],p=SYS.byPotion[id];
-  return '<button class="btn small" data-action="use-prepared" data-id="'+i+'"'+(p?'':' disabled')+'>'+esc(p?p.name:'Пустой слот '+(i+1))+'</button>';
- }).join('')+'</div>'+
+
  (r.portalReady?'<button class="btn gold wide" data-action="safe-portal">◈ Безопасный портал · вернуться на базу</button>':'')+
  '<div class="dungeon-buttons">'+
  '<button class="dungeon-action special" data-action="skill" '+(turns<skill.turns?'disabled':'')+'><span>'+skill.icon+'</span><small>'+skill.name+'</small></button>'+
  '<button class="dungeon-action" data-action="spell-modal"><span>✣</span><small>Магия</small></button>'+
- '<button class="dungeon-action" data-action="potion" '+(r.potions?'':'disabled')+'><span>✚</span><small>Зелье '+r.potions+'</small></button>'+
+
  '<button class="dungeon-action" data-action="wait"><span>⧖</span><small>Пропустить</small></button>'+
  '<button class="dungeon-action" data-action="battle-log"><span>▤</span><small>Журнал</small></button></div></div></div>';
 }
