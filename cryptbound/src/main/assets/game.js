@@ -567,12 +567,50 @@ function grantScroll(id,count,source){
 }
 
 function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
+
+/* Pocket-room spell combat uses the same consumable scroll and turn rules.
+   World-altering / terrain magic is cast only from the main maze. */
+function activeRoom(){
+ if(!r||r.chamberActive==null)return null;
+ var t=tile(r.chamberActive);return t&&t.kind==='chamber'&&t.room?t:null;
+}
+function livingRoomGuards(){
+ var t=activeRoom();return t?t.room.guards.filter(function(g){return g.hp>0;}):[];
+}
+function castInSideRoom(sp){
+ var t=activeRoom();if(!t)return false;
+ var guards=livingRoomGuards(),st=stats(),power=spellPower(sp,st);
+ var affected=0,total=0;
+ var targets=['aoe','burnall','freezeall','drainall'].includes(sp.kind)?guards:
+  ['chain'].includes(sp.kind)?guards.slice(0,Math.max(1,3+bonus('chainTargets'))):guards.slice(0,1);
+ function hit(g){
+  var damage=Math.max(1,Math.ceil(power-(g.def||0)));
+  g.hp=Math.max(0,g.hp-damage);total+=damage;affected++;
+  if(g.hp>0&&['burn','burnall'].includes(sp.kind))g.burn=Math.max(g.burn||0,3);
+  if(g.hp>0&&['stun','freezeall'].includes(sp.kind))g.stun=Math.max(g.stun||0,2);
+  if(g.hp>0&&sp.kind==='weakness')g.atk=Math.max(1,g.atk-Math.ceil(st.pow*.3));
+ }
+ if(['heal','healshield','lastlight'].includes(sp.kind))r.hp=Math.min(st.hp,r.hp+power);
+ if(['shield','healshield','lastlight'].includes(sp.kind))r.shield+=sp.kind==='shield'?power:Math.ceil(power*.7);
+ if(sp.kind==='lastlight')r.resurrection=(r.resurrection||0)+1;
+ if(sp.kind==='timestop')r.timeStopTurns=Math.max(r.timeStopTurns||0,5);
+ if(['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].includes(sp.kind)){
+  targets.forEach(hit);
+  if(['drain','drainall'].includes(sp.kind))r.hp=Math.min(st.hp,r.hp+Math.ceil(total*.45));
+ }
+ t.room.guardHp=t.room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
+ log('В побочной комнате применено «'+sp.name+'»: целей '+affected+'.');
+ finishAction();if(r)showChamber(t);
+ return true;
+}
+
 function spellValid(sp){
  if(r.silenceTurns>0)return 'Магия заглушена боссом';
+ if(activeRoom()&&(sp.rank===6||['earthgate','reveal','earthquake'].includes(sp.kind)))return 'Для изменения этажей выйдите из побочной комнаты';
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(sp.id==='earthgate'&&r.floor<=1)return 'Нет нижних этажей для возвращения';
- if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().length)return 'Нет цели';
+ if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().length&&!livingRoomGuards().length)return 'Нет цели';
  if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
  return null;
 }
@@ -1107,6 +1145,7 @@ function consumeTurn(){
  if(r.rageTurns>0)r.rageTurns--;
  if(r.reflectionTurns>0)r.reflectionTurns--;
  if(r.barrierTurns>0)r.barrierTurns--;
+ var frozen=!!(r.timeStopTurns>0);
  if(r.timeStopTurns>0)r.timeStopTurns--;
  var alive=r.chamberActive!=null?[]:enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
@@ -1119,7 +1158,11 @@ function consumeTurn(){
  if(r.ghost&&r.ghost.hp>0){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
   if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
-   if(targetGhost){targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
+   if(activeRoom()){
+    var roomGuard=livingRoomGuards()[0];if(roomGuard){roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
+     var room=activeRoom().room;room.guardHp=room.guards.reduce(function(n,g){return n+g.hp;},0);
+     log('Призрачный страж бьёт стража комнаты: '+r.ghost.atk+'.');}
+   }else if(targetGhost){targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
  if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
@@ -1158,8 +1201,8 @@ function consumeTurn(){
    if(special.kind==='slam')amount=Math.ceil(amount*1.85);
    if(special.kind==='shot')amount=Math.max(2,Math.ceil(e.atk*.85));
   }
+  if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
   if(e.boss){amount=bossAttack(t,e,amount,ready);if(amount==null)return;}
-  if(r.timeStopTurns>0){log('Время замерло: '+e.name+' пропускает действие.');return;}
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
    if(Math.random()*100<r.ghost.dodge){log('Призрак увернулся от удара '+e.name+'.');return;}
@@ -1185,7 +1228,7 @@ function consumeTurn(){
   var counter=bonus('thorns')+(Math.random()*100<bonus('reflect')?Math.max(1,Math.floor(stats().atk*.45)):0);
   if(counter>0&&e.hp>0){e.hp-=counter;log('Ответный урон: '+counter+'.');if(e.hp<=0)kill(t);}
  });
- if(r.chamberActive!=null)chamberEnemyPhase();
+ if(r.chamberActive!=null)chamberEnemyPhase(frozen);
  if(r.hp<=0){
   if(r.resurrection>0){r.resurrection--;r.hp=Math.max(1,Math.ceil(stats().hp*.45));r.poisonTurns=0;log('Печать возрождения спасает героя.');}
   else{die();return false;}
@@ -1425,6 +1468,7 @@ function cast(id){
   if(!Array.isArray(r.spellHistory))r.spellHistory=[];
   r.spellHistory.push(id);r.spellHistory=r.spellHistory.slice(-40);
  }
+ if(activeRoom()){castInSideRoom(sp);return;}
  if(advancedCast(sp))return;
  var tar=target(),st=stats();
  var magic=spellPower(sp,st);
@@ -1693,25 +1737,37 @@ function showChamber(t){
  html+='<button class="btn dark wide space-top" data-action="close">Выйти в основной лабиринт</button>';
  dialog(html);
 }
-function chamberEnemyPhase(){
+function chamberEnemyPhase(frozen){
  if(!r||r.chamberActive==null)return;
- var t=tile(r.chamberActive),room=t&&t.room;if(!room)return;
+ var t=activeRoom(),room=t&&t.room;if(!room)return;
  room.turns++;
  room.guards.forEach(function(g){
   if(g.hp<=0||r.hp<=0)return;
+  if(g.burn>0){g.burn--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().pow*.45)));}
+  if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
+  if(g.hp<=0)return;
+  if(g.stun>0){g.stun--;return;}
+  if(frozen)return;
   g.cooldown=Math.max(0,(g.cooldown||3)-1);
-  if(g.cooldown>0)return;
-  g.cooldown=3;
+  if(g.cooldown>0)return;g.cooldown=3;
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   var damage=Math.max(1,g.atk+rand(-1,1)-stats().def);
+  if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
+  if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
+   if(Math.random()*100<r.ghost.dodge){log('Призрак уклонился от '+g.name+'.');return;}
+   r.ghost.hp=Math.max(0,r.ghost.hp-damage);if(!r.ghost.hp)r.ghost=null;return;
+  }
   if(r.summon&&r.summon.hp>0&&Math.random()<.45){
    r.summon.hp=Math.max(0,r.summon.hp-damage);
    if(r.summon.hp===0){r.summon=null;r.summonTile=null;}
    log('Спутник принимает удар '+g.name+'.');return;
   }
+  if(r.setShieldRemaining>0){var fromSet=Math.min(r.setShieldRemaining,damage);r.setShieldRemaining-=fromSet;damage-=fromSet;}
   if(r.shield>0){var absorbed=Math.min(r.shield,damage);r.shield-=absorbed;damage-=absorbed;}
-  r.hp=Math.max(0,r.hp-damage);log(g.name+' наносит '+damage+' урона в побочной комнате.');
+  r.hp=Math.max(0,r.hp-damage);
+  if(damage>0)log(g.name+' наносит '+damage+' урона в побочной комнате.');
  });
+ room.guardHp=room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
 }
 function fightChamber(id){
  if(!r)return;
