@@ -214,7 +214,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -257,6 +257,10 @@ function load(){
   if(!Array.isArray(v.run.questItems))v.run.questItems=[];
   if(!Array.isArray(v.run.preparedPotions))v.run.preparedPotions=[null,null];
   if(v.run.guardCharges==null)v.run.guardCharges=0;
+  if(v.run.earthGateFound==null)v.run.earthGateFound=false;
+  if(v.run.earthGateTitleGranted==null)v.run.earthGateTitleGranted=false;
+  if(v.run.sixStarFound==null)v.run.sixStarFound=false;
+  if(!Array.isArray(v.run.spellHistory))v.run.spellHistory=[];
   if(v.run.ghost===undefined)v.run.ghost=null;
   if(v.run.resurrection==null)v.run.resurrection=0;
   if(v.run.timeStopTurns==null)v.run.timeStopTurns=0;
@@ -438,12 +442,40 @@ function renderHero(){
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>')+
  '<div class="btnrow"><button class="btn dark wide" data-action="abandon">Завершить забег</button></div>';
 }
+
+/* Weighted scroll discovery: rank VI is never sold and never a normal chest reward.
+   An Earth Gate may be found at most once per location; the second comes from the title. */
+function rollSpell(limit){
+ limit=Math.max(1,Math.min(6,limit||4));
+ var r100=Math.random()*100;
+ var rank=r100<44?1:r100<70?2:r100<86?3:r100<96?4:r100<99.85?5:6;
+ if(rank>limit)rank=limit;
+ var options=SPELLS.filter(function(sp){return sp.rank===rank&&
+  !(sp.id==='earthgate'&&r.earthGateFound)&&
+  !(sp.rank===6&&(r.sixStarFound||r.floor<40));});
+ if(!options.length)options=SPELLS.filter(function(sp){return sp.rank<=Math.min(limit,4);});
+ return pick(options);
+}
+function grantScroll(id,count,source){
+ var sp=SYS.bySpell[id];if(!sp)return 0;
+ if(sp.id==='earthgate'&&source!=='title'){
+  if(r.earthGateFound)return 0;
+  r.earthGateFound=true;count=1;
+ }
+ if(sp.rank===6){
+  if(r.sixStarFound)return 0;
+  r.sixStarFound=true;count=1;
+ }
+ r.scrolls[id]=(r.scrolls[id]||0)+count;return count;
+}
+
 function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
 function spellValid(sp){
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
- if(['attack','burn','stun','chain','drain'].indexOf(sp.kind)>=0&&!enemies().length)return 'Нет цели';
- if(sp.kind==='reveal'&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
+ if(sp.id==='earthgate'&&r.floor<=1)return 'Нет нижних этажей для возвращения';
+ if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().length)return 'Нет цели';
+ if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
  return null;
 }
 function renderSpells(){
@@ -646,7 +678,7 @@ function safePortal(){
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
   carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
-  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.ghost=null;carry.chamberActive=null;carry.shield=0;
+  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.ghost=null;carry.chamberActive=null;carry.shield=0;carry.earthGateFound=false;carry.earthGateTitleGranted=false;carry.sixStarFound=false;carry.spellHistory=[];
   carry.poisonTurns=0;carry.blessed=0;carry.log=[];
   s.meta.activeExpedition=carry;
  }else{
@@ -672,6 +704,7 @@ function resumeExpedition(){
  r=s.run=carry;s.meta.activeExpedition=null;
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
+ r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
  fillPreparedPotions(r);r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
  r.mp=Math.min(stats().mp,r.mp+Math.floor(stats().mp*.35));
@@ -924,12 +957,13 @@ function kill(t){
   drop.diamonds=Math.max(1,Math.floor(depthMultiplier()*(1+Math.floor((r.actIndex||0)/3))));
   log('Босс повержен! Безопасный портал открыт на этом этаже.');
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
+  if(r.floor>=40&&Math.random()<.025)drop.scroll=rollSpell(6).id;
   drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
   r.ep+=4;s.meta.bossKills=(s.meta.bossKills||0)+1;
  }
  else {
   if(Math.random()<.23+bonus('lootChance')*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
-  else if(Math.random()<.33){drop.scroll=pick(SPELLS).id;}
+  else if(Math.random()<.33){drop.scroll=rollSpell(e.boss&&r.floor>=40?6:e.elite?5:4).id;}
  }
  t.drops=drop;
  if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
@@ -1091,7 +1125,7 @@ function claimTile(t){
    labels.push(mat.name+' ×'+qty);
   }
   if(pending.soul){var spirit=addSpiritSoul(pending.soul);if(spirit){lines.push('<strong>☽ '+esc(spirit.name)+'</strong>');labels.push('☽ '+spirit.name);}}
-  if(pending.scroll){r.scrolls[pending.scroll]=(r.scrolls[pending.scroll]||0)+1;
+  if(pending.scroll){grantScroll(pending.scroll,1,'loot');
    var sp=SPELLS.find(function(x){return x.id===pending.scroll;});
    lines.push('<strong>✣ Свиток «'+esc(sp.name)+'»</strong>');labels.push('✣ '+sp.name+' ×1');}
   if(pending.gear){var loot=addItem(pending.gear.slot,pending.gear.rarity);
@@ -1118,7 +1152,7 @@ function claimTile(t){
     labels.push(i.name+' ×1');}
   }else{r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');}
   if(lvl('vault')>0&&Math.random()<Math.min(.5,.1*lvl('vault'))){
-   var extra=pick(SPELLS);r.scrolls[extra.id]=(r.scrolls[extra.id]||0)+1;
+   var extra=rollSpell(4);grantScroll(extra.id,1,'chest');
    lines.push('<strong>✣ Дополнительный свиток «'+esc(extra.name)+'»</strong>');
   }
   t.cleared=true;log('Сундук вскрыт.');
@@ -1367,7 +1401,7 @@ function gainSecret(e){
  switch(e.type){
   case'relic':addItem('relic',Math.max(2,rarityRoll()));break;
   case'ep':r.ep+=4;break;
-  case'scroll':var sp=pick(SPELLS);r.scrolls[sp.id]=(r.scrolls[sp.id]||0)+2;break;
+  case'scroll':var sp=rollSpell(4);grantScroll(sp.id,2,'secret');break;
   case'shield':r.shield+=30+r.floor*3;break;
   case'gold':addGold(35+r.floor*3);break;
   case'mana':r.mp=Math.min(stats().mp,r.mp+25);break;
@@ -1419,7 +1453,7 @@ function buy(id){
  var cost=shopPrice(id);if(r.gold<cost){toast('Недостаточно монет.');return;}
  r.gold-=cost;
  if(id==='potion')r.potions++;
- else if(id==='scroll'){var spell=pick(SPELLS);r.scrolls[spell.id]=(r.scrolls[spell.id]||0)+1;}
+ else if(id==='scroll'){var spell=rollSpell(3);grantScroll(spell.id,1,'merchant');}
  else addItem(pick(Object.keys(SLOT)),Math.max(1,rarityRoll()));
  log('Покупка у странствующего торговца. −'+cost+' монет.');
  close();finishAction();
@@ -1440,7 +1474,7 @@ function showPuzzle(){
 }
 function puzzleAnswer(id){
  var correct=Number(id)===r.pendingPuzzle;
- if(correct){r.ep+=3;var s1=pick(SPELLS);r.scrolls[s1.id]=(r.scrolls[s1.id]||0)+1;log('Загадка решена! +3 ✧ и свиток.');}
+ if(correct){r.ep+=3;var s1=rollSpell(4);grantScroll(s1.id,1,'puzzle');log('Загадка решена! +3 ✧ и свиток.');}
  else{r.hp=Math.max(0,r.hp-10-r.floor);log('Руна ошибочного ответа обжигает вас.');}
  r.pendingPuzzle=null;close();finishAction();
 }
@@ -1454,6 +1488,10 @@ function gainTalent(id){
  if(t.effect==='summonBase'&&r.summon){r.summon.hp+=14;r.summon.maxHp+=14;r.summon.atk+=4;}
  if(t.effect==='summonHp'&&r.summon){r.summon.hp+=t.amount;r.summon.maxHp+=t.amount;}
  if(t.effect==='summonAtk'&&r.summon)r.summon.atk+=t.amount;
+ if(t.id==='sage'&&!r.earthGateTitleGranted){
+  r.earthGateTitleGranted=true;r.scrolls.earthgate=(r.scrolls.earthgate||0)+1;
+  log('Планарный пророк получает дополнительные Врата Земли.');
+ }
  log('Принят титул «'+t.name+'»: '+(n+1)+'/3.');
  toast('Развитие: '+t.name);draw();save();
 }

@@ -302,11 +302,11 @@ window.CryptTitles = [
     "tree": 1,
     "rank": 4,
     "parent": "meditation",
-    "name": "Архимаг",
+    "name": "Планарный пророк",
     "icon": "✣",
-    "effect": "spellDamage",
+    "effect": "earthDistance",
     "amount": 12,
-    "desc": "Урон магии +12%."
+    "desc": "Врата Земли возвращают на 30–50 этажей. При первом получении звания выдаёт второй свиток."
   },
   {
     "id": "inferno",
