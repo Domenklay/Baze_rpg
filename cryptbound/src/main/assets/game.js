@@ -826,6 +826,10 @@ function consumeTurn(){
  if(!r)return false;
  r.turn++;
  if(r.blessed>0)r.blessed--;
+ if(r.rageTurns>0)r.rageTurns--;
+ if(r.reflectionTurns>0)r.reflectionTurns--;
+ if(r.barrierTurns>0)r.barrierTurns--;
+ if(r.timeStopTurns>0)r.timeStopTurns--;
  var alive=r.chamberActive!=null?[]:enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
@@ -833,6 +837,12 @@ function consumeTurn(){
   if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
   victim.foe.hp-=hit;log('Скелет наносит '+hit+' урона: '+victim.foe.name+'.');
   if(victim.foe.hp<=0)kill(victim);
+ }
+ if(r.ghost&&r.ghost.hp>0){
+  r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
+  if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
+   if(targetGhost){targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
+    if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
  if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
   r.hp=Math.max(0,r.hp-poison);log('Яд: −'+poison+' HP.');}
@@ -864,7 +874,14 @@ function consumeTurn(){
    if(special.kind==='shot')amount=Math.max(2,Math.ceil(e.atk*.85));
   }
   if(e.boss){amount=bossAttack(t,e,amount,ready);if(amount==null)return;}
+  if(r.timeStopTurns>0){log('Время замерло: '+e.name+' пропускает действие.');return;}
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
+  if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
+   if(Math.random()*100<r.ghost.dodge){log('Призрак увернулся от удара '+e.name+'.');return;}
+   r.ghost.hp=Math.max(0,r.ghost.hp-amount);
+   if(r.ghost.hp<=0){log('Призрачный страж развеялся.');r.ghost=null;}return;
+  }
+  if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит полностью блокирует попадание; зарядов '+r.guardCharges+'.');return;}
   if(r.summon&&r.summon.hp>0&&Math.random()<.72){
    var summonDamage=Math.max(1,amount-(r.summon.def||0));
    r.summon.hp=Math.max(0,r.summon.hp-summonDamage);
@@ -874,12 +891,18 @@ function consumeTurn(){
    var taken=amount;if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
    r.hp=Math.max(0,r.hp-taken);
    if(taken)log(e.name+' наносит '+taken+' урона.');
+   if(taken&&r.reflectionTurns>0&&e.hp>0){var reflect=Math.max(1,Math.ceil(taken*.5));
+    e.hp-=reflect;if(e.hp<=0)kill(t);}
+
   }
   var counter=bonus('thorns')+(Math.random()*100<bonus('reflect')?Math.max(1,Math.floor(stats().atk*.45)):0);
   if(counter>0&&e.hp>0){e.hp-=counter;log('Ответный урон: '+counter+'.');if(e.hp<=0)kill(t);}
  });
  if(r.chamberActive!=null)chamberEnemyPhase();
- if(r.hp<=0){die();return false;}
+ if(r.hp<=0){
+  if(r.resurrection>0){r.resurrection--;r.hp=Math.max(1,Math.ceil(stats().hp*.45));r.poisonTurns=0;log('Печать возрождения спасает героя.');}
+  else{die();return false;}
+ }
  return true;
 }
 function kill(t){
@@ -927,7 +950,7 @@ function strike(tid){
  if(r){r.fx='attack';r.fxUntil=Date.now()+420;}
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  var critical=Math.random()*100<st.crit;
- var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def-(t.foe.guard||0));
+ var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-t.foe.def-(t.foe.guard||0));
  t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
  if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
