@@ -12,9 +12,9 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','clicker_rules.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
-const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules;
+const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS '+name);}
 test('Six selectable classes and 18 authentic offline sprite frames',()=>{
@@ -25,6 +25,20 @@ test('Six selectable classes and 18 authentic offline sprite frames',()=>{
   for(const pose of ['attack','skill'])for(const step of [2,3])
    assert.ok(fs.statSync(path.join(root,'imported',key+'_'+pose+'_'+step+'.png')).size>1000);
  }
+});
+test('Ten acts and thirty dungeon locations with original region monsters',()=>{
+ assert.equal(DN.acts.length,10);
+ assert.equal(DN.acts.flatMap(a=>a.locations).length,30);
+ for(const act of DN.acts)for(const loc of act.locations){
+  assert.equal(loc.mobs.length,10);
+  assert.equal(loc.elites.length,5);
+  assert.ok(loc.boss.name&&loc.boss.loot.length);
+ }
+ assert.equal(DN.bossFloor(5),false);
+ assert.equal(DN.bossFloor(30),true);
+ assert.equal(DN.bossFloor(40),true);
+ assert.equal(DN.bossFloor(35),false);
+ assert.equal(DN.rewardMultiplier(50),2);
 });
 test('Six imported T1–T2 regions, 156 unique monsters, 12 sets and 24 weapons',()=>{
  assert.equal(DB.regions.length,6);
