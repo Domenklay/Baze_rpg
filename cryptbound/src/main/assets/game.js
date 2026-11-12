@@ -152,8 +152,14 @@ function mkEnemy(boss,ranged,forcedElite){
  var stage=(r.actIndex||0),location=(r.locationIndex||0);
  var difficulty=(1+Math.floor((r.floor-1)/10)*.20)*(1+stage*.12+location*.12);
  var isBoss=!!boss,isRanged=!!ranged,isElite=!!(elite&&!isBoss);
- var hp=Math.max(12,Math.round((src.hp||26+stage*8+location*5)*difficulty*(isBoss?5:isElite?1.8:1)));
- var atk=Math.max(3,Math.round((src.atk||6+stage*1.4+location*1.5)*difficulty*(isBoss?1.4:isElite?1.2:1)));
+ // Original Clicker bosses use multi-thousand-HP raid values; Cryptbound
+ // is a single-hero turn-based game and must not multiply those values by five.
+ var originalHp=src.hp||26+stage*8+location*5;
+ var originalAtk=src.atk||6+stage*1.4+location*1.5;
+ var adjustedHp=isBoss?(src.hp?Math.round(Math.sqrt(src.hp)*10):145+stage*55+location*22):originalHp;
+ var adjustedAtk=isBoss?Math.max(7,Math.round(Math.sqrt(originalAtk)*2)):originalAtk;
+ var hp=Math.max(12,Math.round(adjustedHp*difficulty*(isElite?1.8:1)));
+ var atk=Math.max(3,Math.round(adjustedAtk*difficulty*(isElite?1.2:1)));
  var def=Math.max(0,src.def||0);
  var visual=CR.visualId(src.name),kind=src.kind||EX.monster(visual).kind||'slam';
  var skill=isRanged?{name:'Дальний выстрел',every:3,description:'Стреляет каждый третий ход.',kind:'shot'}:
