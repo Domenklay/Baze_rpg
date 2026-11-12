@@ -22,7 +22,7 @@ jobs:
           gh run download 43164563932 --repo Domenklay/Baze_rpg --name Cryptbound-Offline-Android --dir dist
           test -f dist/Cryptbound-v0.3.0-offline-Android.apk
           cat dist/SHA256SUMS.txt
-          (cd dist && sha256sum -c SHA256SUMS.txt)
+          sha256sum -c dist/SHA256SUMS.txt
       - name: Restore v0.3 release assets without rebuilding anything
         env:
           GH_TOKEN: ${{ github.token }}
