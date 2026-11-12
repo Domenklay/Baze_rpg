@@ -22,6 +22,8 @@ test('Six selectable classes and 18 authentic offline sprite frames',()=>{
  for(const key of ['strength_m','strength_f','rogue_m','rogue_f','mage_m','mage_f']){
   for(const pose of ['idle','attack','skill'])
    assert.ok(fs.statSync(path.join(root,'imported',key+'_'+pose+'.png')).size>1000);
+  for(const pose of ['attack','skill'])for(const step of [2,3])
+   assert.ok(fs.statSync(path.join(root,'imported',key+'_'+pose+'_'+step+'.png')).size>1000);
  }
 });
 test('Six imported T1–T2 regions, 156 unique monsters, 12 sets and 24 weapons',()=>{
@@ -155,7 +157,11 @@ test('Original animation frame appears when attacking and spellcasting',()=>{
  const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);
  if(target){target.revealed=true;target.foe.hp=100;A('strike',target.id);}
  assert.match(el('portrait').innerHTML,/mage_m_attack.png/);
+ assert.match(el('portrait').innerHTML,/mage_m_attack_2.png/);
+ assert.match(el('portrait').innerHTML,/mage_m_attack_3.png/);
  A('skill');assert.match(el('portrait').innerHTML,/mage_m_skill.png/);
+ assert.match(el('portrait').innerHTML,/mage_m_skill_2.png/);
+ assert.match(el('portrait').innerHTML,/mage_m_skill_3.png/);
 });
 test('Saves remain local and APK has no Internet permission',()=>{
  api.save();
