@@ -882,22 +882,34 @@ function action(name,id){
  if(name==='permanent'){permanent(id);return;}
  if(name==='abandon'){abandon();return;}
  if(name==='confirm-end'){die();return;}
+ if(name==='chronicles'){chronicles();return;}
+ if(name==='milestone'){claimMilestone(id);return;}
+ if(name==='hero-rank'){rankHero(id);return;}
+ if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
  if(name==='reveal'){reveal(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='strike'){strike(id);return;}
  if(name==='descend'){descend();return;}
  if(name==='inspect-tile'){inspectTile(id);return;}
+ if(name==='inspect-enemy'){inspectUnit('enemy',id);return;}
+ if(name==='inspect-summon'){inspectUnit('summon');return;}
  if(name==='skill'){useSkill();return;}
  if(name==='potion'){potion();return;}
  if(name==='wait'){wait();return;}
+ if(name==='spell-modal'){magicDialog();return;}
+ if(name==='cast-modal'){var spell=SPELLS.find(function(sp){return sp.id===id;});if(spellValid(spell)){toast(spellValid(spell));return;}close();cast(id);return;}
  if(name==='cast'){cast(id);return;}
  if(name==='talent'){gainTalent(id);return;}
  if(name==='tree'){r.treeView=clamp(Number(id)||0,0,2);draw();save();return;}
  if(name==='bag-filter'){r.bagFilter=id||'all';r.bagSelected=null;draw();save();return;}
- if(name==='item-select'){r.bagSelected=Number(id);draw();return;}
- if(name==='inspect-slot'){r.bagFilter=SLOT[id]?id:'all';r.bagSelected=r.equip[id]||null;r.tab='bag';draw();save();return;}
- if(name==='inspect-item'){r.bagSelected=Number(id);r.bagFilter=(item(id)||{}).slot||'all';r.tab='bag';draw();save();return;}
+ if(name==='item-select'){var itm=item(id);if(itm)gearComparison(itm.slot,itm.id);return;}
+ if(name==='inspect-slot'){if(SLOT[id])gearComparison(id,r.equip[id]);return;}
+ if(name==='inspect-item'){var itm2=item(id);if(itm2)gearComparison(itm2.slot,itm2.id);return;}
+ if(name==='modal-select'){gearComparison(r.inspectSlot,Number(id));return;}
+ if(name==='modal-equip'){var e=item(r.inspectItem);if(e){equip(e.id);gearComparison(e.slot,e.id);}return;}
+ if(name==='modal-upgrade'){var g=item(r.inspectItem);if(g){upgrade(g.id);gearComparison(g.slot,g.id);}return;}
+ if(name==='modal-scrap'){var it=item(r.inspectItem);if(it&&!equipped(it.id)){var type=it.slot;scrap(it.id);gearComparison(type,null);}return;}
  if(name==='equip'){equip(id);return;}
  if(name==='upgrade'){upgrade(id);return;}
  if(name==='scrap'){scrap(id);return;}
@@ -913,10 +925,27 @@ function action(name,id){
  if(name==='puzzle-answer'){puzzleAnswer(id);return;}
 }
 document.addEventListener('click',function(e){
+ if(Date.now()<suppressClickUntil && e.target.closest('[data-hold]')){e.preventDefault();return;}
  var b=e.target.closest('[data-action],[data-tab]');if(!b)return;e.preventDefault();
  if(b.dataset.tab){if(r){r.tab=b.dataset.tab;$('content').scrollTop=0;draw();save();}return;}
  action(b.dataset.action,b.dataset.id);
 });
+document.addEventListener('pointerdown',function(e){
+ if(!r)return;
+ var t=e.target.closest('[data-hold]');if(!t)return;
+ clearTimeout(holdTimeout);
+ var kind=t.dataset.hold,id=t.dataset.id;
+ holdTimeout=setTimeout(function(){suppressClickUntil=Date.now()+1000;inspectUnit(kind,id);},550);
+});
+['pointerup','pointercancel','pointerleave','pointermove'].forEach(function(n){
+ document.addEventListener(n,function(){clearTimeout(holdTimeout);holdTimeout=null;});
+});
+document.addEventListener('contextmenu',function(e){
+ var t=e.target.closest('[data-hold]');if(!t)return;e.preventDefault();
+ clearTimeout(holdTimeout);suppressClickUntil=Date.now()+1000;
+ inspectUnit(t.dataset.hold,t.dataset.id);
+});
+
 window.Crypt={save:save,back:function(){
  if($('overlay').innerHTML){close();return;}
  if(r&&r.tab!=='maze'){r.tab='maze';draw();return;}
