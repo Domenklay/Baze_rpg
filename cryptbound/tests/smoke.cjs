@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
 const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 let checks=0;
@@ -411,6 +411,17 @@ test('Spell catalog has 6 schools × 6 ranks, with 6-star rarity isolated',()=>{
  assert.equal(sys.spells.length,36);
  for(const school of sys.schools)assert.deepEqual(
   Array.from(sys.spells.filter(x=>x.school===school.id),x=>x.rank).sort(),[1,2,3,4,5,6]);
+});
+
+
+test('Every regional boss has distinct phase abilities and script mapping',()=>{
+ const bosses=win.CryptBossScripts.list;
+ assert.equal(bosses.length,30);
+ const names=new Set(bosses.flatMap(b=>b.phases.map(p=>p.name)));
+ assert.equal(names.size,60);
+ for(let act=0;act<10;act++)for(let loc=0;loc<3;loc++){
+  assert.equal(win.CryptBossScripts.get(act,loc).phases.length,2);
+ }
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);

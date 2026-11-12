@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -255,7 +255,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -320,6 +320,9 @@ function load(){
   if(!Array.isArray(v.run.spellHistory))v.run.spellHistory=[];
   if(v.run.ghost===undefined)v.run.ghost=null;
   if(v.run.resurrection==null)v.run.resurrection=0;
+  if(v.run.burnTurns==null)v.run.burnTurns=0;
+  if(v.run.bleedTurns==null)v.run.bleedTurns=0;
+  if(v.run.silenceTurns==null)v.run.silenceTurns=0;
   if(v.run.timeStopTurns==null)v.run.timeStopTurns=0;
   if(!v.run.materials)v.run.materials={};
   if(v.run.diamonds==null)v.run.diamonds=0;
@@ -528,6 +531,7 @@ function grantScroll(id,count,source){
 
 function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
 function spellValid(sp){
+ if(r.silenceTurns>0)return 'Магия заглушена боссом';
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(sp.id==='earthgate'&&r.floor<=1)return 'Нет нижних этажей для возвращения';
@@ -889,6 +893,25 @@ function bossCallsBackup(e){
  cell.foe.atk=Math.max(2,Math.round(cell.foe.atk*.6));
  e.bossAdds++;log('Босс призывает подкрепление: '+cell.foe.name+'.');
 }
+
+function applyRegionalBossAbility(e,spec,damage){
+ if(!spec)return damage;
+ log('Босс применяет '+spec.name+'.');
+ var v=spec.value;
+ if(spec.kind==='guard'){e.guard=Math.max(e.guard||0,v);return damage;}
+ if(spec.kind==='summon'){for(var i=0;i<v;i++)bossCallsBackup(e);return damage;}
+ if(spec.kind==='poison'){r.poisonTurns=Math.max(r.poisonTurns||0,v);return damage;}
+ if(spec.kind==='bleed'){r.bleedTurns=Math.max(r.bleedTurns||0,v);return damage;}
+ if(spec.kind==='burn'){r.burnTurns=Math.max(r.burnTurns||0,v);return damage;}
+ if(spec.kind==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,v);return damage;}
+ if(spec.kind==='mana'){r.mp=Math.max(0,r.mp-v);return damage;}
+ if(spec.kind==='heal'){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*v/100));return damage;}
+ if(spec.kind==='drain'){r.hp=Math.max(0,r.hp-v);e.hp=Math.min(e.maxHp,e.hp+v);return damage;}
+ if(spec.kind==='shatter'){r.shield=Math.max(0,r.shield-v);r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-v);return Math.ceil(damage*1.5);}
+ if(spec.kind==='frenzy'){return Math.ceil(damage*v);}
+ return damage;
+}
+
 function bossAttack(t,e,damage,ready){
  var phase=e.hp<=e.maxHp*.35?3:e.hp<=e.maxHp*.70?2:1;
  var style=e.bossStyle==null?((r.actIndex||0)*3+(r.locationIndex||0))%6:e.bossStyle;
@@ -900,6 +923,8 @@ function bossAttack(t,e,damage,ready){
  }
  if(e.telegraph){
   var move=e.telegraph.phase;e.telegraph=null;
+  var scenario=BS.get(r.actIndex||0,r.locationIndex||0);
+  if(scenario&&scenario.phases[move-2])return applyRegionalBossAbility(e,scenario.phases[move-2],Math.ceil(damage*(move===3?2.1:1.3)));
   log('Особый приём босса: '+e.name+'!');
   if(style===0||style===3)bossCallsBackup(e);
   if(style===1)e.guard=4+Math.floor(r.floor/7);
@@ -948,6 +973,12 @@ function consumeTurn(){
    if(targetGhost){targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
+ if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
+  r.hp=Math.max(0,r.hp-bleed);log('Кровотечение: −'+bleed+' чистого урона.');}
+ if(r.burnTurns>0){r.burnTurns--;var flames=Math.max(2,Math.ceil(r.floor*.45));
+  var absorbed=Math.min(r.shield,flames);r.shield-=absorbed;r.hp=Math.max(0,r.hp-flames+absorbed);
+  log('Горение: −'+Math.max(0,flames-absorbed)+' магического урона.');}
+ if(r.silenceTurns>0)r.silenceTurns--;
  if(r.poisonTurns>0){r.poisonTurns--;var poison=Math.max(2,Math.floor(2+r.floor*.5));
   r.hp=Math.max(0,r.hp-poison);log('Яд: −'+poison+' HP.');}
  alive=r.chamberActive!=null?[]:enemies();
@@ -1086,6 +1117,7 @@ var SKILLS={
  assassin:{name:'Ядовитый клинок',icon:'☽',cost:5,turns:4}
 };
 function useSkill(){
+ if(r.silenceTurns>0){toast('Босс наложил молчание.');return;}
  var skill=SKILLS[r.class];
  if(r.turn-r.skillUsed<skill.turns){toast('Умение восстанавливается.');return;}
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
