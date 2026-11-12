@@ -467,4 +467,36 @@ test('One original story event per region contributes journal lore without repea
  assert.equal(run.journalNotes.length,notes);
 });
 
+
+test('Pocket rooms accept combat spells, enforce world-magic limit and use protection',()=>{
+ let run=state.run;if(!run){A('begin','necromancer');run=state.run;}
+ const tile=run.tiles.find(t=>t.kind==='empty');assert.ok(tile);
+ tile.kind='chamber';tile.revealed=true;tile.cleared=false;
+ run.hp=10000;run.mp=10000;run.poisonTurns=0;run.bleedTurns=0;run.burnTurns=0;
+ A('pickup',tile.id);assert.ok(tile.room);assert.equal(run.chamberActive,tile.id);
+ for(const g of tile.room.guards){g.hp=1000;g.maxHp=1000;g.cooldown=3;}
+ tile.room.guardHp=tile.room.guards.reduce((v,g)=>v+g.hp,0);
+ run.scrolls.bolt=3;
+ const startHp=tile.room.guardHp,turns=run.turn;
+ A('cast','bolt');
+ assert.ok(tile.room.guardHp<startHp);
+ assert.equal(run.scrolls.bolt,2);
+ assert.equal(run.turn,turns+1);
+ run.scrolls.sunfall=1;
+ const protectedScrolls=run.scrolls.sunfall;
+ A('cast','sunfall');
+ assert.equal(run.scrolls.sunfall,protectedScrolls,'6★ must be blocked in side rooms');
+ assert.equal(run.chamberActive,tile.id);
+ run.timeStopTurns=2;
+ for(const g of tile.room.guards)g.cooldown=1;
+ const hp=run.hp;
+ A('wait');A('wait');
+ assert.equal(run.hp,hp,'Time stop prevents guard damage in both turns');
+ assert.equal(tile.room.guards[0].cooldown,1);
+ run.guardCharges=3;
+ A('wait');
+ assert.equal(run.guardCharges,0,'All three incoming attacks are blocked');
+ assert.equal(run.hp,hp);
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
