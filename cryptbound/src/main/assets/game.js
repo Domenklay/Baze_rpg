@@ -105,48 +105,64 @@ function addItem(slot,rarity){
 }
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
-function mkEnemy(boss){
- var src=boss?{id:'boss',name:BOSSES[Math.floor((r.floor-1)/5)%BOSSES.length],hp:95,atk:12,def:3,ep:9,gold:30}:pick(MOBS.slice(0,Math.min(6,2+Math.ceil(r.floor/2))));
- var scale=1+(r.floor-1)*.18;
- var ehp=Math.floor(src.hp*scale*(boss?1.55:1)),eatk=Math.floor(src.atk*(1+(r.floor-1)*.13)),edef=src.def+Math.floor((r.floor-1)*.32);
- return {id:src.id,name:src.name,hp:ehp,maxHp:ehp,atk:eatk,def:edef,ep:src.ep+(boss?Math.floor(r.floor/2):0),gold:src.gold+Math.floor(r.floor*1.3),boss:!!boss,burn:0,stun:0,skill:EX.monster(src.id),cooldown:EX.monster(src.id).every,guard:0};
+function mkEnemy(boss,ranged){
+ var reg=CR.region(r.floor);
+ var src=ranged?CR.rangedSource():boss?pick(reg.enemies.filter(function(m){return m.boss;})):
+  pick(reg.enemies.filter(function(m){return !m.boss&&(!m.elite||r.floor>=3&&Math.random()<.16);}));
+ var difficulty=1+Math.floor((r.floor-1)/4)*.22;
+ var isBoss=!!(boss||src.boss),isRanged=!!ranged;
+ var hp=Math.max(12,Math.round(src.hp*difficulty*(isBoss?.72:.88))),atk=Math.max(3,Math.round(src.atk*difficulty)),def=Math.max(0,src.def||0);
+ var visual=CR.visualId(src.name),skill=isRanged?
+ {name:'Дальний выстрел',every:3,description:'Стреляет издалека раз в три хода и не блокирует соседние клетки.',kind:'shot'}:EX.monster(visual);
+ return {id:src.id,name:src.name,visual:visual,hp:hp,maxHp:hp,atk:atk,def:def,
+ ep:isBoss?9:src.elite?4:2,gold:isBoss?32:src.elite?15:7,
+ boss:isBoss,burn:0,stun:0,poison:0,skill:skill,cooldown:skill.every,guard:0,
+ ranged:isRanged,attackInterval:isRanged?3:1,attackCooldown:isRanged?3:1,loot:src.loot||[]};
 }
 function distributeTiles(){
- var types=Array.from({length:25},function(){return 'empty';});
- var positions=Array.from({length:25},function(_,i){return i;});
- for(var j=24;j>0;j--){var k=rand(0,j),v=positions[j];positions[j]=positions[k];positions[k]=v;}
- var pos=0;function insert(kind,count){for(var n=0;n<count;n++)types[positions[pos++]]=kind;}
- insert('start',1);insert('exit',1);
- insert('enemy',r.floor%5===0?5:6+(r.floor>6?1:0));
+ var types=Array.from({length:25},function(){return 'empty';}),indices=[];
+ for(var i=0;i<25;i++)if(i!==12)indices.push(i);
+ for(var j=indices.length-1;j>0;j--){var k=rand(0,j),v=indices[j];indices[j]=indices[k];indices[k]=v;}
+ types[12]='start';
+ var pos=0;
+ function insert(kind,count){for(var x=0;x<count&&pos<indices.length;x++)types[indices[pos++]]=kind;}
+ insert('exit',1);insert('enemy',r.floor%5===0?5:6);
  if(r.floor%5===0)insert('boss',1);
- insert('chest',2);insert('trap',2);insert('altar',1);insert('shop',1);
- insert('event',2);insert('puzzle',1);insert('secret',1);
- insert('coin',2);insert('potion',1);
- var tiles=types.map(function(kind,id){
-  return {id:id,kind:kind,revealed:kind==='start',cleared:kind==='start'||kind==='empty'&&false,
-    foe:kind==='enemy'||kind==='boss'?mkEnemy(kind==='boss'):null,
-    drops:null,hasKey:false};
+ insert('chest',2);insert('trap',1);insert('altar',1);insert('shop',1);
+ insert('event',1);insert('puzzle',1);insert('secret',1);insert('coin',2);insert('potion',1);
+ // Exactly one ranged enemy archetype can start revealed, shooting every third turn.
+ if(Math.random()<.5){var rangerTile=types.indexOf('enemy');if(rangerTile>=0)types[rangerTile]='ranged';}
+ var tiles=types.map(function(kind,id){var enemy=kind==='enemy'||kind==='boss'||kind==='ranged';
+  return {id:id,kind:kind==='ranged'?'enemy':kind,
+   revealed:kind==='start'||kind==='ranged',cleared:kind==='start',foe:enemy?mkEnemy(kind==='boss',kind==='ranged'):null,
+   drops:null,hasKey:false};
  });
- var boss=tiles.find(function(t){return t.kind==='boss';});
- var holders=tiles.filter(function(t){return t.foe;});
- var carrier=boss||pick(holders);
+ var carrier=tiles.find(function(t){return t.kind==='boss';})||pick(tiles.filter(function(t){return t.foe&&!t.foe.ranged;}));
  if(carrier)carrier.hasKey=true;
  return tiles;
 }
+function placeSummon(){
+ if(!r.summon||r.summon.hp<=0)return false;
+ if(r.summonTile!=null&&r.tiles[r.summonTile])return true;
+ var spot=CR.summonSpot(r.tiles);
+ if(!spot.tile){log('Нет места для призыва.');return false;}
+ if(spot.opened){spot.tile.revealed=true;spot.tile.cleared=true;log('Для призыва открыта свободная клетка.');}
+ r.summonTile=spot.tile.id;return true;
+}
 function startFloor(){
- r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor');r.blessed=0;
- if(r.summon)r.summon.hp=Math.max(0,r.summon.hp);
+ r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
+ r.summonTile=null;
+ if(r.summon&&r.summon.hp>0)placeSummon();
  var st=stats();
- r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));
- r.ep+=bonus('epFloor');
+ r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));r.ep+=bonus('epFloor');
  r.poisonTurns=0;
  var revealCount=Math.floor(bonus('revealFloor'));
- var unseen=r.tiles.filter(function(t){return !t.revealed;});
- for(var i=0;i<revealCount&&unseen.length;i++){
-   var chosen=unseen.splice(rand(0,unseen.length-1),1)[0];
-   chosen.revealed=true;
+ for(var i=0;i<revealCount;i++){
+  var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+  if(!available.length)break;
+  var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='empty')chosen.cleared=true;
  }
- log('Этаж '+r.floor+'. «'+maxFloorLabel()+'». Под плитами скрыты опасности и находки.');
+ log('Этаж '+r.floor+'. «'+maxFloorLabel()+'». Путь начинается из центра. Соседние чудовища перекрывают проход.');
 }
 function begin(hero){
  var meta=s.meta;
