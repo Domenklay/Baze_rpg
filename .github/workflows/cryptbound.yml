@@ -59,8 +59,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.3.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.3.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.4.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.4.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -73,7 +73,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.3.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.3.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.3.0 — Android" --notes "Подписи HP/таймера/урона у монстров и призывов, удержание для инспекции, лут всплывает без окон, экипировка сравнивается в двух колонках, магия открывается поверх карты. Универсальные титулы и отдельная прокачка героев, коллекция реликвий и достижения."
+          if ! gh release view cryptbound-v0.4.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.4.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.4.0 — Android" --notes "Пространственное исследование от стартовой клетки, блокирование соседних клеток ближними врагами, открытый дальник с выстрелом раз в 3 хода, призыв на свободную клетку. Шесть героев с офлайн PNG/атаками, 6 биомов, 156 врагов, 12 комплектов, 24 оружия из RPG Clicker Infinity и постоянный склад материалов для поселения."
           fi
-          gh release upload cryptbound-v0.3.0 dist/Cryptbound-v0.3.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.4.0 dist/Cryptbound-v0.4.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
