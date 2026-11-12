@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,holdTimeout=null,suppressClickUntil=0;
+var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
  necromancer:{name:'Некромант',type:'Магия',title:'Хозяин костей',description:'Призывает скелета, который сражается и прикрывает владельца.',hp:78,mp:58,atk:10,def:1,pow:11,crit:5,icon:'☠'},
@@ -145,7 +145,11 @@ function addItem(slot,rarity){
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
 function mkEnemy(boss,ranged,forcedElite){
- var reg=currentRegion(),elites=reg.elites||[],mobs=reg.mobs||[];
+ var reg=currentRegion(),elites=reg.elites||[],mobs=(reg.mobs||[]).slice();
+  /* Fill only the five missing drawn T1/T2 species without duplicating existing IDs. */
+  var extra=r.actIndex===0&&r.locationIndex===0?DB.regions[0].enemies.slice(10,20):
+    r.actIndex===1&&r.locationIndex===1?DB.regions[4].enemies.slice(0,10):[];
+  extra.forEach(function(m){if(!mobs.some(function(x){return x.id===m.id;}))mobs.push(m);});
  var elite=!!forcedElite;
  var rangedPool=mobs.filter(function(m){return m.kind==='shot'||/лучник|арбалет|стрелок|пращник|дальник/i.test(m.name+' '+(m.role||''));});
  var availableRanged=rangedPool.length?rangedPool:mobs;
@@ -415,7 +419,7 @@ function hud(){
 }
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
-function monsterVisual(e){return icon('enemy',e.visual||CR.visualId(e.name));}
+function monsterVisual(e){return SP.monster(e,e.spriteFxUntil>Date.now()?e.spriteFx:'idle')||icon('enemy',e.visual||CR.visualId(e.name));}
 function activeTileView(t){
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
  var hero=r.heroTile===t.id?'<span class="hero-on-board">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
@@ -475,7 +479,7 @@ function combatView(){
  var t=target();
  if(!t)return frame('ЗАЛЫ ОЖИДАЮТ','<p class="fine muted">Касайтесь закрытых плит, чтобы исследовать этаж. Открытые чудовища отвечают ударами на каждый ход.</p>');
  var f=t.foe;
- return '<div class="combat-box"><div class="combat-portrait">'+icon('enemy',f.id)+'</div><div class="combat-data">'+
+ return '<div class="combat-box"><div class="combat-portrait">'+monsterVisual(f)+'</div><div class="combat-data">'+
  '<h3>'+f.name+(f.boss?' <span class="red">БОСС</span>':'')+'</h3><div class="mini-meter"><i style="width:'+pct(f.hp,f.maxHp)+'%"></i></div>'+
  '<p>'+f.hp+' / '+f.maxHp+' HP</p><div class="combat-stat">АТК '+f.atk+' · БРОНЯ '+f.def+'</div></div>'+
  '<button class="btn" data-action="strike" data-id="'+t.id+'">⚔ УДАР</button></div>';
@@ -789,7 +793,10 @@ function renderBag(){
  '<div><b>'+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</b><small>Свитков</small></div>'+
  '<div><b>'+r.gold+'</b><small>Монет</small></div></div>'+
  '<button class="btn alt wide space-top" data-action="potion" '+(r.potions?'':'disabled')+'>Выпить эликсир (+45% HP)</button>')+
- frame('КВЕСТОВЫЕ ПРЕДМЕТЫ',quests||'<p class="fine muted">Печати локаций ещё не найдены.</p>')+
+ frame('ДОБЫЧА ЭКСПЕДИЦИИ',Object.keys(r.materials||{}).some(function(k){return r.materials[k]>0;})?
+    '<div class="crypt-material-grid">'+Object.entries(r.materials).filter(function(e){return e[1]>0;}).sort(function(a,b){return a[0].localeCompare(b[0],'ru');}).map(function(e){return '<span class="crypt-material-chip">'+SP.materialIcon(e[0])+'<i>'+esc(e[0])+'</i><b>×'+e[1]+'</b></span>';}).join('')+'</div>':
+    '<p class="fine muted">Материалы появятся после сбора трофеев с клеток.</p>')+
+  frame('КВЕСТОВЫЕ ПРЕДМЕТЫ',quests||'<p class="fine muted">Печати локаций ещё не найдены.</p>')+
  frame('СОБРАННЫЕ ДУШИ',souls||'<p class="fine muted">Пока нет душ.</p>')+
  frame('НАЙДЕННЫЕ ЗАПИСКИ',notes||'<p class="fine muted">Пока нет записей.</p>');
 }
@@ -1068,7 +1075,7 @@ function renderBase(){
  frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
  '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
  '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn gold wide space-top" data-action="quest-board">Совет деревни · общие задания</button><button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
+ '<button class="btn gold wide space-top" data-action="quest-board">Совет деревни · общие задания</button><button class="btn alt wide space-top" data-action="bestiary">Бестиарий и изображения монстров</button><button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
  '<button class="btn alt wide space-top" data-action="fairy-toggle">'+(s.meta.fairyMuted?'Включить комментарии светлячка':'Скрыть комментарии светлячка')+'</button>'+frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
  '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
 }
@@ -1306,6 +1313,7 @@ function consumeTurn(){
   }
   var effectiveDefense=Math.max(0,stats().def-(r.armorBreakPower||0));
   var amount=Math.max(1,e.atk+rand(-2,2)-effectiveDefense-bonus('damageFlat')-Math.floor(r.blessed));
+   e.spriteFx=ready?'skill':'attack';e.spriteFxUntil=Date.now()+430;
   if(e.boss){
    amount=bossAttack(t,e,amount,ready);if(amount==null)return;
   }else if(ready){amount=monsterSpecial(e,amount,false);}
@@ -1352,7 +1360,7 @@ function kill(t){
  if((e.boss||e.id&&e.elite)&&lvl('magnate')>0)drop.soul={kind:'elite',name:'Душа '+e.name};
  else if(!e.boss&&lvl('merchant')>0&&Math.random()<Math.min(.72,.12*lvl('merchant')))drop.soul={kind:'common',name:'Душа '+e.name};
  for(var source of (e.loot||[])){
-  if(Math.random()*100<source.chance)drop.materials.push({name:source.name,qty:rand(source.min,source.max)});
+  if(Math.random()*100<source.chance)drop.materials.push({name:SP.canonicalMaterial(source.name),qty:rand(source.min,source.max)});
  }
  if(e.boss){
   r.bossClears[r.floor]=true;r.portalReady=true;
@@ -2299,6 +2307,20 @@ function usePreparedPotion(index){
  log('Алхимик: использовано «'+p.name+'».');finishAction();
 }
 
+function bestiary(){
+  var lookup=Object.create(null);
+  DN.acts.forEach(function(act){act.locations.forEach(function(loc){
+   (loc.mobs||[]).concat(loc.elites||[],[loc.boss]).forEach(function(m){if(m&&m.id)lookup[m.id]=m.name;});
+  });});
+  DB.regions.forEach(function(reg){(reg.enemies||[]).forEach(function(m){if(!lookup[m.id])lookup[m.id]=m.name;});});
+  var found=Object.entries(s.meta.bestiary||{}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];});
+  var rows=found.map(function(entry){
+   var e={id:entry[0],name:lookup[entry[0]]||entry[0]};
+   return '<div class="crypt-bestiary-entry">'+monsterVisual(e)+'<div><b>'+esc(e.name)+'</b><small>Побеждено: '+entry[1]+'</small></div></div>';
+  }).join('');
+  dialog('<div class="emblem">☗</div><h2>БЕСТИАРИЙ</h2><p>Записи сохраняются между экспедициями. Доступны изображения обнаруженных существ T1–T2, остальные получат их по мере создания.</p>'+
+   '<div class="crypt-bestiary-list">'+(rows||'<p class="fine muted">Пока не побеждено ни одного существа.</p>')+'</div><button class="btn wide space-top" data-action="close">Назад</button>');
+}
 function town(){
  var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=materialCount();
  var builds=Object.keys(BUILDINGS).map(function(id){
@@ -2314,7 +2336,7 @@ function town(){
  '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
  '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
  '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
- '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span>'+esc(e[0])+' <b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
+ '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span class="crypt-material-chip">'+SP.materialIcon(e[0])+'<i>'+esc(e[0])+'</i><b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>'+
  '<button class="btn dark wide space-top" data-action="close">Выйти</button>');
 }
@@ -2405,6 +2427,7 @@ function action(name,id){
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='choose'){choose();return;}
  if(name==='dungeon-achievements'){dungeonAchievements();return;}
+  if(name==='bestiary'){bestiary();return;}
  if(name==='quest-board'){questBoard();return;}
  if(name==='story-choice'){storyChoice(id);return;}
  if(name==='claim-quest'){claimQuestReport(id);return;}

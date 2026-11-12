@@ -50,6 +50,7 @@ jobs:
           node --check cryptbound/src/main/assets/art.js
           node --check cryptbound/src/main/assets/equipment_art.js
           node --check cryptbound/src/main/assets/titles.js
+          node --check cryptbound/src/main/assets/sprite_catalog.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -58,6 +59,7 @@ jobs:
           node --check cryptbound/src/main/assets/story_events.js
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
+          node cryptbound/tests/sprites.cjs
 
       - name: Compile playable Android app
         run: gradle :cryptbound:assembleDebug --no-daemon

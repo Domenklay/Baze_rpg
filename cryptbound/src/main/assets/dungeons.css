@@ -42,3 +42,26 @@
 .dungeon-potion-slot .potion-caption{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;text-align:center;line-height:1.15}
 .dungeon-potion-slot small{flex:none;font-size:10px;color:#d1b892}
 @media(max-width:360px){.dungeon-potion-slot{gap:2px;padding:3px}.dungeon-potion-slot .potion-symbol{font-size:15px}.dungeon-potion-slot .potion-caption{font-size:9px}.dungeon-potion-slot small{font-size:9px}}
+
+/* RPG Clicker sprites: real transparent PNG poses, never distort the source pixel art. */
+.crypt-monster-sprite{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;image-rendering:pixelated;filter:drop-shadow(0 2px 2px #120b0c)}
+.dungeon-board .tile .crypt-monster-sprite{position:absolute;inset:7% 7% 10%;width:86%;height:83%;pointer-events:none}
+.crypt-monster-sprite.pose-attack{animation:crypt-monster-hit .43s ease-out both}
+.crypt-monster-sprite.pose-skill{animation:crypt-monster-magic .43s ease-out both}
+@keyframes crypt-monster-hit{0%{transform:translateX(10%) scale(.9)}50%{transform:translateX(-8%) scale(1.08)}100%{transform:none}}
+@keyframes crypt-monster-magic{0%{opacity:.6;filter:brightness(1.8)}50%{opacity:1;transform:scale(1.12);filter:brightness(1.4)}100%{transform:none;filter:none}}
+.unit-profile .crypt-monster-sprite,.combat-portrait .crypt-monster-sprite,.dungeon-foe-icon .crypt-monster-sprite{max-width:100%;max-height:100%;min-width:0;object-fit:contain}
+.chamber-cell .crypt-monster-sprite{width:90%;height:72%}
+.crypt-resource-icon{width:29px;height:29px;object-fit:contain;image-rendering:pixelated;flex:none}
+.crypt-resource-fallback{width:29px;height:29px;display:inline-grid;place-items:center;color:#9d8262;flex:none}
+.crypt-material-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-height:230px;overflow:auto}
+.crypt-material-chip{display:flex!important;align-items:center;gap:5px;min-width:0;padding:5px 6px;border:1px solid #594039;background:#211719;color:#d7c6b2;font:10px/1.2 Arial;text-align:left}
+.crypt-material-chip i{font-style:normal;flex:1;min-width:0;overflow-wrap:anywhere}
+.crypt-material-chip b{white-space:nowrap;color:#eac58d}
+.crypt-bestiary-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:60dvh;overflow:auto}
+.crypt-bestiary-entry{display:flex;align-items:center;gap:6px;padding:5px;background:#291d1f;border:1px solid #574039;min-width:0;text-align:left}
+.crypt-bestiary-entry .crypt-monster-sprite,.crypt-bestiary-entry svg{width:54px;height:58px;flex:none}
+.crypt-bestiary-entry div{min-width:0}
+.crypt-bestiary-entry b{font-size:11px;display:block;overflow-wrap:anywhere}
+.crypt-bestiary-entry small{font-size:10px;color:#b59a82;display:block}
+@media(max-width:360px){.crypt-bestiary-list{grid-template-columns:1fr}.crypt-resource-icon,.crypt-resource-fallback{width:25px;height:25px}}
