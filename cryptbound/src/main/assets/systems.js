@@ -10,6 +10,21 @@ var potions=[
 {id:'reflection',name:'Зеркальная настойка',level:2,cost:8,description:'Следующие пять ходов возвращает часть прямого урона врагам.',icon:'⟡'},
 {id:'barrier',name:'Корень мирового дерева',level:3,cost:11,description:'Создаёт массивный защитный барьер на 10 ходов.',icon:'♜'}
 ];
+
+/* Exact craft ingredients from the RPG Clicker Infinity loot tables.
+   Never consume random materials or quest memories in the alchemy workshop. */
+var potionIngredients={
+ ghost:[['Болотные споры',3],['Кожа нетопыря',2]],
+ aegis:[['древесина',4],['Горный кристалл',2]],
+ cleanse:[['Болотные споры',2],['Ядовитая железа',1]],
+ fury:[['волчий клык',3],['Плотная шкура каньона',2]],
+ insight:[['Горный кристалл',3],['Ведьмин янтарь',1]],
+ phoenix:[['Зеркальный хитин',2],['Вулканический сердечник',1]],
+ reflection:[['Чёрный хитин разлома',3],['Горный кристалл',2]],
+ barrier:[['Лесная сердцевина',3],['Окаменелое ребро Сарката',1]]
+};
+potions.forEach(function(p){p.ingredients=potionIngredients[p.id]||[];});
+
 var spells=[];
 function sp(id,school,rank,name,kind,base,cost,description,icon){spells.push({id,school,rank,name,kind,base,cost,description,icon,rarity:rank});}
 /* Five ordinary spell tiers follow the six classic elemental utility archetypes;
