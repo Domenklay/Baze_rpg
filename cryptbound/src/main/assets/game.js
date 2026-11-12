@@ -212,6 +212,22 @@ function placeSummon(){
  if(spot.opened){spot.tile.revealed=true;spot.tile.cleared=true;log('Для призыва открыта свободная клетка.');}
  r.summonTile=spot.tile.id;return true;
 }
+
+function hasUniqueGear(effect){return Object.keys(r.equip).some(function(slot){var g=equippedItem(slot);return !!g&&g.uniqueEffect===effect;});}
+function activateEntranceEquipment(room){
+ var shield=setBonus('entryShield');
+ if(shield){r.setShieldRemaining=(r.setShieldRemaining||0)+shield;r.setShieldTurns=10;log('Комплект: щит на 10 ходов +'+shield+'.');}
+ if(!room){
+  var heals=setBonus('healFloor');if(heals)r.hp=Math.min(stats().hp,r.hp+heals);
+  var scrolls=setBonus('scrollFloor')+(hasUniqueGear('freespell')?1:0);
+  for(var i=0;i<scrolls;i++){var sp=rollSpell(hasUniqueGear('freespell')?4:3);grantScroll(sp.id,1,'set');}
+  if(setBonus('guardFloor')||hasUniqueGear('bulwark'))r.guardCharges=(r.guardCharges||0)+setBonus('guardFloor')+(hasUniqueGear('bulwark')?2:0);
+  if(hasUniqueGear('rebirth'))r.resurrection=Math.max(1,r.resurrection||0);
+  if(setBonus('ghostFloor')&&(!r.ghost||r.ghost.hp<=0)){var hp=22+Math.ceil(r.floor*1.3);
+   r.ghost={hp:hp,maxHp:hp,atk:5+Math.ceil(r.floor*.6),cooldown:3,dodge:60};log('Комплект перепризвал призрачного спутника.');}
+ }
+}
+
 function startFloor(){
  heroMoveToken++;
  r.chamberActive=null;
@@ -226,6 +242,7 @@ function startFloor(){
  var st=stats();
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor'));r.ep+=bonus('epFloor');
  r.poisonTurns=0;
+ activateEntranceEquipment(false);
  var revealCount=Math.floor(bonus('revealFloor'));
  for(var i=0;i<revealCount;i++){
   var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
@@ -911,6 +928,7 @@ function consumeTurn(){
  if(!r)return false;
  r.turn++;
  if(r.blessed>0)r.blessed--;
+ if(r.setShieldTurns>0){r.setShieldTurns--;if(!r.setShieldTurns)r.setShieldRemaining=0;}
  if(r.sunBurnTurns>0)r.sunBurnTurns--;
  if(r.rageTurns>0)r.rageTurns--;
  if(r.reflectionTurns>0)r.reflectionTurns--;
@@ -975,7 +993,9 @@ function consumeTurn(){
    log('Скелет перехватывает '+summonDamage+' урона.');
    if(!r.summon.hp){log('Призванный скелет разрушен.');r.summon=null;r.summonTile=null;}
   }else{
-   var taken=amount;if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
+   var taken=amount;
+   if(r.setShieldRemaining>0){var shieldAbsorb=Math.min(taken,r.setShieldRemaining);r.setShieldRemaining-=shieldAbsorb;taken-=shieldAbsorb;}
+   if(r.shield>0){var absorb=Math.min(r.shield,taken);r.shield-=absorb;taken-=absorb;}
    r.hp=Math.max(0,r.hp-taken);
    if(taken)log(e.name+' наносит '+taken+' урона.');
    if(taken&&r.reflectionTurns>0&&e.hp>0){var reflect=Math.max(1,Math.ceil(taken*.5));
@@ -1044,7 +1064,7 @@ function strike(tid){
  if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
  t.foe.hp-=amount;
  var glove=equippedItem('gloves');
- if(glove&&glove.stormCharge&&t.foe.hp>0&&Math.random()<.25){
+ if(((glove&&glove.stormCharge)||hasUniqueGear('storm'))&&t.foe.hp>0&&Math.random()<.25){
   var spark=Math.max(4,Math.ceil(st.pow*.7)+2);
   t.foe.hp-=spark;log('Грозовая перчатка выпускает разряд: '+spark+' магического урона.');
  }
@@ -1444,7 +1464,7 @@ function openChamber(t){
   t.room=replaceRoom;
  }
  t.entered=true;r.chamberActive=t.id;
- if(first){log('Открыт вход в побочное помещение: '+currentRegion().name+'.');finishAction();}
+ if(first){activateEntranceEquipment(true);log('Открыт вход в побочное помещение: '+currentRegion().name+'.');finishAction();}
  if(r)showChamber(t);
 }
 function showChamber(t){
