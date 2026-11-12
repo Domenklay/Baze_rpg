@@ -513,7 +513,7 @@ function gearSlotButton(slot){
 function renderHero(){
  var c=C[r.class],st=stats();
  var left=['helm','armor','bracer','boots'];
- var right=['ring','amulet','cloak','gloves','weapon'];
+ var right=['ring','amulet','cloak','gloves'];
  var statsHtml='<div class="statlist">'+
   '<span>Здоровье</span><b>'+r.hp+' / '+st.hp+'</b><span>Мана</span><b>'+r.mp+' / '+st.mp+'</b>'+
   '<span>Атака</span><b>'+st.atk+'</b><span>Броня</span><b>'+st.def+'</b>'+
@@ -523,7 +523,7 @@ function renderHero(){
  frame('ГЕРОЙ И ПРЕДМЕТЫ','<div class="gear-layout">'+
   '<div class="gear-slots gear-left">'+left.map(gearSlotButton).join('')+'</div>'+
   '<div class="gear-center"><div class="gear-portrait">'+window.CryptArt.hero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</div>'+
-   '<div class="gear-hero-name">'+c.name+'</div><small>'+c.title+'</small></div>'+
+   '<div class="gear-hero-name">'+c.name+'</div><small>'+c.title+'</small><div class="gear-weapon-slot">'+gearSlotButton('weapon')+'</div></div>'+
   '<div class="gear-slots gear-right">'+right.map(gearSlotButton).join('')+'</div></div>'+
   '<p class="fine muted space-top">Нажмите ячейку экипировки, чтобы открыть сумку с подходящими предметами.</p>')+
  frame('ХАРАКТЕРИСТИКИ',statsHtml)+
@@ -624,55 +624,41 @@ function renderTalents(){
 }
 
 function statName(k){return {atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',pow:'Магия',crit:'Крит %'}[k];}
+
 function gearComparison(slot,selectedId){
- var current=equippedItem(slot),candidate=item(selectedId);
+ var worn=equippedItem(slot),candidate=item(selectedId);
  if(candidate&&candidate.slot!==slot)candidate=null;
  var available=r.items.filter(function(it){return it.slot===slot;}).sort(function(a,b){return b.rarity-a.rarity||b.floor-a.floor;});
- if(!candidate)candidate=available.find(function(it){return !equipped(it.id);})||current||available[0]||null;
+ if(!candidate)candidate=available.find(function(it){return !equipped(it.id);})||worn||available[0]||null;
  r.inspectSlot=slot;r.inspectItem=candidate?candidate.id:null;
- var compareKeys=['atk','def','hp','mp','pow','crit'].filter(function(k){return current&&current[k]||candidate&&candidate[k];});
- function card(title,i,other,side){
-  var img=i?window.CryptArt.item(i.slot,i.rarity):window.CryptArt.item(slot,0);
-  var html='<div class="gear-compare-card '+side+'"><div class="gear-compare-title">'+title+'</div><div class="gear-compare-icon">'+img+'</div>'+
-   '<strong class="'+(i?'c'+i.rarity:'muted')+'">'+(i?esc(i.name)+(i.plus?' +'+i.plus:''):'Нет предмета')+'</strong>'+
-   '<small>'+(i?(i.setName||RARITY[i.rarity])+' · +'+i.plus:'Ячейка свободна')+'</small>';
-  for(var k of compareKeys){
-   var val=i?(i[k]||0):0,oldVal=other?(other[k]||0):0,delta=side==='current'?oldVal-val:val-oldVal;
-   var lost=side==='current'&&val>0&&oldVal===0,positive=side==='new'&&delta>0;
-   var negative=side==='new'&&delta<0;
-   var deltaTxt=(side==='current'&&delta!==0)?'<em class="'+(delta>0?'positive':'negative')+'">'+(delta>0?'+':'')+delta+'</em>':
-    side==='new'&&delta!==0?'<em class="'+(delta>0?'positive':'negative')+'">'+(delta>0?'+':'')+delta+'</em>':'';
-   html+='<div class="gear-compare-stat'+(lost?' stat-lost':'')+(negative?' stat-negative':'')+(positive?' stat-better':'')+'">'+
-     '<span>'+statName(k)+'</span><b>'+(val?'+'+val:'—')+'</b>'+deltaTxt+'</div>';
-  }
-  return html+'</div>';
- }
- var oldGear=current,selected=candidate;
- var list=available.map(function(it){
-   return '<button class="item r'+it.rarity+(selected&&it.id===selected.id?' selected':'')+'" data-action="modal-select" data-id="'+it.id+'">'+
-   (equipped(it.id)?'<span class="equipped-tag">НАДЕТО</span>':'')+
-   window.CryptArt.item(it.slot,it.rarity)+'<span>'+esc(it.name)+(it.plus?' +'+it.plus:'')+'</span></button>';
- }).join('');
- var canSelect=selected&&!equipped(selected.id);
- var nextEquip=Object.assign({},r.equip);
- if(selected)nextEquip[slot]=selected.id;
- var setCounts=CR.counts(nextEquip,r.items);
- var setHelp=selected&&selected.setId?
-  '<div class="compact-set-help"><b>Комплект: '+esc(selected.setName)+' · '+(setCounts[selected.setId]||0)+'/'+(CR.setRules(selected.setId)?.slots.length||4)+'</b>'+
-  CR.descriptions(selected.setId).map(function(txt,i){
-   var need=CR.thresholds(selected.setId)[i],active=(setCounts[selected.setId]||0)>=need;
-   return '<small class="'+(active?'set-on':'')+'">'+(active?'✓ ':'○ ')+txt+'</small>';
-  }).join('')+'</div>':'<div class="fine muted compact-set-help">Оружие имеет собственный фиксированный эффект.</div>';
- var cost=selected?upgradeCost(selected):0;
- dialog('<div class="subhead">ОСМОТР СНАРЯЖЕНИЯ · '+esc(SLOT[slot])+'</div><h2>СРАВНЕНИЕ</h2>'+
-  '<div class="gear-two-columns">'+card('СЛЕВА · НАДЕТО',oldGear,selected,'current')+card('СПРАВА · ВЫБРАНО',selected,oldGear,'new')+'</div>'+
-  setHelp+'<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(canSelect?'':'disabled')+'>Надеть</button>'+
-  '<button class="btn alt small" data-action="modal-upgrade" '+(selected&&r.gold>=cost&&selected.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
-  '<button class="btn dark small" data-action="modal-scrap" '+(canSelect?'':'disabled')+'>Разобрать</button></div>'+
-  '<div class="frame-title gear-available-title">СУМКА · '+available.length+' ПРЕДМ.</div>'+
-  '<div class="gear-picker">'+(list||'<p class="fine muted">В этом слоте пока нет предметов.</p>')+'</div>'+
-  '<button class="btn alt wide space-top" data-action="close">Вернуться без смены экипировки</button>');
+ var cols=['atk','def','hp','mp','pow','crit'];
+ var changed=cols.filter(function(k){return (candidate&&candidate[k]||0)!==(worn&&worn[k]||0);});
+ var rows=changed.map(function(k){
+  var current=worn&&worn[k]||0,going=candidate&&candidate[k]||0,delta=going-current;
+  return '<div class="gear-compact-change"><span>'+statName(k)+'</span><span>'+current+' → '+going+'</span>'+
+   '<strong class="'+(delta>0?'positive':delta<0?'negative':'')+'">'+(delta>0?'+':'')+delta+'</strong></div>';
+ }).join('')||'<p class="fine muted">Числовые параметры не изменятся. Сравните особые эффекты и комплект.</p>';
+ var next=Object.assign({},r.equip);if(candidate)next[slot]=candidate.id;
+ var setCount=CR.counts(next,r.items),rules=candidate&&candidate.setId?CR.setRules(candidate.setId):null;
+ var setInfo=rules?'<div class="compact-set-help"><strong>Комплект: '+esc(candidate.setName)+' · '+(setCount[candidate.setId]||0)+'/'+rules.slots.length+'</strong>'+
+  CR.descriptions(candidate.setId).map(function(line,i){return '<small class="'+((setCount[candidate.setId]||0)>=CR.thresholds(candidate.setId)[i]?'set-on':'')+'">'+esc(line)+'</small>';}).join('')+'</div>':
+  '<div class="compact-set-help fine muted">'+(candidate&&candidate.uniqueEffect?'Уникальный предмет 6★: '+esc(candidate.trait):'Самостоятельная экипировка')+'</div>';
+ var list=available.map(function(it){return '<button class="item r'+it.rarity+(candidate&&candidate.id===it.id?' selected':'')+
+  '" data-action="modal-select" data-id="'+it.id+'">'+window.CryptArt.item(it.slot,it.rarity)+
+  '<span>'+esc(it.name)+'</span></button>';}).join('');
+ var cost=candidate?upgradeCost(candidate):0;
+ dialog('<div class="subhead">ЭКИПИРОВКА · '+esc(SLOT[slot])+'</div><h2>Компактное сравнение</h2>'+
+ '<div class="gear-two-columns gear-compact-head"><div>'+window.CryptArt.item(slot,worn?worn.rarity:0)+
+ '<small>Надето</small><b>'+esc(worn?worn.name:'Пусто')+'</b></div><div>'+window.CryptArt.item(slot,candidate?candidate.rarity:0)+
+ '<small>Выбрано</small><b>'+esc(candidate?candidate.name:'Нет предмета')+'</b></div></div>'+
+ '<div class="gear-compact-stats">'+rows+'</div>'+setInfo+
+ '<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Надеть</button>'+
+ '<button class="btn alt small" data-action="modal-upgrade" '+(candidate&&r.gold>=cost&&candidate.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
+ '<button class="btn dark small" data-action="modal-scrap" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Разобрать</button></div>'+
+ '<div class="frame-title">Подходящие предметы · '+available.length+'</div><div class="gear-picker">'+(list||'<p>В этом слоте пусто.</p>')+'</div>'+
+ '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
+
 function magicDialog(){
  var spellGrid=shownSpells().map(function(sp){
   var disabled=spellValid(sp);
@@ -714,7 +700,7 @@ function renderBag(){
    '<div class="fine muted">'+RARITY[selected.rarity]+' · '+SLOT[selected.slot]+
    (equipped(selected.id)?' · НАДЕТО':'')+'</div></div></div>'+
    '<div class="compare-head"><span>ПАРАМЕТР</span><span>НАДЕТО</span><span>НОВОЕ</span><span>РАЗНИЦА</span></div>'+
-   ['atk','def','hp','mp','pow','crit'].map(function(k){return compareStat(selected,current,k);}).join('')+
+   ['atk','def','hp','mp','pow','crit'].filter(function(k){return (selected[k]||0)!==(current&&current[k]||0);}).map(function(k){return compareStat(selected,current,k);}).join('')+
    '<div class="btnrow space-top"><button class="btn" data-action="equip" data-id="'+selected.id+'" '+(equipped(selected.id)?'disabled':'')+'>Надеть</button>'+
    '<button class="btn alt" data-action="upgrade" data-id="'+selected.id+'" '+(r.gold<upgradeCost(selected)||selected.plus>=9?'disabled':'')+'>Заточить '+upgradeCost(selected)+' ◈</button>'+
    '<button class="btn dark" data-action="scrap" data-id="'+selected.id+'" '+(equipped(selected.id)?'disabled':'')+'>Разобрать</button></div>';
