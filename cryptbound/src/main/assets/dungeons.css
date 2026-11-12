@@ -1,0 +1,8 @@
+/* Field hero is the real imported sprite; a map move is only visual. */
+.dungeon-board .maze .tile{position:relative;overflow:hidden}
+.dungeon-board .maze .hero-on-board{position:absolute;inset:2%;z-index:7;display:flex;align-items:center;justify-content:center;pointer-events:none;animation:hero-tile-hop .24s ease-out both}
+.dungeon-board .maze .hero-on-board .clicker-hero-art{width:100%;height:100%;object-fit:contain;image-rendering:auto}
+.dungeon-board .maze .hero-on-board .clicker-hero-sequence{width:100%;height:100%;display:block;position:relative}
+.dungeon-board .maze .hero-on-board .clicker-hero-sequence img{position:absolute;inset:0}
+.dungeon-board .maze .tile-origin .origin-dot{opacity:.2}
+@keyframes hero-tile-hop{from{transform:translateY(-10%) scale(.94)}to{transform:translateY(0) scale(1)}}

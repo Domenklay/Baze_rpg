@@ -107,12 +107,14 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  r.tiles=originalTiles;r.talents=old;api.debug.draw();
 });
 
-test('Hero origin at center with connected orthogonal exploration',()=>{
+test('Random hero origin with connected orthogonal exploration',()=>{
  assert.equal(r.tiles.length,25);
- assert.equal(r.tiles[12].kind,'start');
+ const origin=r.tiles.find(t=>t.kind==='start');
+ assert.ok(origin);assert.equal(r.heroTile,origin.id);
  assert.match(el('content').innerHTML,/tile-origin/);
+ assert.match(el('content').innerHTML,/hero-on-board/);
  assert.ok(r.tiles.filter(t=>t.revealed).length<=3);
- const far=r.tiles.find(t=>!t.revealed&&CR.near(12).indexOf(t.id)===-1);
+ const far=r.tiles.find(t=>!t.revealed&&CR.near(origin.id).indexOf(t.id)===-1);
  const turn=r.turn;A('reveal',far.id);
  assert.equal(r.turn,turn);
  assert.equal(far.revealed,false);
@@ -134,7 +136,7 @@ test('Necromancer finds a legitimate summon tile and fills a hidden empty when n
  r.tiles.forEach(t=>{if(t.kind==='empty'&&t.revealed){t.revealed=false;t.cleared=false;}});
  r.summon=null;r.summonTile=null;r.mp=1000;
  A('skill');assert.ok(r.summon&&r.summon.hp>0);
- assert.notEqual(r.summonTile,12);
+ assert.notEqual(r.summonTile,r.heroTile);
  const cell=r.tiles[r.summonTile];
  assert.equal(cell.kind,'empty');assert.equal(cell.revealed,true);
  assert.match(el('content').innerHTML,/tile-summon/);
@@ -167,7 +169,7 @@ test('A hidden archer has a three-round attack interval and does not block explo
 });
 test('Opening and collecting a find each consume exactly one turn',()=>{
  const t=r.tiles.find(x=>x.kind==='coin');assert.ok(t);
- const safe=CR.near(12).find(id=>!r.tiles[id].revealed);
+ const safe=CR.near(r.tiles.find(t=>t.kind==='start').id).find(id=>!r.tiles[id].revealed);
  if(safe!==undefined){
   const tt=r.tiles[safe];tt.kind='coin';tt.foe=null;tt.cleared=false;
   const start=r.turn;A('reveal',tt.id);assert.equal(r.turn,start+1);
@@ -187,9 +189,9 @@ test('Permanent T1 material drops are sourced from the imported monster table',(
   skill:{name:'Укус',every:3,kind:'bite'},cooldown:3};
  A('strike',t.id);assert.ok(t.drops);
  assert.ok(t.drops.materials.length>=1);
- const got=t.drops.materials[0];const before=state.meta.materials[got.name]||0;
+ const got=t.drops.materials[0];const before=r.materials[got.name]||0;
  A('pickup',t.id);
- assert.ok(state.meta.materials[got.name]>=before+got.qty);
+ assert.ok(r.materials[got.name]>=before+got.qty);
 });
 test('Fixed catalog set gear and 2/4/6 bonuses function',()=>{
  const chest=r.items.find(x=>x.slot==='armor'),relic=r.items.find(x=>x.slot==='relic');
