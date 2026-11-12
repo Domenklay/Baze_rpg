@@ -373,7 +373,7 @@ function renderTalents(){
  '<div class="tree-choice">'+treeButtons+'</div>'+
  '<div class="title-tree-info"><div><strong>'+names[tree]+'</strong><small>5 ступеней · 15 титулов · 3 улучшения каждого</small></div>'+
   '<span>'+progress+'/15</span></div>'+
- '<div class="title-tree">'+ranks+'</div>'+
+ '<p class="fine muted space-bottom">Титулы универсальные. Для '+C[r.class].name+' основная ветка '+names[r.class==='necromancer'?1:r.class==='executioner'?0:2]+': её развитие дешевле остальных.</p>'+ '<div class="title-tree">'+ranks+'</div>'+
  '<p class="fine muted center">Развивайте один из доступных путей, затем выбирайте ответвления. Ветви можно изучать параллельно.</p>';
 }
 
@@ -473,11 +473,14 @@ function renderBag(){
  '<button class="btn alt wide space-top" data-action="potion" '+(r.potions?'':'disabled')+'>Выпить эликсир (+45% HP)</button>');
 }
 function renderMenu(){
- return '<div class="emblem">✥</div><div class="subhead">НАСТРОЙКИ ЭКСПЕДИЦИИ</div><h2>ДОРОГА ВО МГЛУ</h2>'+
- '<p>Игра полностью автономна. Сохранение находится только на этом устройстве.</p>'+
- '<div class="btnrow"><button class="btn" data-action="close">Вернуться</button><button class="btn alt" data-action="camp">Память предков</button></div>'+
+ return '<div class="emblem">✥</div><div class="subhead">ПРИВАЛ МЕЖДУ ТЕНЯМИ</div><h2>ЭКСПЕДИЦИЯ</h2>'+
+ '<p>Игра работает без интернета. Автосохранение остаётся на этом устройстве.</p>'+
+ '<button class="btn wide space-top" data-action="close">Продолжить спуск</button>'+
+ '<button class="btn gold wide space-top" data-action="chronicles">✥ Хроники, реликвии, испытания</button>'+
+ '<button class="btn alt wide space-top" data-action="camp">Постоянное развитие героев</button>'+
  '<button class="btn dark wide space-top" data-action="abandon">Завершить забег</button>';
 }
+
 function draw(){
  if(!s)return;
  hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=section('Записки выживших','Лагерь')+
@@ -661,7 +664,7 @@ function rewardDialog(title,lines){
 }
 function floatLoot(tileId,labels){
  if(!labels||!labels.length)return;
- var maze=document.querySelector('.dungeon-board .maze');
+ var maze=document.querySelector?document.querySelector('.dungeon-board .maze'):null;
  if(!maze||!document.createElement)return;
  var pop=document.createElement('div');pop.className='pickup-float';
  pop.style.left=((Number(tileId)%5+.5)*20)+'%';
