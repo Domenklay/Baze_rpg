@@ -54,6 +54,7 @@ test('Only one specialization per title fork; chosen path remains upgradeable',(
 
 test('Adventure remains, soul use and one-time treasure',()=>{
  const old=Object.assign({},r.talents);
+ const originalTiles=JSON.parse(JSON.stringify(r.tiles));
  r.talents.fortune=1;r.talents.explorer=1;r.talents.cartographer=1;
  const corpse=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(corpse);
  corpse.kind='corpse';corpse.corpseId='storm-smith';corpse.revealed=true;corpse.cleared=false;
@@ -67,12 +68,13 @@ test('Adventure remains, soul use and one-time treasure',()=>{
  A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
  assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
  A('pickup',corpse.id);assert.equal(state.seq,before+3);
- r.talents=old;r.tab='maze';api.debug.draw();
+ r.tiles=originalTiles;r.talents=old;r.tab='maze';api.debug.draw();
 });
 
 
 test('Side chamber guard, central loot and talent-gated secret',()=>{
  const old=Object.assign({},r.talents);
+ const originalTiles=JSON.parse(JSON.stringify(r.tiles));
  r.talents.fortune=1;r.talents.seeker=1;r.talents.stealth=1;r.talents.scavenger=1;
  const room=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(room);
  room.kind='chamber';room.revealed=true;room.cleared=false;
@@ -88,7 +90,7 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  A('chamber-secret',room.id);assert.equal(room.cleared,true);
  assert.equal(room.kind,'empty');assert.equal(r.secrets,prev+1);
  A('chamber-secret',room.id);assert.equal(r.secrets,prev+1);
- r.talents=old;api.debug.draw();
+ r.tiles=originalTiles;r.talents=old;api.debug.draw();
 });
 
 test('Hero origin at center with connected orthogonal exploration',()=>{
