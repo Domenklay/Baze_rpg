@@ -215,7 +215,7 @@ function begin(hero){
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
-    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
+    hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
@@ -248,7 +248,7 @@ function load(){
  if(meta.diamonds==null)meta.diamonds=0;
  if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
-  if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';
+  if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';if(!v.run.spellSchool)v.run.spellSchool='all';
   if(v.run.actIndex==null)v.run.actIndex=0;
   if(v.run.locationIndex==null)v.run.locationIndex=0;
   if(!v.run.bossClears)v.run.bossClears={};
@@ -478,14 +478,26 @@ function spellValid(sp){
  if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
  return null;
 }
+
+function spellTabs(){
+ var options=[{id:'all',name:'Все',icon:'✣'}].concat(SYS.schools);
+ return '<div class="spell-school-tabs">'+options.map(function(x){
+  var selected=(r.spellSchool||'all')===x.id;
+  return '<button class="bag-filter'+(selected?' active':'')+'" data-action="spell-school" data-id="'+x.id+'">'+
+   x.icon+' '+x.name+'</button>';
+ }).join('')+'</div>';
+}
+function shownSpells(){return SPELLS.filter(function(sp){return (r.spellSchool||'all')==='all'||sp.school===r.spellSchool;})
+ .sort(function(a,b){return a.rank-b.rank;});}
+
 function renderSpells(){
- var cards=SPELLS.map(function(sp){
+ var cards=shownSpells().map(function(sp){
   var error=spellValid(sp);
   return '<button class="spell-card" data-action="cast" data-id="'+sp.id+'" '+(error?'disabled':'')+'>'+
-  '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4><p>'+sp.description+'</p><small>◈ '+manaCost(sp)+' маны · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
+  '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4><p>'+sp.description+'</p><small>'+sp.rank+'★ · ◈ '+manaCost(sp)+' маны · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
  }).join('');
  return section('Книга магии','Мощь '+stats().pow)+
- frame('ПЕЧАТИ И СВИТКИ','<div class="spell-list">'+cards+'</div>')+
+ frame('ПЕЧАТИ И СВИТКИ',spellTabs()+'<div class="spell-list">'+cards+'</div>')+
  frame('ПРАВИЛА МАГИИ','<p class="fine muted">Заклинания тратят ману, свиток и один ход. Враждебные заклинания направляются в первое найденное живое чудовище. Свитки можно найти в сундуках, купить у странствующего торговца и получить за загадки.</p>');
 }
 function renderTalents(){
@@ -566,14 +578,14 @@ function gearComparison(slot,selectedId){
   '<button class="btn alt wide space-top" data-action="close">Вернуться без смены экипировки</button>');
 }
 function magicDialog(){
- var spellGrid=SPELLS.map(function(sp){
+ var spellGrid=shownSpells().map(function(sp){
   var disabled=spellValid(sp);
   return '<button class="spell-card" data-action="cast-modal" data-id="'+sp.id+'" '+(disabled?'disabled':'')+'>'+
     '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4>'+
-    '<p>'+sp.description+'</p><small>'+manaCost(sp)+' МН · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
+    '<p>'+sp.description+'</p><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
  }).join('');
  dialog('<div class="subhead">КНИГА МАГИИ · НЕ ПОКИДАЯ ЭТАЖ</div><h2>ЗАКЛИНАНИЯ</h2>'+
-  '<p class="fine muted">Использование заклинания расходует один ход.</p><div class="spell-list scroll-spells">'+spellGrid+'</div>'+
+  '<p class="fine muted">Использование заклинания расходует один ход. 6★ — редчайшие изменяющие этаж чары.</p>'+spellTabs()+'<div class="spell-list scroll-spells">'+spellGrid+'</div>'+
   '<button class="btn alt wide space-top" data-action="close">Назад к лабиринту</button>');
 }
 
@@ -1908,6 +1920,7 @@ function action(name,id){
  if(name==='cast'){cast(id);return;}
  if(name==='talent'){gainTalent(id);return;}
  if(name==='tree'){r.treeView=clamp(Number(id)||0,0,2);draw();save();return;}
+ if(name==='spell-school'){r.spellSchool=SYS.schools.some(function(x){return x.id===id;})?id:'all';save();draw();if($('overlay').innerHTML)magicDialog();return;}
  if(name==='bag-filter'){r.bagFilter=id||'all';r.bagSelected=null;draw();save();return;}
  if(name==='item-select'){var itm=item(id);if(itm)gearComparison(itm.slot,itm.id);return;}
  if(name==='inspect-slot'){if(SLOT[id])gearComparison(id,r.equip[id]);return;}
