@@ -376,6 +376,59 @@ function renderTalents(){
  '<div class="title-tree">'+ranks+'</div>'+
  '<p class="fine muted center">Развивайте один из доступных путей, затем выбирайте ответвления. Ветви можно изучать параллельно.</p>';
 }
+
+function statName(k){return {atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',pow:'Магия',crit:'Крит %'}[k];}
+function gearComparison(slot,selectedId){
+ var current=equippedItem(slot),candidate=item(selectedId);
+ if(candidate&&candidate.slot!==slot)candidate=null;
+ var available=r.items.filter(function(it){return it.slot===slot;}).sort(function(a,b){return b.rarity-a.rarity||b.floor-a.floor;});
+ if(!candidate)candidate=available.find(function(it){return !equipped(it.id);})||current||available[0]||null;
+ r.inspectSlot=slot;r.inspectItem=candidate?candidate.id:null;
+ function card(title,i,other,side){
+  var img=i?window.CryptArt.item(i.slot,i.rarity):window.CryptArt.item(slot,0);
+  var html='<div class="gear-compare-card '+side+'"><div class="gear-compare-title">'+title+'</div><div class="gear-compare-icon">'+img+'</div>'+
+   '<strong class="'+(i?'c'+i.rarity:'muted')+'">'+(i?esc(i.name)+(i.plus?' +'+i.plus:''):'Нет предмета')+'</strong>'+
+   '<small>'+(i?RARITY[i.rarity]+' · +'+i.plus:'Ячейка свободна')+'</small>';
+  for(var k of ['atk','def','hp','mp','pow','crit']){
+   var val=i?(i[k]||0):0,oldVal=other?(other[k]||0):0,delta=side==='current'?oldVal-val:val-oldVal;
+   var lost=side==='current'&&val>0&&oldVal===0,positive=side==='new'&&delta>0;
+   var negative=side==='new'&&delta<0;
+   var deltaTxt=(side==='current'&&delta!==0)?'<em class="'+(delta>0?'positive':'negative')+'">'+(delta>0?'+':'')+delta+'</em>':
+    side==='new'&&delta!==0?'<em class="'+(delta>0?'positive':'negative')+'">'+(delta>0?'+':'')+delta+'</em>':'';
+   html+='<div class="gear-compare-stat'+(lost?' stat-lost':'')+(negative?' stat-negative':'')+(positive?' stat-better':'')+'">'+
+     '<span>'+statName(k)+'</span><b>'+(val?'+'+val:'—')+'</b>'+deltaTxt+'</div>';
+  }
+  return html+'</div>';
+ }
+ var oldGear=current,selected=candidate;
+ var list=available.map(function(it){
+   return '<button class="item r'+it.rarity+(selected&&it.id===selected.id?' selected':'')+'" data-action="modal-select" data-id="'+it.id+'">'+
+   (equipped(it.id)?'<span class="equipped-tag">НАДЕТО</span>':'')+
+   window.CryptArt.item(it.slot,it.rarity)+'<span>'+esc(it.name)+(it.plus?' +'+it.plus:'')+'</span></button>';
+ }).join('');
+ var canSelect=selected&&!equipped(selected.id);
+ var cost=selected?upgradeCost(selected):0;
+ dialog('<div class="subhead">ОСМОТР СНАРЯЖЕНИЯ · '+esc(SLOT[slot])+'</div><h2>СРАВНЕНИЕ</h2>'+
+  '<div class="gear-two-columns">'+card('СЛЕВА · НАДЕТО',oldGear,selected,'current')+card('СПРАВА · ВЫБРАНО',selected,oldGear,'new')+'</div>'+
+  '<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(canSelect?'':'disabled')+'>Надеть</button>'+
+  '<button class="btn alt small" data-action="modal-upgrade" '+(selected&&r.gold>=cost&&selected.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
+  '<button class="btn dark small" data-action="modal-scrap" '+(canSelect?'':'disabled')+'>Разобрать</button></div>'+
+  '<div class="frame-title gear-available-title">СУМКА · '+available.length+' ПРЕДМ.</div>'+
+  '<div class="gear-picker">'+(list||'<p class="fine muted">В этом слоте пока нет предметов.</p>')+'</div>'+
+  '<button class="btn alt wide space-top" data-action="close">Вернуться без смены экипировки</button>');
+}
+function magicDialog(){
+ var spellGrid=SPELLS.map(function(sp){
+  var disabled=spellValid(sp);
+  return '<button class="spell-card" data-action="cast-modal" data-id="'+sp.id+'" '+(disabled?'disabled':'')+'>'+
+    '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4>'+
+    '<p>'+sp.description+'</p><small>'+manaCost(sp)+' МН · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
+ }).join('');
+ dialog('<div class="subhead">КНИГА МАГИИ · НЕ ПОКИДАЯ ЭТАЖ</div><h2>ЗАКЛИНАНИЯ</h2>'+
+  '<p class="fine muted">Использование заклинания расходует один ход.</p><div class="spell-list scroll-spells">'+spellGrid+'</div>'+
+  '<button class="btn alt wide space-top" data-action="close">Назад к лабиринту</button>');
+}
+
 function itemGrid(items){
  return items.map(function(i){
   return '<button class="item r'+i.rarity+(r.bagSelected===i.id?' selected':'')+'" data-action="item-select" data-id="'+i.id+'">'+
