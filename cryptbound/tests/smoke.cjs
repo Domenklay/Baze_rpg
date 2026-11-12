@@ -66,8 +66,29 @@ test('Adventure remains, soul use and one-time treasure',()=>{
  assert.match(el('content').innerHTML,/СОБРАННЫЕ ДУШИ/);
  A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
  assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
- A('pickup',corpse.id);assert.equal(state.seq,before+2);
+ A('pickup',corpse.id);assert.equal(state.seq,before+3);
  r.talents=old;r.tab='maze';api.debug.draw();
+});
+
+
+test('Side chamber guard, central loot and talent-gated secret',()=>{
+ const old=Object.assign({},r.talents);
+ r.talents.fortune=1;r.talents.seeker=1;r.talents.stealth=1;r.talents.scavenger=1;
+ const room=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(room);
+ room.kind='chamber';room.revealed=true;room.cleared=false;
+ A('pickup',room.id);assert.ok(room.room);
+ room.room.secret=true;
+ assert.match(el('overlay').innerHTML,/ПОБОЧНОЕ ПОМЕЩЕНИЕ/);
+ let attempts=0;r.hp=5000;
+ while(room.room.guardHp>0&&attempts++<60)A('chamber-fight',room.id);
+ assert.equal(room.room.guardHp,0);
+ A('chamber-reward',room.id);assert.equal(room.room.rewardTaken,true);
+ assert.equal(room.cleared,false);
+ const prev=r.secrets;
+ A('chamber-secret',room.id);assert.equal(room.cleared,true);
+ assert.equal(room.kind,'empty');assert.equal(r.secrets,prev+1);
+ A('chamber-secret',room.id);assert.equal(r.secrets,prev+1);
+ r.talents=old;api.debug.draw();
 });
 
 test('Hero origin at center with connected orthogonal exploration',()=>{

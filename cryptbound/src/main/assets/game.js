@@ -831,6 +831,7 @@ function claimTile(t){
   finishAction();if(r)floatLoot(t.id,['−'+dmg+' HP']);return;
  }
  if(kind==='corpse'){discoverCorpse(t);return;}
+ if(kind==='chamber'){openChamber(t);return;}
  if(kind==='secret'){t.cleared=true;discoverSecret();finishAction();return;}
  if(kind==='altar'){t.cleared=true;showAltar();finishAction();return;}
  if(kind==='shop'){t.cleared=true;showShop();finishAction();return;}
@@ -893,7 +894,7 @@ function consumeSpiritSoul(id){
 function discoverCorpse(t){
  if(!t||t.cleared||!t.revealed)return;
  var story=CORPSE_STORIES.find(function(x){return x.id===t.corpseId;})||CORPSE_STORIES[0],first=!r.uniqueFinds[story.id],lines=[];
- t.cleared=true;
+ t.cleared=true;t.kind='empty';
  if(first){
   r.uniqueFinds[story.id]=true;
   var gear=addItem(story.slot,1);
@@ -908,6 +909,58 @@ function discoverCorpse(t){
  if(r)dialog('<div class="emblem">☽</div><div class="subhead">ОСТАНКИ ИССЛЕДОВАТЕЛЯ</div><h2>'+esc(story.name)+'</h2>'+
  '<p>'+esc(story.note)+'</p><div class="reward-rows">'+lines.map(function(x){return '<div class="reward-entry">'+esc(x)+'</div>';}).join('')+'</div>'+
  '<button class="btn wide" data-action="close">Продолжить</button>');
+}
+
+/* A small instanced side chamber, saved on its original dungeon tile.
+   The main map never grants its secret during automatic normal-tile clearing. */
+function openChamber(t){
+ if(!t||t.kind!=='chamber'||!t.revealed||t.cleared)return;
+ var enter=!t.entered;
+ if(!t.room)t.room={guardHp:Math.max(14,Math.floor(16+r.floor*1.7)),rewardTaken:false,secretTaken:false,secret:Math.random()<.45};
+ t.entered=true;
+ if(enter){log('Найдена пещера с одиноким стражем и наградой в центре.');finishAction();}
+ if(r)showChamber(t);
+}
+function showChamber(t){
+ if(!r||!t||!t.room||t.kind!=='chamber')return;
+ var room=t.room,secret=!!(lvl('scavenger')||lvl('phantom'))&&(room.secret||lvl('phantom')>0);
+ var html='<div class="emblem">⌂</div><div class="subhead">ПОБОЧНОЕ ПОМЕЩЕНИЕ</div><h2>ПОТЕРЯННЫЙ ПРИДЕЛ</h2>'+
+ '<p>Страж охраняет сундук в центре. Вдоль стены тянется потрескавшаяся кладка.</p>'+
+ '<div class="unit-skill"><strong>'+(room.guardHp>0?'Страж комнаты: '+room.guardHp+' HP':'Страж побеждён')+'</strong></div>';
+ if(room.guardHp>0)html+='<button class="btn wide" data-action="chamber-fight" data-id="'+t.id+'">⚔ Атаковать стража · 1 ход</button>';
+ else if(!room.rewardTaken)html+='<button class="btn wide" data-action="chamber-reward" data-id="'+t.id+'">Забрать центральную награду · 1 ход</button>';
+ else html+='<p class="golden">Награда получена.</p>';
+ if(room.guardHp<=0&&room.rewardTaken&&secret&&!room.secretTaken){
+  html+='<button class="btn gold wide space-top" data-action="chamber-secret" data-id="'+t.id+'">✦ Подсвеченный тайник у края · 1 ход</button>';
+ }else if(!secret){html+='<p class="fine muted">Особых секретов не обнаружено.</p>';}
+ html+='<button class="btn alt wide space-top" data-action="close">Выйти из помещения</button>';
+ dialog(html);
+}
+function fightChamber(id){
+ var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp<=0)return;
+ t.room.guardHp=Math.max(0,t.room.guardHp-Math.max(1,stats().atk-2));
+ if(t.room.guardHp>0)r.hp=Math.max(0,r.hp-Math.max(1,3+Math.floor(r.floor*.25)-stats().def));
+ else log('Страж побочного помещения побеждён.');
+ finishAction();if(r)showChamber(t);
+}
+function chamberReward(id){
+ var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||t.room.rewardTaken)return;
+ t.room.rewardTaken=true;
+ var coins=addGold(20+r.floor*2);
+ if(Math.random()<.6)addItem(pick(Object.keys(SLOT)),1);
+ log('Найдена награда в побочной комнате: '+coins+' монет.');
+ var secret=!!(lvl('scavenger')||lvl('phantom'))&&(t.room.secret||lvl('phantom')>0);
+ if(!secret){t.cleared=true;t.kind='empty';}
+ finishAction();if(r&&secret)showChamber(t);else close();
+}
+function chamberSecret(id){
+ var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||
+  !(lvl('scavenger')||lvl('phantom'))||!(t.room.secret||lvl('phantom')>0))return;
+ t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
+ if(lvl('phantom'))addItem('relic',2);
+ else r.scrolls.heal=(r.scrolls.heal||0)+1;
+ log('Тайновед обнаружил дополнительный тайник в дальней стене.');
+ finishAction();close();
 }
 function gainSecret(e){
  r.secrets++;r.ep+=bonus('secretEp');
@@ -1194,6 +1247,9 @@ function action(name,id){
  if(name==='reveal'){reveal(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
+ if(name==='chamber-fight'){fightChamber(id);return;}
+ if(name==='chamber-reward'){chamberReward(id);return;}
+ if(name==='chamber-secret'){chamberSecret(id);return;}
  if(name==='strike'){strike(id);return;}
  if(name==='descend'){descend();return;}
  if(name==='inspect-tile'){inspectTile(id);return;}
