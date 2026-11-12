@@ -103,10 +103,34 @@ function stats(){
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge'),0,50)};
 }
 function newItem(slot,floor,variant){
- var src=CR.gear(slot,floor,variant==null?rand(0,1):variant);
+ var sourceFloor=(((r.actIndex||0)*3+(r.locationIndex||0))%6)*4+1;
+ var src=CR.gear(slot,sourceFloor,rand(0,1));
+ var star=variant==null?rarityRoll():Math.max(1,Math.min(6,Math.floor(Number(variant)||1)));
+ src.rarity=star;
+ if(star===6){
+  var unique=['storm','freespell','rebirth','bulwark','devour'];
+  src.uniqueEffect=pick(unique);src.setId=null;src.setName=null;
+  src.name=({storm:'Око громового судьи',freespell:'Перстень несказанных слов',
+   rebirth:'Печать возвращения',bulwark:'Зеркало королей',devour:'Сердце собирателя душ'})[src.uniqueEffect];
+  src.trait='Уникальный эффект 6★ без комплекта';
+ }else if(star>=3&&slot!=='weapon'&&Math.random()<.20){
+  var sid='dungeon:'+(r.actIndex||0)+':'+(r.locationIndex||0),spec=CR.setRules(sid);
+  if(spec&&spec.slots.indexOf(slot)>=0){
+   src.setId=sid;src.setName=CR.setDefinition(sid).name;
+   src.name=({helm:'Шлем',ring:'Кольцо',gloves:'Перчатки'})[slot]+' «'+currentRegion().name+'»';
+  }
+ }
  return Object.assign({id:++s.seq,plus:0,floor:floor,fixed:true},src);
 }
-function rarityRoll(){var x=rand(1,100),chance=bonus('rarityBoost');return x<=20+chance?1:0;}
+function rarityRoll(){
+ var value=Math.random()*100,boost=Math.min(.45,Math.max(0,(r.floor-30)*.003));
+ if(r.floor>=40&&value<.08+boost)return 6;
+ if(value<1+boost*2)return 5;
+ if(value<6+boost*3)return 4;
+ if(value<20+boost*4)return 3;
+ if(value<52)return 2;
+ return 1;
+}
 function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
  if(r.items.length>=48){r.gold+=10+r.floor*2;log('Сумка переполнена. Добыча обменяна на монеты.');return null;}
