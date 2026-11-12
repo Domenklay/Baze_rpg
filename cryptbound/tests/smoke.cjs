@@ -510,4 +510,90 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  assert.equal(run.hp,hp);
 });
 
+
+test('Exactly three compact consumable controls remain visible above the maze',()=>{
+ if(!state.run)A('begin','necromancer');
+ const run=state.run;
+ A('close');run.tab='maze';
+ run.potions=3;run.preparedPotions=['ghost','aegis'];
+ run.tiles.forEach(t=>{if(t.foe)t.foe.hp=0;});
+ api.debug.draw();
+ const html=el('content').innerHTML;
+ assert.equal((html.match(/class="dungeon-potion-slot/g)||[]).length,3);
+ assert.equal((html.match(/data-action="potion"/g)||[]).length,1,'Only one dedicated HP elixir button');
+ assert.equal((html.match(/data-action="use-prepared"/g)||[]).length,2);
+ assert.ok(html.indexOf('dungeon-potion-bar')<html.indexOf('dungeon-board'),'Potions must be above the maze');
+ const before=run.potions;
+ run.hp=Math.max(1,api.debug.stats().hp-70);api.debug.draw();
+ A('potion');
+ assert.equal(run.potions,before-1,'Healing must consume old HP elixir stock');
+ assert.ok(run.hp>0);
+});
+test('Late-game alchemy materials exist in their own tier and cannot be substituted',()=>{
+ const sys=win.CryptSystems;
+ assert.equal(sys.potions.length,16);
+ const late=['forgeguard','wildheart','ashvow','deepveil','soulmemory','dreamtruce','stormroot','astraloath'];
+ const allLoot=DN.acts.map(a=>new Set(a.locations.flatMap(l=>[...l.mobs,...l.elites,l.boss]
+    .flatMap(m=>(m.loot||[]).map(x=>x.name)))));
+ late.forEach((id,index)=>{
+  const p=sys.byPotion[id];
+  assert.ok(p&&p.ingredients.length>=2);
+  p.ingredients.forEach(x=>assert.ok(allLoot[index+2].has(x[0]),id+': unavailable '+x[0]));
+ });
+ A('escape-25');const meta=state.meta;
+ const oldLevel=meta.city.alchemist;meta.city.alchemist=5;
+ const p=sys.byPotion.astraloath,previous=Object.fromEntries(p.ingredients.map(x=>[x[0],meta.materials[x[0]]||0]));
+ for(const [name,count] of p.ingredients)meta.materials[name]=count+4;
+ const stock=meta.potionStock.astraloath||0;
+ A('brew-potion','astraloath');
+ assert.equal(meta.potionStock.astraloath,stock+1);
+ for(const [name,count] of p.ingredients)assert.equal(meta.materials[name],4);
+ for(const [name,value] of Object.entries(previous))meta.materials[name]=value;
+ meta.city.alchemist=oldLevel;
+});
+test('Every region has a unique one-time lore puzzle with adventurer clue',()=>{
+ const puzzles=win.CryptStoryEvents.puzzles;
+ assert.equal(puzzles.length,30);
+ assert.equal(new Set(puzzles.map(p=>p[0])).size,30);
+ for(const p of puzzles)assert.ok(p[2]>=0&&p[2]<p[1].length);
+ A('begin','necromancer');
+ const run=state.run,point=run.tiles.find(t=>t.kind==='empty'&&!t.revealed);
+ assert.ok(point);
+ run.hp=9999;run.mp=9999;
+ run.talents.seeker=1;
+ point.kind='puzzle';point.revealed=true;point.cleared=false;
+ const oldRainbow=state.meta.rainbowDiamonds,turn=run.turn;
+ A('pickup',point.id);
+ assert.equal(run.pendingPuzzle.regional,true);
+ assert.match(el('overlay').innerHTML,/Подсказка авантюриста/);
+ A('puzzle-answer',String(puzzles[0][2]));
+ assert.equal(run.turn,turn+2);
+ assert.equal(run.pendingPuzzle,null);
+ assert.equal(state.meta.rainbowDiamonds,oldRainbow+1);
+ assert.ok(state.meta.achievements['act1-location1-lore-puzzle']);
+ point.kind='puzzle';point.cleared=false;point.revealed=true;
+ A('pickup',point.id);
+ assert.equal(run.pendingPuzzle.regional,false);
+ A('puzzle-answer','0');
+ assert.equal(state.meta.rainbowDiamonds,oldRainbow+1);
+});
+test('First and final bosses use tactical HP scaling rather than raid-clicker values',()=>{
+ const old=state.run;
+ old.floor=29;old.key=true;old.hp=9999;
+ const exit=old.tiles.find(t=>t.kind==='exit');assert.ok(exit);exit.revealed=true;
+ A('descend');
+ const first=old.tiles.find(t=>t.foe&&t.foe.boss);assert.ok(first);
+ assert.ok(first.foe.hp>140&&first.foe.hp<1100,'Act 1 tactical boss HP: '+first.foe.hp);
+ assert.ok(first.foe.atk>=3&&first.foe.atk<60);
+ A('escape-25');const meta=state.meta;
+ meta.unlockedAct=9;meta.selectedAct=9;
+ A('begin','necromancer');
+ const last=state.run;last.hp=99999;last.floor=29;last.key=true;
+ last.tiles.find(t=>t.kind==='exit').revealed=true;
+ A('descend');
+ const finalBoss=last.tiles.find(t=>t.foe&&t.foe.boss);assert.ok(finalBoss);
+ assert.ok(finalBoss.foe.hp>first.foe.hp&&finalBoss.foe.hp<4500);
+ assert.ok(finalBoss.foe.atk>first.foe.atk);
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
