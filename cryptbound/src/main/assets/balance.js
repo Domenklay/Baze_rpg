@@ -73,8 +73,9 @@ var abilities={
 function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
 function hash(s){s=String(s||'unknown');var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function role(source,ranged){
- var t=((source.role||'')+' '+(source.kind||'')+' '+(source.name||'')+' '+(source.skillName||'')).toLowerCase();
- if(ranged||/дальник|стрел|арбалет|пращ|shot/.test(t))return 'marksman';
+ var t=((source.role||'')+' '+(source.name||'')+' '+(source.skillName||'')).toLowerCase();
+ var kind=(source.kind||'').toLowerCase();
+ if(ranged||kind==='shot'||/дальник|стрел|арбалет|пращ/.test(t))return 'marksman';
  if(/призыв|призыва|некромант|архижре|повелител.*дух/.test(t))return 'summoner';
  if(/поддерж|лечен|лекар|целител|исцелен|шаман|regener/.test(t))return 'healer';
  if(/яд|кислот|жало|спор|паразит|poison|токсин/.test(t))return 'venom';
@@ -82,6 +83,12 @@ function role(source,ranged){
  if(/танк|защит|брон|страж|хитин|панцир|щит|guard/.test(t))return 'sentinel';
  if(/контрол|маг|жрец|чарод|curse|дух|прокля|колдун|ведьм|заклин/.test(t))return 'hexer';
  if(/тяжёл|таран|ударник|хищник|палач|slam|голем|великан/.test(t))return 'brute';
+ if(kind==='poison')return 'venom';
+ if(kind==='double')return 'skirmisher';
+ if(kind==='burn'||kind==='curse')return 'hexer';
+ if(kind==='guard')return 'sentinel';
+ // A generic Clicker "slam" classification is not a personality: assign a
+ // stable mixed combat profession rather than making every T2 mob a brute.
  var pool=['brute','sentinel','skirmisher','venom','hexer','healer','summoner'];
  return pool[hash(source.id)%pool.length];
 }
