@@ -291,11 +291,11 @@ window.CryptTitles = [
     "tree": 1,
     "rank": 4,
     "parent": "summonmaster",
-    "name": "Легион мёртвых",
+    "name": "Тёмный жрец",
     "icon": "☠",
-    "effect": "summonHp",
-    "amount": 20,
-    "desc": "Призывы: +20 HP."
+    "effect": "darkCrit",
+    "amount": 10,
+    "desc": "Шанс удвоить урон магии тьмы +10% за уровень."
   },
   {
     "id": "sage",
@@ -313,22 +313,22 @@ window.CryptTitles = [
     "tree": 1,
     "rank": 4,
     "parent": "flameheart",
-    "name": "Вечный огонь",
+    "name": "Маг разрушения",
     "icon": "♨",
-    "effect": "burnDamage",
-    "amount": 5,
-    "desc": "Урон горения +5."
+    "effect": "fireProc",
+    "amount": 10,
+    "desc": "Шанс усилить огненное заклинание +10% за уровень."
   },
   {
     "id": "thunderlord",
     "tree": 1,
     "rank": 4,
     "parent": "lightning",
-    "name": "Повелитель бури",
+    "name": "Повелитель стихий",
     "icon": "ϟ",
-    "effect": "chainTargets",
-    "amount": 1,
-    "desc": "Цепное заклинание поражает ещё одну цель."
+    "effect": "spellDamage",
+    "amount": 10,
+    "desc": "Урон всех атакующих заклинаний +10% за уровень."
   },
   {
     "id": "fortune",
@@ -494,5 +494,60 @@ window.CryptTitles = [
     "effect": "corpseMemory",
     "amount": 1,
     "desc": "Находит уникальные воспоминания в останках."
+  },
+  {
+    "id": "legendmage",
+    "name": "Легендарный маг",
+    "tree": 1,
+    "rank": 4,
+    "parent": "summonmaster",
+    "effect": "utilityPower",
+    "amount": 15,
+    "desc": "Защитные и вспомогательные заклинания сильнее на 15% за уровень.",
+    "icon": "✣"
+  },
+  {
+    "id": "timelord",
+    "name": "Повелитель времени",
+    "tree": 1,
+    "rank": 4,
+    "parent": "meditation",
+    "effect": "timeBonus",
+    "amount": 1,
+    "desc": "Остановка времени длится на 1 дополнительный ход за уровень.",
+    "icon": "◷"
+  },
+  {
+    "id": "highpriest",
+    "name": "Верховный жрец света",
+    "tree": 1,
+    "rank": 4,
+    "parent": "meditation",
+    "effect": "lightEcho",
+    "amount": 10,
+    "desc": "Световая магия наносит дополнительный урон с шансом +10% за уровень.",
+    "icon": "☀"
+  },
+  {
+    "id": "bishop",
+    "name": "Епископ света",
+    "tree": 1,
+    "rank": 4,
+    "parent": "flameheart",
+    "effect": "healPower",
+    "amount": 15,
+    "desc": "Заклинания исцеления эффективнее на 15% за уровень.",
+    "icon": "✚"
+  },
+  {
+    "id": "icearch",
+    "name": "Архиепископ льда",
+    "tree": 1,
+    "rank": 4,
+    "parent": "lightning",
+    "effect": "iceArmor",
+    "amount": 15,
+    "desc": "Ледяные и защитные свитки создают на 15% больше щита за уровень.",
+    "icon": "❄"
   }
 ];
