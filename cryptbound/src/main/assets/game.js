@@ -205,7 +205,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},portalReady:false,materials:{},diamonds:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},portalReady:false,materials:{},diamonds:0,questItems:[],floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,shoulders:null,armor:null,gloves:null,belt:null,legs:null,boots:null,relic:null},bagSelected:null,bagFilter:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -216,7 +216,7 @@ function begin(hero){
  r.hp=stats().hp;r.mp=stats().mp;
  startFloor();save();draw();close();
 }
-function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
+function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 function load(){
  try{var v=JSON.parse(localStorage.getItem(KEY)||'null');if(!v||v.version!==1||!v.meta||!v.meta.upgrades)return null;
  if(v.run&&(!C[v.run.class]||!Array.isArray(v.run.tiles)||!Array.isArray(v.run.items)||!v.run.equip))return null;
@@ -230,6 +230,8 @@ function load(){
  if(meta.selectedAct==null)meta.selectedAct=0;
  if(meta.activeExpedition===undefined)meta.activeExpedition=null;
  if(!meta.completedActs)meta.completedActs={};
+ if(!meta.achievements)meta.achievements={};
+ if(meta.activeExpedition&&!Array.isArray(meta.activeExpedition.questItems))meta.activeExpedition.questItems=[];
  if(meta.diamonds==null)meta.diamonds=0;
  if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
  if(v.run){for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
@@ -237,6 +239,7 @@ function load(){
   if(v.run.actIndex==null)v.run.actIndex=0;
   if(v.run.locationIndex==null)v.run.locationIndex=0;
   if(!v.run.bossClears)v.run.bossClears={};
+  if(!Array.isArray(v.run.questItems))v.run.questItems=[];
   if(!v.run.materials)v.run.materials={};
   if(v.run.diamonds==null)v.run.diamonds=0;
   if(v.run.heroTile==null){var origin=v.run.tiles.find(function(t){return t.kind==='start';});v.run.heroTile=origin?origin.id:12;}
@@ -363,7 +366,7 @@ function renderMaze(){
  var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
  return '<div class="dungeon-root">'+
  '<div class="dungeon-header"><div><span class="subhead">'+esc(DN.acts[r.actIndex||0].name)+' · '+(r.locationIndex+1)+'/3 · ЭТАЖ '+r.floor+' · '+sceneTitle+'</span>'+
- '<div class="dungeon-progress">Плит '+exposed+'/25 · Врагов '+hiddenEnemies().length+' · Ход '+r.turn+'</div></div>'+
+ '<div class="dungeon-progress">Плит '+exposed+'/25 · Врагов '+hiddenEnemies().length+' · Ход '+r.turn+'</div><div class="fine muted">'+esc(currentRegion().story||'')+'</div></div>'+
  '<div class="dungeon-key '+(r.key?'found':'')+'">'+(r.key?'⚿ Ключ найден':'⚿ Найдите ключ')+'</div></div>'+
  '<div class="dungeon-board"><div class="dungeon-border"><div class="maze">'+r.tiles.map(activeTileView).join('')+'</div></div></div>'+
  '<div class="dungeon-footer">'+
@@ -550,7 +553,8 @@ function renderBag(){
    '<button class="btn alt" data-action="upgrade" data-id="'+selected.id+'" '+(r.gold<upgradeCost(selected)||selected.plus>=9?'disabled':'')+'>Заточить '+upgradeCost(selected)+' ◈</button>'+
    '<button class="btn dark" data-action="scrap" data-id="'+selected.id+'" '+(equipped(selected.id)?'disabled':'')+'>Разобрать</button></div>';
  }
-  var souls=(r.soulBag||[]).map(function(sp){return '<div class="row space-bottom"><b>'+esc(sp.name)+'</b>'+
+  var quests=(r.questItems||[]).map(function(q){return '<div class="reward-entry">✥ '+esc(q)+'</div>';}).join('');
+ var souls=(r.soulBag||[]).map(function(sp){return '<div class="row space-bottom"><b>'+esc(sp.name)+'</b>'+
  '<button class="btn small" data-action="consume-soul" data-id="'+sp.id+'">Использовать · 1 ход</button></div>';}).join('');
  var notes=(r.journalNotes||[]).slice(-8).map(function(x){return '<div class="reward-entry">'+esc(x)+'</div>';}).join('');
  return section('Инвентарь',r.items.length+'/30')+
@@ -561,6 +565,7 @@ function renderBag(){
  '<div><b>'+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</b><small>Свитков</small></div>'+
  '<div><b>'+r.gold+'</b><small>Монет</small></div></div>'+
  '<button class="btn alt wide space-top" data-action="potion" '+(r.potions?'':'disabled')+'>Выпить эликсир (+45% HP)</button>')+
+ frame('КВЕСТОВЫЕ ПРЕДМЕТЫ',quests||'<p class="fine muted">Печати локаций ещё не найдены.</p>')+
  frame('СОБРАННЫЕ ДУШИ',souls||'<p class="fine muted">Пока нет душ.</p>')+
  frame('НАЙДЕННЫЕ ЗАПИСКИ',notes||'<p class="fine muted">Пока нет записей.</p>');
 }
@@ -594,9 +599,19 @@ function salvageExpedition(expedition){
  s.meta.materials['Металлолом']=(s.meta.materials['Металлолом']||0)+gain;
  return gain;
 }
+
+function awardAchievement(key,diamonds){
+ if(s.meta.achievements[key])return 0;
+ s.meta.achievements[key]=true;s.meta.rainbowDiamonds=(s.meta.rainbowDiamonds||0)+diamonds;
+ return diamonds;
+}
 function safePortal(){
  if(!r||!r.portalReady||!isBossFloor()||!r.bossClears[r.floor]){toast('Безопасный портал открывается только после победы над боссом.');return;}
- var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex,loot=bankExpeditionLoot(1),scrap=0;
+ var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex;
+ var locKey='act'+(oldAct+1)+'-location'+(oldLocation+1);
+ var rainbow=awardAchievement(locKey+'-first-boss',1);
+ if(r.bossClears[50])rainbow+=awardAchievement(locKey+'-deep-50',2);
+ var loot=bankExpeditionLoot(1),scrap=0;
  s.meta.best=Math.max(s.meta.best,r.floor);
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
@@ -606,6 +621,7 @@ function safePortal(){
   s.meta.activeExpedition=carry;
  }else{
   scrap=salvageExpedition(r);
+  rainbow+=awardAchievement('act'+(oldAct+1)+'-complete',3);
   s.meta.completedActs[oldAct]=(s.meta.completedActs[oldAct]||0)+1;
   s.meta.unlockedAct=Math.max(s.meta.unlockedAct,Math.min(DN.acts.length-1,oldAct+1));
   s.meta.activeExpedition=null;
@@ -613,7 +629,7 @@ function safePortal(){
  }
  s.run=null;r=null;save();draw();
  dialog('<div class="emblem">◈</div><h2>'+(oldLocation===2?'Подземелье завершено':'Безопасное возвращение')+'</h2>'+
- '<p>Покинута локация «'+esc(oldName)+'». На склад сдано '+loot.resources+' ресурсов и '+loot.diamonds+' алмазов.</p>'+
+ '<p>Покинута локация «'+esc(oldName)+'». На склад сдано '+loot.resources+' ресурсов и '+loot.diamonds+' алмазов.</p>'+ (rainbow?'<p class="golden">Достижения: +'+rainbow+' радужных алмазов (одноразово).</p>':'')+
  (oldLocation<2?'<p>Таланты, предметы, золото, свитки и записи сохранены. Следующая локация начнётся после отдыха на базе.</p>'+
  '<button class="btn wide" data-action="resume-expedition">Продолжить экспедицию</button>':
  '<p>Все три локации пройдены. Временное снаряжение разобрано: +'+scrap+' металлолома.</p>'+
@@ -665,7 +681,7 @@ function renderBase(){
   var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0;
   var current=exp&&exp.actIndex===i;
   return '<div class="meta-upgrade"><div><strong>'+(done?'✓ ':'')+(i+1)+'. '+esc(a.name)+'</strong>'+
-   '<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small></div>'+
+   '<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small><small>'+esc(a.story||'')+'</small></div>'+
    '<button class="btn small" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+
    (current?'Продолжить':unlocked?'Войти':'Закрыто')+'</button></div>';
  }).join('');
@@ -781,6 +797,8 @@ function kill(t){
  }
  if(e.boss){
   r.bossClears[r.floor]=true;r.portalReady=true;
+  var q=currentRegion().questItem;
+  if(q&&r.questItems.indexOf(q)<0){r.questItems.push(q);log('Получен квестовый предмет: '+q+'.');}
   drop.diamonds=Math.max(1,Math.floor(depthMultiplier()*(1+Math.floor((r.actIndex||0)/3))));
   log('Босс повержен! Безопасный портал открыт на этом этаже.');
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
