@@ -52,6 +52,24 @@ test('Only one specialization per title fork; chosen path remains upgradeable',(
  r.talents=oldTitles;r.ep=oldEp;api.debug.draw();
 });
 
+test('Adventure remains, soul use and one-time treasure',()=>{
+ const old=Object.assign({},r.talents);
+ r.talents.fortune=1;r.talents.explorer=1;r.talents.cartographer=1;
+ const corpse=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(corpse);
+ corpse.kind='corpse';corpse.corpseId='storm-smith';corpse.revealed=true;corpse.cleared=false;
+ const n=r.items.length,before=state.seq;
+ A('pickup',corpse.id);assert.equal(corpse.cleared,true);
+ assert.equal(r.items.length,n+1);
+ assert.ok(r.journalNotes.some(x=>x.includes('Павший механик')));
+ const soul=r.soulBag.find(x=>x.storyId==='storm-smith');assert.ok(soul);
+ A('close');r.tab='bag';api.debug.draw();
+ assert.match(el('content').innerHTML,/СОБРАННЫЕ ДУШИ/);
+ A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
+ assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
+ A('pickup',corpse.id);assert.equal(state.seq,before+2);
+ r.talents=old;r.tab='maze';api.debug.draw();
+});
+
 test('Hero origin at center with connected orthogonal exploration',()=>{
  assert.equal(r.tiles.length,25);
  assert.equal(r.tiles[12].kind,'start');

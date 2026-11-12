@@ -335,44 +335,44 @@ window.CryptTitles = [
     "tree": 2,
     "rank": 0,
     "parent": null,
-    "name": "Жажда находок",
+    "name": "Ученик авантюриста",
     "icon": "◈",
-    "effect": "gold",
-    "amount": 15,
-    "desc": "Больше золота на 15%."
+    "effect": "epFloor",
+    "amount": 1,
+    "desc": "За новый этаж +1 очко исследования."
   },
   {
     "id": "seeker",
     "tree": 2,
     "rank": 1,
     "parent": "fortune",
-    "name": "Чутьё ловушек",
+    "name": "Искатель",
     "icon": "◉",
     "effect": "trapReduce",
-    "amount": 25,
-    "desc": "Урон ловушек −25%."
+    "amount": 12,
+    "desc": "Поиск тайников; урон ловушек −12% за уровень."
   },
   {
     "id": "explorer",
     "tree": 2,
     "rank": 1,
     "parent": "fortune",
-    "name": "Картограф",
+    "name": "Мародёр",
     "icon": "✥",
-    "effect": "epFloor",
-    "amount": 2,
-    "desc": "За новый этаж +2 опыта пути."
+    "effect": "gold",
+    "amount": 5,
+    "desc": "Останки исследователей могут содержать ценности; золото +5%."
   },
   {
     "id": "stealth",
     "tree": 2,
     "rank": 2,
     "parent": "seeker",
-    "name": "Тень",
+    "name": "Следопыт",
     "icon": "☽",
-    "effect": "dodge",
-    "amount": 5,
-    "desc": "Уклонение +5%."
+    "effect": "chamberHint",
+    "amount": 1,
+    "desc": "Замечает признаки секретов в побочных комнатах."
   },
   {
     "id": "vault",
@@ -382,117 +382,117 @@ window.CryptTitles = [
     "name": "Взломщик",
     "icon": "⚿",
     "effect": "chestGold",
-    "amount": 20,
-    "desc": "Золото из сундуков +20%."
+    "amount": 12,
+    "desc": "Вскрывает тайники в сундуках и увеличивает находки монет."
   },
   {
     "id": "merchant",
     "tree": 2,
     "rank": 2,
     "parent": "explorer",
-    "name": "Торгаш",
+    "name": "Духолов",
     "icon": "◈",
-    "effect": "discount",
-    "amount": 10,
-    "desc": "Цены торговцев −10%."
+    "effect": "soulDrop",
+    "amount": 12,
+    "desc": "Каждый уровень даёт 12% шанс души с обычного врага."
   },
   {
     "id": "cartographer",
     "tree": 2,
     "rank": 2,
     "parent": "explorer",
-    "name": "Зоркий глаз",
+    "name": "Собиратель останков",
     "icon": "◉",
-    "effect": "revealFloor",
+    "effect": "corpseSoul",
     "amount": 1,
-    "desc": "При спуске открывается клетка."
+    "desc": "Извлекает особые души из останков исследователей."
   },
   {
     "id": "scavenger",
     "tree": 2,
     "rank": 3,
     "parent": "stealth",
-    "name": "Собиратель",
+    "name": "Тайновед",
     "icon": "▤",
-    "effect": "lootChance",
-    "amount": 8,
-    "desc": "Дополнительный шанс добычи +8%."
+    "effect": "chamberSecret",
+    "amount": 1,
+    "desc": "Видит дополнительные секреты у края побочной комнаты."
   },
   {
     "id": "secretkeeper",
     "tree": 2,
     "rank": 3,
     "parent": "vault",
-    "name": "Искатель тайн",
+    "name": "Археолог",
     "icon": "✦",
-    "effect": "secretEp",
-    "amount": 2,
-    "desc": "За пасхалки +2 опыта пути."
+    "effect": "relicMemory",
+    "amount": 1,
+    "desc": "Узнаёт свойства редких реликвий."
   },
   {
     "id": "trader",
     "tree": 2,
     "rank": 3,
     "parent": "merchant",
-    "name": "Поставщик",
+    "name": "Проводник душ",
     "icon": "⚒",
-    "effect": "discount",
-    "amount": 8,
-    "desc": "Цены торговцев −8%."
+    "effect": "soulPower",
+    "amount": 1,
+    "desc": "Усиливает защитные и лечебные эффекты расходуемых душ."
   },
   {
     "id": "navigator",
     "tree": 2,
     "rank": 3,
     "parent": "cartographer",
-    "name": "Путеводная звезда",
+    "name": "Анатом",
     "icon": "✧",
-    "effect": "revealFloor",
+    "effect": "corpseBonus",
     "amount": 1,
-    "desc": "При спуске открывается ещё клетка."
+    "desc": "Дополнительный опыт изучения останков и улики."
   },
   {
     "id": "phantom",
     "tree": 2,
     "rank": 4,
     "parent": "scavenger",
-    "name": "Незримый ходок",
+    "name": "Охотник за тайнами",
     "icon": "☽",
-    "effect": "dodge",
-    "amount": 6,
-    "desc": "Уклонение +6%."
+    "effect": "deepSecret",
+    "amount": 1,
+    "desc": "Находит скрытые награды в особых комнатах."
   },
   {
     "id": "reliclord",
     "tree": 2,
     "rank": 4,
     "parent": "secretkeeper",
-    "name": "Мастер реликвий",
+    "name": "Хранитель реликвий",
     "icon": "♛",
-    "effect": "rarityBoost",
-    "amount": 5,
-    "desc": "Шанс редкого предмета +5%."
+    "effect": "relicBlessing",
+    "amount": 1,
+    "desc": "Изучение артефактов приносит благословение."
   },
   {
     "id": "magnate",
     "tree": 2,
     "rank": 4,
     "parent": "trader",
-    "name": "Князь золота",
+    "name": "Жнец душ",
     "icon": "◈",
-    "effect": "gold",
-    "amount": 20,
-    "desc": "Больше золота на 20%."
+    "effect": "eliteSoul",
+    "amount": 1,
+    "desc": "Получает редкие души с элиты и боссов."
   },
   {
     "id": "pathfinder",
     "tree": 2,
     "rank": 4,
     "parent": "navigator",
-    "name": "Тайное зрение",
+    "name": "Хранитель памяти",
     "icon": "◉",
-    "effect": "revealFloor",
-    "amount": 2,
-    "desc": "При спуске ещё две клетки открываются."
+    "effect": "corpseMemory",
+    "amount": 1,
+    "desc": "Находит уникальные воспоминания в останках."
   }
 ];
