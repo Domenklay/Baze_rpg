@@ -67,7 +67,7 @@ function levelTheme(){return CR.regionIndex(r.floor);}
 function maxFloorLabel(){return CR.region(r.floor).name;}
 function lvl(n){return (r.talents[n]||0);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
-function levelCost(t){var main=r.class==='necromancer'?1:r.class==='executioner'?0:2;
+function levelCost(t){var main=C[r.class].type==='Магия'?1:C[r.class].type==='Битва'?0:2;
  var base=2+t.rank*3+lvl(t.id)*3;
  return t.tree===main?base:Math.ceil(base*1.25);
 }
@@ -82,9 +82,9 @@ function stats(){
  var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
  var def=c.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def')+setBonus('def');
  var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
- var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.relicStat(s.meta,'mp')+setBonus('mp');
+ var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
  var pow=c.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
- var crit=c.crit+bonus('crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
+ var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -217,7 +217,7 @@ function hud(){
  $('hp-fill').style.width=pct(r.hp,st.hp)+'%';$('mp-fill').style.width=pct(r.mp,st.mp)+'%';
  $('hp-label').textContent=r.hp+' / '+st.hp+' ЗД';$('mp-label').textContent=r.mp+' / '+st.mp+' МН';
  $('gold-label').textContent=r.gold;$('ep-label').textContent=r.ep;
- $('portrait').innerHTML=window.CryptArt.miniHero(r.class);
+ $('portrait').innerHTML=window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null);
  document.querySelectorAll('[data-tab]').forEach(function(b){b.classList.toggle('active',b.dataset.tab===r.tab);});
 }
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
@@ -292,7 +292,7 @@ function skillText(){return r.class==='necromancer'?'☠ Призвать ске
 function skillHint(){return r.class==='necromancer'?'8 маны, 5 ходов восстановления':r.class==='executioner'?'4 маны, 4 хода восстановления':'6 маны, 5 ходов восстановления';}
 function renderMaze(){
  var exposed=r.tiles.filter(function(t){return t.revealed;}).length;
- var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed;
+ var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed,skill=SKILLS[r.class];
  var sceneTitle=maxFloorLabel();
  var footer=foe?
    '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
@@ -310,7 +310,7 @@ function renderMaze(){
  '<div class="dungeon-footer">'+
  '<div class="dungeon-encounter">'+footer+'</div>'+summon+
  '<div class="dungeon-buttons">'+
- '<button class="dungeon-action special" data-action="skill" '+(turns<(r.class==='executioner'?4:5)?'disabled':'')+'><span>'+(r.class==='necromancer'?'☠':r.class==='executioner'?'⚔':'◉')+'</span><small>'+(r.class==='necromancer'?'Призыв':r.class==='executioner'?'Казнь':'Разведка')+'</small></button>'+
+ '<button class="dungeon-action special" data-action="skill" '+(turns<skill.turns?'disabled':'')+'><span>'+skill.icon+'</span><small>'+skill.name+'</small></button>'+
  '<button class="dungeon-action" data-action="spell-modal"><span>✣</span><small>Магия</small></button>'+
  '<button class="dungeon-action" data-action="potion" '+(r.potions?'':'disabled')+'><span>✚</span><small>Зелье '+r.potions+'</small></button>'+
  '<button class="dungeon-action" data-action="wait"><span>⧖</span><small>Пропустить</small></button>'+
@@ -334,7 +334,7 @@ function renderHero(){
  return section('Экипировка',c.type)+
  frame('ГЕРОЙ И ПРЕДМЕТЫ','<div class="gear-layout">'+
   '<div class="gear-slots gear-left">'+left.map(gearSlotButton).join('')+'</div>'+
-  '<div class="gear-center"><div class="gear-portrait">'+window.CryptArt.hero(r.class)+'</div>'+
+  '<div class="gear-center"><div class="gear-portrait">'+window.CryptArt.hero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</div>'+
    '<div class="gear-hero-name">'+c.name+'</div><small>'+c.title+'</small></div>'+
   '<div class="gear-slots gear-right">'+right.map(gearSlotButton).join('')+'</div></div>'+
   '<p class="fine muted space-top">Нажмите ячейку экипировки, чтобы открыть сумку с подходящими предметами.</p>')+
@@ -497,7 +497,7 @@ function draw(){
  if(!s)return;
  hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=section('Записки выживших','Лагерь')+
  '<div class="scene">'+window.CryptArt.room(0,1)+'<div class="banner-label">Место, где всё начинается снова.</div></div>'+
- frame('НОВАЯ ЭКСПЕДИЦИЯ','<p class="fine muted">Выберите одного из трёх героев. Каждый забег создаёт новый лабиринт, но полученные осколки памяти позволяют усиливать будущие походы.</p>'+
+ frame('НОВАЯ ЭКСПЕДИЦИЯ','<p class="fine muted">Выберите одного из шести героев. Каждый забег создаёт новый лабиринт, но полученные осколки памяти позволяют усиливать будущие походы.</p>'+
  '<button class="btn wide space-top" data-action="choose">Выбрать героя</button>')+
  frame('ЛЕТОПИСЬ','<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Забегов</small></div><div><b>'+s.meta.best+'</b><small>Лучший этаж</small></div><div><b>'+s.meta.souls+'</b><small>Осколков</small></div></div><button class="btn alt wide space-top" data-action="camp">Память предков</button>');return;}
  $('content').classList.toggle('dungeon-mode',r.tab==='maze');
@@ -514,8 +514,8 @@ function choose(){
   var c=C[k];return '<button class="class-option" data-action="begin" data-id="'+k+'">'+window.CryptArt.hero(k)+
  '<span><strong>'+c.icon+' '+c.name+'</strong><small>'+c.description+'</small></span></button>';
  }).join('');
- dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.1</div><h2>ВЫБОР ПУТИ</h2>'+
- '<p>Три архетипа. Один бесконечный спуск. Всё, что вы потеряете, останется под землёй — кроме памяти.</p>'+opts+
+ dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.4</div><h2>ВЫБОР ПУТИ</h2>'+
+ '<p>Шесть героев. Один бесконечный спуск. Всё, что вы потеряете, останется под землёй — кроме памяти.</p>'+opts+
  '<p class="fine muted">Скрытые клетки · Пошаговый бой · Магия · Призыв · Древа титулов</p>'+
  '<button class="btn dark wide" data-action="close">Закрыть</button>');
 }
@@ -538,7 +538,8 @@ function consumeTurn(){
  alive.slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
-  if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage'));if(e.hp<=0){kill(t);return;}}
+  if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
+  if(e.poison>0){e.poison--;e.hp-=Math.max(2,Math.floor(stats().atk*.24));if(e.hp<=0){kill(t);return;}}
   var ready=false;
   if(e.ranged){
    e.attackCooldown=Math.max(0,(e.attackCooldown||3)-1);
@@ -581,7 +582,7 @@ function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
- r.hp=Math.min(stats().hp,r.hp+bonus('killHeal'));
+ r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[]};
  for(var source of (e.loot||[])){
   if(Math.random()*100<source.chance)drop.materials.push({name:source.name,qty:rand(source.min,source.max)});
@@ -605,8 +606,8 @@ function strike(tid){
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+rand(0,3)-t.foe.def-(t.foe.guard||0));
  t.foe.guard=0;
- if(t.foe.boss)amount=Math.floor(amount*(1+bonus('bossDamage')*.01));
- if(critical)amount=Math.floor(amount*(1.6+bonus('critDamage')*.01));
+ if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
+ if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
  t.foe.hp-=amount;
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
@@ -615,38 +616,59 @@ function strike(tid){
 function finishAction(){if(!r)return;consumeTurn();if(r){draw();save();
   if(r.fx&&r.fxUntil>Date.now()){setTimeout(function(){if(r&&Date.now()>=r.fxUntil){r.fx=null;draw();}},460);}
  }}
+var SKILLS={
+ necromancer:{name:'Призвать скелета',icon:'☠',cost:8,turns:5},
+ executioner:{name:'Казнящий удар',icon:'⚔',cost:4,turns:4},
+ scout:{name:'Разведка',icon:'◉',cost:6,turns:5},
+ sorceress:{name:'Грозовое эхо',icon:'ϟ',cost:9,turns:5},
+ guardian:{name:'Нерушимый удар',icon:'♜',cost:6,turns:4},
+ assassin:{name:'Ядовитый клинок',icon:'☽',cost:5,turns:4}
+};
 function useSkill(){
- if(r){r.fx='skill';r.fxUntil=Date.now()+420;}
- if(r.turn-r.skillUsed<(r.class==='executioner'?4:5)){toast('Умение ещё восстанавливается.');return;}
- var targetTile=target();var st=stats();
+ var skill=SKILLS[r.class];
+ if(r.turn-r.skillUsed<skill.turns){toast('Умение восстанавливается.');return;}
+ if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
+ var t=target(),st=stats(),damage=0;
  if(r.class==='necromancer'){
-  if(r.mp<8){toast('Нужно 8 маны.');return;}
-  r.mp-=8;r.summonTile=null;r.summon={name:'Костяной страж',def:2,specialCooldown:4,maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
+  var creature={name:'Костяной страж',def:2,specialCooldown:4,
+   maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
    hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
- atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3};
-  if(!placeSummon()){r.summon=null;r.mp+=8;toast('Не удалось найти место для призыва.');return;}
-  r.skillUsed=r.turn;log('Некромант призывает скелета из могильной пыли.');
+   atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3};
+  var previous=r.summon,oldTile=r.summonTile;
+  r.summon=creature;r.summonTile=null;
+  if(!placeSummon()){r.summon=previous;r.summonTile=oldTile;toast('Свободных клеток для призыва нет.');return;}
+  log('Призван костяной страж на клетку '+r.summonTile+'.');
  }else if(r.class==='executioner'){
-  if(!targetTile){toast('Нужен враг для удара.');return;}
-  if(r.mp<4){toast('Нужно 4 маны.');return;}
-  r.mp-=4;
-  var dmg=Math.max(3,Math.floor(st.atk*2.15)-targetTile.foe.def);
-  targetTile.foe.hp-=dmg;
-  r.shield+=Math.floor(st.def*1.8)+7;
-  log('Казнящий удар наносит '+dmg+' урона. Защитная стойка.');
-  if(targetTile.foe.hp<=0)kill(targetTile);
-  r.skillUsed=r.turn;
+  if(!t){toast('Нужен открытый враг.');return;}
+  damage=Math.max(3,Math.floor(st.atk*2.1)-t.foe.def);
+  t.foe.hp-=damage;r.shield+=Math.floor(st.def*1.8)+7;
+  log('Казнь: '+damage+' урона и защитная стойка.');
+  if(t.foe.hp<=0)kill(t);
+ }else if(r.class==='guardian'){
+  r.shield+=12+Math.floor(st.def*2.2);
+  if(t){damage=Math.max(3,Math.floor(st.atk*1.65)-t.foe.def);t.foe.hp-=damage;
+   if(t.foe.hp<=0)kill(t);}
+  log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
+ }else if(r.class==='sorceress'){
+  var targets=enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
+  targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
+   enemy.foe.hp-=val;if(enemy.foe.hp<=0)kill(enemy);});
+  log('Грозовое эхо поражает '+targets.length+' врагов.');
+ }else if(r.class==='assassin'){
+  if(!t){toast('Нужен открытый враг.');return;}
+  damage=Math.max(3,Math.floor(st.atk*1.35)-t.foe.def);
+  t.foe.hp-=damage;t.foe.poison=3;
+  log('Ядовитый клинок: '+damage+' урона, яд на три хода.');
+  if(t.foe.hp<=0)kill(t);
  }else{
-  if(r.mp<6){toast('Нужно 6 маны.');return;}
-  r.mp-=6;r.skillUsed=r.turn;
-  var n=0;for(var i=0;i<3;i++){
-   var list=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
-   if(!list.length)break;
-   var t=pick(list);t.revealed=true;if(t.kind==='empty')t.cleared=true;n++;
-  }
-  var coin=addGold(4+r.floor*2);
-  log('Следопыт видит сквозь стены: открыто '+n+' клеток и найдено '+coin+' монет.');
+  var count=0;
+  for(var i=0;i<3;i++){var candidates=r.tiles.filter(function(tile){return CR.exploreStatus(tile,r.tiles).ok;});
+   if(!candidates.length)break;var cell=pick(candidates);
+   cell.revealed=true;if(cell.kind==='empty')cell.cleared=true;count++;}
+  addGold(4+r.floor*2);
+  log('Лучник разведывает '+count+' доступных клеток.');
  }
+ r.mp-=skill.cost;r.skillUsed=r.turn;r.fx='skill';r.fxUntil=Date.now()+440;
  finishAction();
 }
 function potion(){
@@ -662,7 +684,7 @@ function cast(id){
  var error=spellValid(sp);if(error){toast(error);return;}
  r.scrolls[id]--;r.mp-=manaCost(sp);
  var tar=target(),st=stats();
- var magic=Math.floor((sp.base+st.pow*1.45)*(1+bonus('spellDamage')*.01));
+ var magic=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
  if(sp.kind==='heal'){r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
  else if(sp.kind==='shield'){r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
  else if(sp.kind==='reveal'){
