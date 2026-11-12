@@ -285,7 +285,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
@@ -344,6 +344,7 @@ function load(){
   if(!v.run.eliteClears)v.run.eliteClears={};
   if(!Array.isArray(v.run.questItems))v.run.questItems=[];
   if(!Array.isArray(v.run.preparedPotions))v.run.preparedPotions=[null,null];
+  if(v.run.locationUsedPotion==null)v.run.locationUsedPotion=0;
   if(v.run.guardCharges==null)v.run.guardCharges=0;
   if(v.run.earthGateFound==null)v.run.earthGateFound=false;
   if(v.run.earthGateTitleGranted==null)v.run.earthGateTitleGranted=false;
@@ -771,6 +772,15 @@ function awardAchievement(key,diamonds){
  s.meta.achievements[key]=true;s.meta.rainbowDiamonds=(s.meta.rainbowDiamonds||0)+diamonds;
  return diamonds;
 }
+
+function localAchievement(kind,reward,title){
+ if(!r)return 0;
+ var code='act'+((r.actIndex||0)+1)+'-location'+((r.locationIndex||0)+1)+'-'+kind;
+ var awarded=awardAchievement(code,reward);
+ if(awarded)log('✧ Достижение «'+title+'»: +'+awarded+' радужных алмазов.');
+ return awarded;
+}
+
 function safePortal(){
  if(!r||!r.portalReady||!isBossFloor()||!r.bossClears[r.floor]){toast('Безопасный портал открывается только после победы над боссом.');return;}
  var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex;
@@ -783,7 +793,7 @@ function safePortal(){
  if(oldLocation<2){
   var carry=JSON.parse(JSON.stringify(r));
   carry.locationIndex=oldLocation+1;carry.floor=1;carry.tiles=[];carry.heroTile=null;carry.portalReady=false;
-  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.ghost=null;carry.chamberActive=null;carry.shield=0;carry.earthGateFound=false;carry.earthGateTitleGranted=false;carry.sixStarFound=false;carry.spellHistory=[];
+  carry.bossClears={};carry.eliteSchedule={};carry.eliteClears={};carry.rangerType=null;carry.key=false;carry.summon=null;carry.summonTile=null;carry.ghost=null;carry.locationUsedPotion=0;carry.chamberActive=null;carry.shield=0;carry.earthGateFound=false;carry.earthGateTitleGranted=false;carry.sixStarFound=false;carry.spellHistory=[];
   carry.poisonTurns=0;carry.blessed=0;carry.log=[];
   s.meta.activeExpedition=carry;
  }else{
@@ -851,12 +861,12 @@ function dungeonAchievements(){
   var list=a.locations.map(function(loc,j){
    var prefix='act'+(i+1)+'-location'+(j+1);
    return '<div class="row space-bottom"><div><strong>'+(claimed[prefix+'-first-boss']?'✓ ':'')+esc(loc.name)+'</strong>'+
-    '<small>Босс 30-го этажа: '+(claimed[prefix+'-first-boss']?'получено':'не получено')+' · Глубина 50: '+(claimed[prefix+'-deep-50']?'получено':'не получено')+'</small></div></div>';
+    '<small>Босс 30-го: '+(claimed[prefix+'-first-boss']?'✓':'○')+' · 50-й этаж: '+(claimed[prefix+'-deep-50']?'✓':'○')+' · Элитник: '+(claimed[prefix+'-elite']?'✓':'○')+' · Тайник: '+(claimed[prefix+'-secret-room']?'✓':'○')+' · Без зелий: '+(claimed[prefix+'-boss-no-potions']?'✓':'○')+'</small></div></div>';
   }).join('');
   return '<div class="frame-title space-top">'+(i+1)+'. '+esc(a.name)+(claimed['act'+(i+1)+'-complete']?' ✓':'')+'</div>'+list;
  }).join('');
  dialog('<div class="emblem">✧</div><h2>ДОСТИЖЕНИЯ ПОДЗЕМЕЛИЙ</h2>'+
- '<p>У каждой из 30 локаций есть одноразовые награды за выход после первого босса и после победы на глубине 50. Полное прохождение трёх локаций награждается отдельно.</p>'+
+ '<p>У каждой из 30 локаций есть награды за первого босса, глубину 50, элитника, тайник и победу без зелий. Полное прохождение трёх локаций награждается отдельно.</p>'+
  '<p class="fine muted">Пробный баланс: +1 за первый портал, +2 за глубину 50, +3 за весь акт. Итоговые значения ещё будут согласованы.</p>'+
  '<div class="log" style="max-height:57dvh;text-align:left;">'+rows+'</div>'+
  '<button class="btn wide space-top" data-action="close">Закрыть</button>');
@@ -1078,7 +1088,7 @@ function consumeTurn(){
 function kill(t){
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
- if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');fairyRemark('elite');}
+ if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');localAchievement('elite',1,'Опасная добыча');fairyRemark('elite');}
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
@@ -1097,9 +1107,11 @@ function kill(t){
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
   if(r.floor>=40&&Math.random()<.025)drop.scroll=rollSpell(6).id;
   drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
+  if((r.locationUsedPotion||0)===0)localAchievement('boss-no-potions',2,'Без зелий');
   r.ep+=4;s.meta.bossKills=(s.meta.bossKills||0)+1;
  }
  else {
+  if(e.elite&&Math.random()<.55)drop.diamonds=1;
   if(Math.random()<.23+(bonus('lootChance')+setBonus('lootChance'))*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
   else if(Math.random()<.33){drop.scroll=rollSpell(e.boss&&r.floor>=40?6:e.elite?5:4).id;}
  }
@@ -1199,7 +1211,7 @@ function useSkill(){
 function potion(){
  if(r.potions<1){toast('Эликсиры закончились.');return;}
  if(r.hp>=stats().hp){toast('Здоровье уже полное.');return;}
- r.potions--;var amount=Math.floor(stats().hp*.45);r.hp=Math.min(stats().hp,r.hp+amount);
+ r.potions--;r.locationUsedPotion=(r.locationUsedPotion||0)+1;var amount=Math.floor(stats().hp*.45);r.hp=Math.min(stats().hp,r.hp+amount);
  log('Выпит целебный эликсир: +'+amount+' HP.');finishAction();
 }
 function wait(){log('Вы затаились, собираясь с силами.');r.mp=Math.min(stats().mp,r.mp+1);finishAction();}
@@ -1616,6 +1628,7 @@ function chamberSecret(id){
  var t=tile(id);
  if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||!roomSecretAvailable(t.room))return;
  t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
+ localAchievement('secret-room',2,'Тайна за стеной');
  if(lvl('phantom'))addItem('amulet',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
  log('В боковой стене найдена тайная ниша.');fairyRemark('secret');
@@ -1880,7 +1893,7 @@ function usePreparedPotion(index){
  index=Number(index);
  var id=r.preparedPotions&&r.preparedPotions[index],p=SYS.byPotion[id];
  if((index!==0&&index!==1)||!p)return;
- r.preparedPotions[index]=null;
+ r.preparedPotions[index]=null;r.locationUsedPotion=(r.locationUsedPotion||0)+1;
  if(id==='ghost'){
   if(!r.ghost||r.ghost.hp<=0){var hp=Math.round(32+r.floor*1.6);
    r.ghost={hp:hp,maxHp:hp,atk:Math.round(8+r.floor*.8),cooldown:3,dodge:70};}
