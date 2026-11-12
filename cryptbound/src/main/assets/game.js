@@ -128,7 +128,8 @@ function mkEnemy(boss,ranged,forcedElite){
  var elites=reg.elites||[],mobs=reg.mobs||[];
  var elite=!!forcedElite;
  var rangedPool=mobs.filter(function(m){return m.kind==='shot'||/лучник|арбалет|стрелок|пращник|дальник/i.test(m.name+' '+(m.role||''));});
- var rangedChoice=rangedPool.find(function(x){return x.id===r.rangerType;})||pick(rangedPool.length?rangedPool:mobs);
+ var availableRanged=rangedPool.length?rangedPool:mobs;
+ var rangedChoice=availableRanged.find(function(x){return x.id===r.rangerType;})||pick(availableRanged);
  if(ranged&&!r.rangerType)r.rangerType=rangedChoice.id;
  var available=mobs.filter(function(x){return (r.floorMonsterTypes||[]).indexOf(x.id)<0;});
  var src=boss?reg.boss:elite?pick(elites):ranged?rangedChoice:pick(available.length?available:mobs);
