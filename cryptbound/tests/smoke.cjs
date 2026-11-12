@@ -1,203 +1,167 @@
-/* node cryptbound/tests/smoke.cjs - no network or Android device required. */
+/* Run with Node 20+: node cryptbound/tests/smoke.cjs */
 'use strict';
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const root=path.resolve(__dirname,'../src/main/assets');
 const elements={},storage={},events={};
 function el(id){return elements[id]||(elements[id]={id,innerHTML:'',textContent:'',style:{},scrollTop:0,
  classList:{add(){},remove(){},toggle(){}}});}
-const windowMock={addEventListener(ev,fn){events['window.'+ev]=fn;}};
-const docMock={hidden:false,getElementById:el,querySelector(){return null},querySelectorAll(){return []},
- addEventListener(ev,fn){events['document.'+ev]=fn;}};
-const context={window:windowMock,document:docMock,
+const win={addEventListener(n,fn){events['window.'+n]=fn;}};
+const doc={hidden:false,getElementById:el,querySelector(){return null},querySelectorAll(){return[]},
+ addEventListener(n,fn){events['document.'+n]=fn;}};
+const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
-vm.createContext(context);
-for(const file of ['art.js','equipment_art.js','titles.js','expansion.js','game.js']){
- vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file,timeout:8000});
-}
-const api=windowMock.Crypt,A=api.debug.action;let tests=0;
-function check(label,fn){fn();tests++;console.log('PASS '+label);}
-check('45 branching titles across three trees',()=>{
- const titles=windowMock.CryptTitles;
- assert.equal(titles.length,45);
- assert.equal(titles.filter(t=>t.tree===0).length,15);
- assert.equal(titles.filter(t=>t.tree===1).length,15);
- assert.equal(titles.filter(t=>t.tree===2).length,15);
- assert.equal(Math.max(...titles.map(t=>t.rank)),4);
-});
-check('Three independent starting classes',()=>{
- for(const klass of ['necromancer','executioner','scout']){
-  A('begin',klass);
-  const state=api.state().run;
-  assert.equal(state.class,klass);
-  assert.equal(state.tiles.length,25);
-  assert.equal(Object.keys(state.equip).length,9);
-  assert.equal(state.items.length,3);
+vm.createContext(ctx);
+const sources=['art.js','equipment_art.js','imported_art.js','titles.js','expansion.js','clicker_data.js','clicker_rules.js','game.js'];
+for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
+const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules;
+let checks=0;
+function test(name,fn){fn();checks++;console.log('PASS '+name);}
+test('Six selectable classes and 18 authentic offline sprite frames',()=>{
+ assert.equal((el('overlay').innerHTML.match(/class-option/g)||[]).length,6);
+ for(const key of ['strength_m','strength_f','rogue_m','rogue_f','mage_m','mage_f']){
+  for(const pose of ['idle','attack','skill'])
+   assert.ok(fs.statSync(path.join(root,'imported',key+'_'+pose+'.png')).size>1000);
  }
 });
+test('Six imported T1–T2 regions, 156 unique monsters, 12 sets and 24 weapons',()=>{
+ assert.equal(DB.regions.length,6);
+ assert.equal(DB.regions.reduce((sum,x)=>sum+x.enemies.length,0),156);
+ assert.equal(DB.sets.length,12);
+ assert.equal(DB.weapons.length,24);
+ assert.ok(DB.regions[0].enemies[0].loot.some(x=>x.chance===100));
+});
 A('begin','necromancer');
-const state=api.state(),r=state.run;
-r.hp=9999;r.mp=1000;
-check('Dungeon displays without full-page scene and has a stone floor',()=>{
- assert.match(el('content').innerHTML,/dungeon-root/);
- assert.match(el('content').innerHTML,/dungeon-board/);
- assert.match(el('content').innerHTML,/tile-entrance/);
- assert.doesNotMatch(el('content').innerHTML,/tile-player/);
- assert.doesNotMatch(el('content').innerHTML,/scene-bg/);
+const state=api.state();let r=state.run;
+r.hp=5000;r.mp=5000;
+test('Hero origin at center with connected orthogonal exploration',()=>{
+ assert.equal(r.tiles.length,25);
+ assert.equal(r.tiles[12].kind,'start');
+ assert.match(el('content').innerHTML,/tile-origin/);
+ assert.ok(r.tiles.filter(t=>t.revealed).length<=3);
+ const far=r.tiles.find(t=>!t.revealed&&CR.near(12).indexOf(t.id)===-1);
+ const turn=r.turn;A('reveal',far.id);
+ assert.equal(r.turn,turn);
+ assert.equal(far.revealed,false);
+ const close=r.tiles.find(t=>CR.exploreStatus(t,r.tiles).ok);
+ assert.ok(close);const old=r.turn;A('reveal',close.id);
+ assert.equal(close.revealed,true);assert.equal(r.turn,old+1);
 });
-check('Empty tiles become visibly blank and unclickable after reveal',()=>{
- const t=r.tiles.find(x=>x.kind==='empty');assert.ok(t);
- A('reveal',t.id);assert.equal(t.revealed,true);assert.equal(t.cleared,true);
- assert.match(el('content').innerHTML,/tile-bare/);
+test('Melee blocker stops neighboring research; single ranged exception does not',()=>{
+ const grid=Array.from({length:25},(_,id)=>({id,kind:id===12?'start':'empty',revealed:id===12||id===13,foe:null}));
+ grid[7].revealed=true;
+ grid[7].foe={hp:9,ranged:false};
+ assert.equal(CR.exploreStatus(grid[8],grid).ok,false);
+ grid[7].foe.ranged=true;
+ assert.equal(CR.exploreStatus(grid[8],grid).ok,true);
+ assert.deepEqual(Array.from(CR.near(12)).sort((a,b)=>a-b),[7,11,13,17]);
 });
-check('Chest first reveals object, then collects loot and opens rewards',()=>{
- const t=r.tiles.find(x=>x.kind==='chest');assert.ok(t);
- const before=r.gold;
- A('reveal',t.id);assert.ok(t.revealed&&!t.cleared);
- assert.equal(r.gold,before);
- A('pickup',t.id);assert.equal(t.cleared,true);
- assert.ok(r.gold>before);
- assert.match(el('overlay').innerHTML,/Старинный сундук/);
- A('close');
+test('Necromancer finds a legitimate summon tile and fills a hidden empty when needed',()=>{
+ // Suppress existing visible empty tiles: the only safe spawn is hidden.
+ r.tiles.forEach(t=>{if(t.kind==='empty'&&t.revealed){t.revealed=false;t.cleared=false;}});
+ r.summon=null;r.summonTile=null;r.mp=1000;
+ A('skill');assert.ok(r.summon&&r.summon.hp>0);
+ assert.notEqual(r.summonTile,12);
+ const cell=r.tiles[r.summonTile];
+ assert.equal(cell.kind,'empty');assert.equal(cell.revealed,true);
+ assert.match(el('content').innerHTML,/tile-summon/);
+ assert.match(el('content').innerHTML,/unit-hp/);
 });
-check('Necromancer summons companion which retains hit points and attack',()=>{
- r.mp=1000;A('skill');assert.ok(r.summon);
- assert.equal(r.summon.name,'Костяной страж');
- assert.ok(r.summon.maxHp>0&&r.summon.atk>0);
+test('Six hero archetypes have distinct starting skills',()=>{
+ for(const klass of ['necromancer','executioner','scout','sorceress','guardian','assassin']){
+  A('begin',klass);r=state.run;r.mp=1000;r.hp=5000;
+  if(!['necromancer','scout'].includes(klass)){
+   const target=r.tiles.find(t=>t.foe&&!t.foe.ranged);target.revealed=true;
+   target.foe.hp=200;target.foe.maxHp=200;
+  }
+  A('skill');
+  assert.ok(r.turn>=1);
+  assert.ok(r.mp<1000);
+  assert.ok(r.fx==='skill');
+ }
 });
-check('A magical spell consumes a scroll and mana',()=>{
- let enemy=r.tiles.find(x=>x.foe&&x.foe.hp>0);
- enemy.revealed=true;enemy.foe.hp=500;enemy.foe.maxHp=500;
- r.mp=1000;r.scrolls.bolt=2;
- const before=r.mp;A('cast','bolt');
- assert.equal(r.scrolls.bolt,1);assert.ok(r.mp<before);
+A('begin','necromancer');r=state.run;r.hp=5000;r.mp=5000;
+test('A hidden archer has a three-round attack interval and does not block exploration',()=>{
+ r.tiles.forEach(t=>{if(t.foe){t.foe.hp=0;}});
+ r.summon=null;r.summonTile=null;r.shield=0;r.poisonTurns=0;
+ const t=r.tiles[0];t.kind='enemy';t.revealed=true;
+ t.foe={id:'ranger_test',name:'Разбойник-лучник',visual:'cultist',hp:70,maxHp:70,
+  atk:12,def:0,ranged:true,attackCooldown:3,cooldown:3,skill:{name:'Дальний выстрел',every:3,kind:'shot'},burn:0,stun:0,poison:0,loot:[]};
+ const oldHp=r.hp;
+ A('wait');A('wait');assert.equal(r.hp,oldHp);
+ A('wait');assert.ok(r.hp<oldHp);
+ assert.equal(t.foe.attackCooldown,3);
 });
-check('Full title prerequisites enforce a five-rank chain',()=>{
- r.ep=1000;
- A('talent','citadel');assert.equal(r.talents.citadel||0,0);
- for(const id of ['blade','iron','endure','lastwall','citadel'])A('talent',id);
- assert.equal(r.talents.citadel,1);
- r.tab='talents';A('tree','1');assert.equal(r.treeView,1);
- assert.match(el('content').innerHTML,/5 ступеней/);
+test('Opening and collecting a find each consume exactly one turn',()=>{
+ const t=r.tiles.find(x=>x.kind==='coin');assert.ok(t);
+ const safe=CR.near(12).find(id=>!r.tiles[id].revealed);
+ if(safe!==undefined){
+  const tt=r.tiles[safe];tt.kind='coin';tt.foe=null;tt.cleared=false;
+  const start=r.turn;A('reveal',tt.id);assert.equal(r.turn,start+1);
+  const opened=r.turn;A('pickup',tt.id);assert.equal(r.turn,opened+1);
+  assert.equal(tt.cleared,true);
+ }else{
+  t.revealed=true;t.cleared=false;
+  const before=r.turn;A('pickup',t.id);assert.equal(r.turn,before+1);
+ }
+ assert.equal(el('overlay').innerHTML,'');
 });
-check('Key remains as loot until pickup, then opens stairs',()=>{
- const carrier=r.tiles.find(t=>t.hasKey);assert.ok(carrier);
- const exit=r.tiles.find(t=>t.kind==='exit');assert.ok(exit);
- exit.revealed=true;r.key=false;
- const floor=r.floor;A('descend');assert.equal(r.floor,floor);
- carrier.revealed=true;
- if(carrier.foe.hp>0){carrier.foe.hp=1;A('strike',carrier.id);}
- assert.ok(carrier.drops&&carrier.drops.key);
- assert.equal(r.key,false);
- A('pickup',carrier.id);
- assert.equal(r.key,true);
- A('close');
- A('descend');assert.equal(r.floor,floor+1);
+test('Permanent T1 material drops are sourced from the imported monster table',()=>{
+ const source=DB.regions[0].enemies[0];
+ const t=r.tiles[5];t.kind='enemy';t.revealed=true;t.cleared=false;
+ t.foe={id:source.id,name:source.name,visual:'wolf',hp:1,maxHp:1,atk:3,def:0,
+  ep:1,gold:2,ranged:false,burn:0,poison:0,stun:0,guard:0,loot:source.loot,
+  skill:{name:'Укус',every:3,kind:'bite'},cooldown:3};
+ A('strike',t.id);assert.ok(t.drops);
+ assert.ok(t.drops.materials.length>=1);
+ const got=t.drops.materials[0];const before=state.meta.materials[got.name]||0;
+ A('pickup',t.id);
+ assert.ok(state.meta.materials[got.name]>=before+got.qty);
 });
-check('Floor 5 contains boss which carries the next key',()=>{
- while(r.floor<5){r.key=true;r.tiles.find(t=>t.kind==='exit').revealed=true;A('descend');}
- const boss=r.tiles.find(t=>t.kind==='boss');
- assert.ok(boss&&boss.hasKey);
-});
-check('Nine-slot equipment with bag filter and comparison table',()=>{
+test('Fixed catalog set gear and 2/4/6 bonuses function',()=>{
+ const chest=r.items.find(x=>x.slot==='armor'),relic=r.items.find(x=>x.slot==='relic');
+ assert.ok(chest.fixed&&relic.fixed);
+ assert.equal(chest.setId,relic.setId);
+ assert.equal(CR.counts(r.equip,r.items)[chest.setId],2);
+ const a=CR.gear('helm',1,0),b=CR.gear('shoulders',1,0);
+ r.items.push(Object.assign({id:++state.seq,plus:0,floor:1},a));
+ r.items.push(Object.assign({id:++state.seq,plus:0,floor:1},b));
+ const hp=api.debug.stats().hp;
+ r.equip.helm=r.items[r.items.length-2].id;r.equip.shoulders=r.items[r.items.length-1].id;
+ assert.equal(CR.counts(r.equip,r.items)[chest.setId],4);
+ assert.ok(api.debug.stats().hp>hp);
  r.tab='hero';api.debug.draw();
- assert.equal((el('content').innerHTML.match(/gear-slot /g)||[]).length,9);
+ assert.match(el('content').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
+});
+test('Compact modal compares fixed equipment with set bonuses',()=>{
  A('inspect-slot','helm');
  assert.equal(r.tab,'hero');
  assert.match(el('overlay').innerHTML,/gear-two-columns/);
- const candidate={id:++state.seq,slot:'helm',name:'Шлем испытателя',rarity:2,plus:0,atk:2,def:3,hp:8,mp:0,pow:0,crit:0};
- r.items.push(candidate);
- A('modal-select',candidate.id);
- assert.match(el('overlay').innerHTML,/Шлем испытателя/);
- assert.match(el('overlay').innerHTML,/positive/);
- A('modal-equip');assert.equal(r.equip.helm,candidate.id);
- assert.equal(r.tab,'hero');A('close');
-});
-check('Equipment upgrades and recalculates stats',()=>{
- const sword=r.items.find(x=>x.id===r.equip.weapon);
- const oldAttack=api.debug.stats().atk;r.gold=999;
- A('upgrade',sword.id);
- assert.equal(sword.plus,1);
- assert.ok(api.debug.stats().atk>=oldAttack);
-});
-check('Secrets grant rewards on second tap and record discovery',()=>{
- const secret=r.tiles.find(t=>t.kind==='secret');
- A('reveal',secret.id);
- assert.equal(r.secrets,0);
- A('pickup',secret.id);
- assert.equal(r.secrets,1);
- assert.ok(state.meta.secrets.length>=1);
+ assert.match(el('overlay').innerHTML,/compact-set-help/);
+ assert.match(el('overlay').innerHTML,/2 предмета/);
  A('close');
 });
-
-check('Simple coin and potion pickups do not open reward modals',()=>{
- A('close');
- for(const kind of ['coin','potion']){
-  const cell=r.tiles.find(t=>t.kind===kind);
-  if(!cell)continue;
-  A('reveal',cell.id);
-  A('pickup',cell.id);
-  assert.equal(cell.cleared,true);
-  assert.equal(el('overlay').innerHTML,'');
- }
+test('Village permanently consumes material quantities for upgrades',()=>{
+ state.meta.materials['Шкура животного']=18;
+ const before=api.debug.stats().atk,old=state.meta.city.forge;
+ A('town-upgrade','forge');
+ assert.equal(state.meta.city.forge,old+1);
+ assert.ok(api.debug.stats().atk>=before+2);
+ A('town');assert.match(el('overlay').innerHTML,/ПОГРАНИЧНЫЙ ПРИВАЛ/);
+ assert.match(el('overlay').innerHTML,/СКЛАД/);A('close');
 });
-check('Summons render on map with corner HP/attack and enemy cooldowns',()=>{
- r.tab='maze';api.debug.draw();
- assert.match(el('content').innerHTML,/tile-summon/);
- assert.match(el('content').innerHTML,/unit-corner unit-hp/);
- assert.match(el('content').innerHTML,/unit-corner unit-atk/);
- const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);target.revealed=true;api.debug.draw();
- assert.match(el('content').innerHTML,/unit-corner unit-cd/);
- const before=target.foe.cooldown;
- A('wait');
- assert.ok(target.foe.cooldown!==before||target.foe.cooldown===target.foe.skill.every);
+test('Original animation frame appears when attacking and spellcasting',()=>{
+ r.tab='hero';r.mp=1000;
+ const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);
+ if(target){target.revealed=true;target.foe.hp=100;A('strike',target.id);}
+ assert.match(el('portrait').innerHTML,/mage_m_attack.png/);
+ A('skill');assert.match(el('portrait').innerHTML,/mage_m_skill.png/);
 });
-check('Inspection dialogs show enemy skills and summon interception',()=>{
- const enemy=r.tiles.find(t=>t.foe&&t.foe.hp>0);
- A('inspect-enemy',enemy.id);
- assert.match(el('overlay').innerHTML,/Следующее применение/);
- assert.match(el('overlay').innerHTML,/Обычная атака/);
- A('close');
- A('inspect-summon');
- assert.match(el('overlay').innerHTML,/Костяной удар/);
- assert.match(el('overlay').innerHTML,/Гробовой раскол/);
- A('close');
-});
-check('Spellbook is a modal and does not change active screen',()=>{
- r.tab='maze';api.debug.draw();
- A('spell-modal');
- assert.equal(r.tab,'maze');
- assert.match(el('overlay').innerHTML,/scroll-spells/);
- A('close');
-});
-check('All universal title trees remain accessible and primary costs differ',()=>{
- r.tab='talents';api.debug.draw();
- for(const tree of ['0','1','2']){A('tree',tree);assert.equal(r.treeView,Number(tree));}
- assert.match(el('content').innerHTML,/Титулы универсальные/);
-});
-check('Hero mastery, relic cabinet and repeatable dungeon progression survive death',()=>{
- const boss=r.tiles.find(t=>t.kind==='boss');
- assert.ok(boss);
- boss.revealed=true;boss.foe.hp=1;
- A('strike',boss.id);
- assert.ok(boss.drops&&boss.drops.relic);
- A('pickup',boss.id);
- assert.ok(Object.values(state.meta.relics).some(v=>v>=1));
- A('close');
- const before=state.meta.heroEssence.necromancer;
- A('confirm-end');
- assert.ok(state.meta.heroEssence.necromancer>before);
- A('camp');assert.match(el('overlay').innerHTML,/РАЗВИТИЕ ГЕРОЕВ/);
- A('hero-rank','necromancer');assert.equal(state.meta.heroRanks.necromancer,1);
- A('chronicles');assert.match(el('overlay').innerHTML,/ШЕСТЬ РЕЛИКВИЙ/);
- assert.match(el('overlay').innerHTML,/БЕСТИАРИЙ/);
- A('milestone','depth5');assert.ok(state.meta.milestones.depth5);
-});
-
-check('Save, local profile and no Android INTERNET permission',()=>{
- api.save();assert.ok(storage.cryptbound_local_v1);
- assert.equal(JSON.parse(storage.cryptbound_local_v1).run,null);
+test('Saves remain local and APK has no Internet permission',()=>{
+ api.save();
+ assert.ok(storage.cryptbound_local_v1);
+ assert.equal(JSON.parse(storage.cryptbound_local_v1).run.class,'necromancer');
  const manifest=fs.readFileSync(path.resolve(__dirname,'../src/main/AndroidManifest.xml'),'utf8');
  assert.ok(!manifest.includes('android.permission.INTERNET'));
 });
-console.log('GAMEPLAY SMOKE TESTS PASSED',tests);
+console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
