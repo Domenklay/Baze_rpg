@@ -222,30 +222,35 @@ function hud(){
 }
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
+function monsterVisual(e){return icon('enemy',e.visual||CR.visualId(e.name));}
 function activeTileView(t){
- var kind=t.kind,alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
- if(t.revealed&&kind==='start'){
-  if(r.summon&&r.summon.hp>0)return '<button class="tile tile-summon" data-action="inspect-summon" data-hold="summon" aria-label="Призванный скелет. Удерживайте для описания">'+
-    icon('enemy','skeleton')+
-    '<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
-    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
-    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
-  return '<div class="tile tile-bare tile-entrance" aria-label="Пустая входная клетка"><span class="stone-joint"></span></div>';
+ var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
+ if(t.revealed&&t.kind==='start')return '<div class="tile tile-origin" aria-label="Начальная точка героя"><span class="origin-dot">◆</span></div>';
+ if(r.summon&&r.summon.hp>0&&r.summonTile===t.id)
+  return '<button class="tile tile-summon" data-action="inspect-summon" data-hold="summon" aria-label="Скелет: удерживайте для изучения">'+
+   icon('enemy','skeleton')+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
+   '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
+   '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
+ if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
+  return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
+ if(!t.revealed){
+  var access=CR.exploreStatus(t,r.tiles);
+  return access.ok?
+   '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">✥</span></button>':
+   '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
- var empty=t.revealed&&!alive&&!drop&&(t.cleared||kind==='empty');
- if(t.revealed&&empty)return '<div class="tile tile-bare" aria-label="Пустой каменный пол"><span class="stone-joint"></span></div>';
- if(!t.revealed)return '<button class="tile hidden" data-action="reveal" data-id="'+t.id+'" aria-label="Раскрыть каменную плиту"><span class="slab-face">✥</span></button>';
- var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):kind==='exit'?'exit':kind==='puzzle'?'event':kind;
- var iconCode=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):icon(marker,alive?t.foe.id:null);
- var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Награда за бой':
-  ({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка'})[kind]||'Находка';
- var act=alive?'strike':kind==='exit'?'descend':'pickup';
+ var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='puzzle'?'event':t.kind;
+ var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?monsterVisual(t.foe):icon(marker);
+ var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка'})[t.kind]||'Находка';
+ var action=alive?'strike':t.kind==='exit'?'descend':'pickup';
+ var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
-   '<span class="unit-corner unit-cd">◷'+(t.foe.cooldown||EX.monster(t.foe.id).every)+'</span>'+
-   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+'" data-action="'+act+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
-  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+iconCode+unit+
- (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
+  '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
+  '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+
+  '" data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
+  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
+  (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
 }
 function inspectUnit(kind,id){
  if(!r)return;
@@ -263,7 +268,7 @@ function inspectUnit(kind,id){
  var special=e.skill||EX.monster(e.id);
  dialog('<div class="emblem">⚔</div><div class="subhead">'+(e.boss?'ПОВЕЛИТЕЛЬ ЭТАЖА':'ОБИТАТЕЛЬ ПОДЗЕМЕЛЬЯ')+'</div>'+
   '<h2>'+esc(e.name)+'</h2>'+
-  '<div class="unit-profile">'+icon('enemy',e.id)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
+  '<div class="unit-profile">'+monsterVisual(e)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
   '<div class="unit-skill"><strong>Обычная атака</strong><p>Атакует каждый свой ход. Урон уменьшается вашей бронёй.</p></div>'+
   '<div class="unit-skill"><strong>'+esc(special.name)+' · ◷ '+(e.cooldown||special.every)+'</strong>'+
   '<p>'+esc(special.description)+' Следующее применение через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
@@ -290,7 +295,7 @@ function renderMaze(){
  var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed;
  var sceneTitle=maxFloorLabel();
  var footer=foe?
-   '<div class="dungeon-foe-icon">'+icon('enemy',foe.id)+'</div><div class="dungeon-foe-info">'+
+   '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
    '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':'')+'</strong>'+
    '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.cooldown||EX.monster(foe.id).every)+'</small>'+
    '<small>'+esc((foe.skill||EX.monster(foe.id)).name)+'</small></div>'+
@@ -344,7 +349,7 @@ function spellValid(sp){
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(['attack','burn','stun','chain','drain'].indexOf(sp.kind)>=0&&!enemies().length)return 'Нет цели';
- if(sp.kind==='reveal'&&!r.tiles.some(function(t){return !t.revealed;}))return 'Всё открыто';
+ if(sp.kind==='reveal'&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
  return null;
 }
 function renderSpells(){
@@ -618,11 +623,10 @@ function useSkill(){
  }else{
   if(r.mp<6){toast('Нужно 6 маны.');return;}
   r.mp-=6;r.skillUsed=r.turn;
-  var list=r.tiles.filter(function(t){return !t.revealed;});
-  var n=0;for(var i=0;i<3&&list.length;i++){
-   var p=rand(0,list.length-1),t=list.splice(p,1)[0];
-   // Scout reveals danger from a distance without triggering it.
-   t.revealed=true;n++;
+  var n=0;for(var i=0;i<3;i++){
+   var list=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+   if(!list.length)break;
+   var t=pick(list);t.revealed=true;if(t.kind==='empty')t.cleared=true;n++;
   }
   var coin=addGold(4+r.floor*2);
   log('Следопыт видит сквозь стены: открыто '+n+' клеток и найдено '+coin+' монет.');
@@ -645,8 +649,12 @@ function cast(id){
  if(sp.kind==='heal'){r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
  else if(sp.kind==='shield'){r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
  else if(sp.kind==='reveal'){
-  var covered=r.tiles.filter(function(t){return !t.revealed;});var count=0;
-  for(var j=0;j<sp.base&&covered.length;j++){var index=rand(0,covered.length-1);covered.splice(index,1)[0].revealed=true;count++;}
+  var count=0;
+  for(var j=0;j<sp.base;j++){
+   var covered=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+   if(!covered.length)break;
+   var t=pick(covered);t.revealed=true;if(t.kind==='empty')t.cleared=true;count++;
+  }
   log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
   var victims=enemies().slice(0,3+bonus('chainTargets'));
@@ -738,6 +746,8 @@ function claimTile(t){
 }
 function reveal(id){
  var t=tile(id);if(!t||t.revealed)return;
+ var access=CR.exploreStatus(t,r.tiles);
+ if(!access.ok){toast(access.reason);return;}
  t.revealed=true;
  var k=t.kind;
  if(k==='enemy'||k==='boss')log('Открыта плита: '+t.foe.name+'.');
