@@ -94,7 +94,7 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  room.kind='chamber';room.revealed=true;room.cleared=false;
  A('pickup',room.id);assert.ok(room.room);
  room.room.secret=true;
- assert.match(el('overlay').innerHTML,/ПОБОЧНОЕ ПОМЕЩЕНИЕ/);
+ assert.match(el('overlay').innerHTML,/ПОБОЧНАЯ КОМНАТА/);
  let attempts=0;r.hp=5000;
  while(room.room.guardHp>0&&attempts++<60)A('chamber-fight',room.id);
  assert.equal(room.room.guardHp,0);
@@ -319,6 +319,56 @@ test('Ten acts can each generate their correct regional boss',()=>{
   A('escape-25');assert.equal(state.run,null);
  }
  state.meta.selectedAct=0;state.meta.unlockedAct=oldUnlocked;
+});
+
+
+test('Elite spawn calendar: exactly once on floors 5–9 of every decade',()=>{
+ A('begin','necromancer');let run=state.run;run.hp=50000;
+ const locations=[];
+ for(let depth=2;depth<=39;depth++){
+  const stair=run.tiles.find(t=>t.kind==='exit');assert.ok(stair);
+  stair.revealed=true;run.key=true;
+  A('descend');assert.equal(run.floor,depth);
+  const elite=run.tiles.filter(t=>t.foe&&t.foe.elite);
+  assert.ok(elite.length<=1);
+  if(elite.length)locations.push(depth);
+  assert.equal(elite.length,depth%10>=5&&depth%10<=9&&run.eliteSchedule[Math.floor((depth-5)/10)]===depth?1:0);
+ }
+ for(let n=0;n<4;n++){
+  const hits=locations.filter(depth=>Math.floor((depth-5)/10)===n);
+  assert.equal(hits.length,1);
+  assert.ok(hits[0]>=5+n*10&&hits[0]<=9+n*10);
+ }
+ assert.equal(run.tiles.find(t=>t.kind==='boss'),undefined);
+});
+test('Walking takes no turn and cannot cross hidden or occupied cells',()=>{
+ A('begin','necromancer');let run=state.run;
+ const start=run.tiles.find(t=>t.kind==='start');assert.equal(start.id,run.heroTile);
+ const neighbor=CR.near(start.id)[0],step=run.tiles[neighbor];
+ step.kind='empty';step.foe=null;step.revealed=true;step.cleared=true;step.drops=null;
+ const turn=run.turn;A('move-hero',neighbor);
+ assert.equal(run.heroTile,neighbor);assert.equal(run.turn,turn);
+ const inaccessible=run.tiles.find(x=>!x.revealed&&x.id!==neighbor);
+ const initial=run.heroTile;A('move-hero',inaccessible.id);
+ assert.equal(run.heroTile,initial);assert.equal(run.turn,turn);
+ step.foe={hp:5,ranged:false};assert.equal(CR.walkPath(run.tiles,start.id,step.id),null);
+});
+test('Regional boss has warned phases and cannot produce a safe portal before death',()=>{
+ A('begin','necromancer');let run=state.run;
+ run.hp=50000;run.floor=29;run.key=true;run.tiles.find(t=>t.kind==='exit').revealed=true;
+ A('descend');assert.equal(run.floor,30);
+ const boss=run.tiles.find(t=>t.foe&&t.foe.boss);assert.ok(boss);
+ assert.equal(boss.foe.name,DN.location(0,0).boss.name);
+ assert.equal(run.portalReady,false);
+ run.tiles.forEach(x=>{if(x.foe&&!x.foe.boss)x.foe.hp=0;});
+ boss.revealed=true;boss.foe.hp=Math.floor(boss.foe.maxHp*.66);
+ A('wait');assert.equal(boss.foe.phase,2);
+ assert.ok(boss.foe.telegraph);
+ A('wait');assert.equal(boss.foe.telegraph,null);
+ boss.foe.hp=Math.floor(boss.foe.maxHp*.3);
+ A('wait');assert.equal(boss.foe.phase,3);
+ boss.foe.hp=1;A('strike',boss.id);
+ assert.equal(run.portalReady,true);
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
