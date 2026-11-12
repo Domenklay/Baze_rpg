@@ -1155,6 +1155,16 @@ function consumeTurn(){
   victim.foe.hp-=hit;log('Скелет наносит '+hit+' урона: '+victim.foe.name+'.');
   if(victim.foe.hp<=0)kill(victim);
  }
+ if(r.summon&&r.summon.hp>0&&activeRoom()){
+  var roomTarget=livingRoomGuards()[0];
+  if(roomTarget){
+   var strikePower=Math.max(1,r.summon.atk-(roomTarget.def||0));
+   roomTarget.hp=Math.max(0,roomTarget.hp-strikePower);
+   var roomState=activeRoom().room;
+   roomState.guardHp=roomState.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
+   log('Спутник наносит '+strikePower+' урона стражу побочной комнаты.');
+  }
+ }
  if(r.ghost&&r.ghost.hp>0){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
   if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
