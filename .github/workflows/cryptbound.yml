@@ -56,6 +56,7 @@ jobs:
           node --check cryptbound/src/main/assets/systems.js
           node --check cryptbound/src/main/assets/boss_scripts.js
           node --check cryptbound/src/main/assets/story_events.js
+          node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
 
       - name: Compile playable Android app
@@ -64,8 +65,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.6.1-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.6.1-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.6.2-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.6.2-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -78,7 +79,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.6.1 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.6.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.6.1 — зелия, поздняя алхимия и сюжетные загадки" --notes "Три компактные всегда доступные кнопки над лабиринтом: лечение HP и два подготовленных зелья. В алхимии теперь 16 рецептов с проверенными материалами T1–T10, 8 новых боевых эффектов. По одной сюжетной загадке для каждой из 30 локаций, подсказки авантюриста и достижение. Нормализация здоровья и атаки боссов из RPG Clicker Infinity под одного героя. Автотесты интерфейса, рецептов, боссов и миграции сохранений. Изображения пока не менялись; баланс в игре ещё требует тестирования."
+          if ! gh release view cryptbound-v0.6.2 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.6.2 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.6.2 — монстры, роли и сложность десяти актов" --notes "Дополнены 300 обычных и 150 элитных монстров 30 локаций: 8 боевых ролей, индивидуальные активные приёмы, защита, лечение союзников, призывы и эффекты яда, горения и молчания. Отдельная возрастающая шкала HP/атаки для каждого T1–T10: следующий акт начинается опаснее третьей локации предыдущего. Элитники впадают в ярость при половине HP, боссы сопротивляются постоянному оглушению. У каждого акта свои ловушки и модификаторы наград/экономики. Для проходимости введена автоматическая подготовка героя и рост предметов по акту; финальный баланс требует реальных прохождений. Изображения не менялись."
           fi
-          gh release upload cryptbound-v0.6.1 dist/Cryptbound-v0.6.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.6.2 dist/Cryptbound-v0.6.2-offline-Android.apk dist/SHA256SUMS.txt --clobber
