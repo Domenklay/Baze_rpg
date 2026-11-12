@@ -859,6 +859,7 @@ function consumeTurn(){
  if(!r)return false;
  r.turn++;
  if(r.blessed>0)r.blessed--;
+ if(r.sunBurnTurns>0)r.sunBurnTurns--;
  if(r.rageTurns>0)r.rageTurns--;
  if(r.reflectionTurns>0)r.reflectionTurns--;
  if(r.barrierTurns>0)r.barrierTurns--;
@@ -883,6 +884,7 @@ function consumeTurn(){
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
   if(e.stun>0){e.stun--;log(e.name+' оглушён.');return;}
+  if(r.sunBurnTurns>0&&e.hp>0){e.hp-=Math.max(3,Math.ceil(e.maxHp*.06));if(e.hp<=0){kill(t);return;}}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
   if(e.poison>0){e.poison--;e.hp-=Math.max(2,Math.floor(stats().atk*.24));if(e.hp<=0){kill(t);return;}}
   var ready=false;
@@ -1063,11 +1065,101 @@ function potion(){
  log('Выпит целебный эликсир: +'+amount+' HP.');finishAction();
 }
 function wait(){log('Вы затаились, собираясь с силами.');r.mp=Math.min(stats().mp,r.mp+1);finishAction();}
+
+/* Six-school combat and exploration magic. The sixth tier alters the entire
+   floor; boss HP is protected from instant kills and one-shot quest loss. */
+function advancedCast(sp){
+ var st=stats(),magic=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ var foes=enemies(),key=sp.kind;
+ var heal=function(v){r.hp=Math.min(st.hp,r.hp+v);};
+ var hit=function(t,dmg,capBoss){
+  if(!t||!t.foe||t.foe.hp<=0)return;
+  var n=Math.max(1,dmg-(t.foe.def||0));
+  t.foe.hp=Math.max(capBoss&&t.foe.boss?1:0,t.foe.hp-n);
+  if(t.foe.hp<=0)kill(t);
+ };
+ function revealConnected(n){
+  var count=0;for(var i=0;i<n;i++){var cells=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+   if(!cells.length)break;var t=pick(cells);t.revealed=true;if(t.kind==='empty')t.cleared=true;count++;}
+  return count;
+ }
+ if(key==='earthgate'){
+  var enhanced=lvl('sage')>0;
+  var distance=enhanced?Math.min(50,30+lvl('sage')*6+Math.floor(st.pow/12)):Math.max(10,10+Math.floor(st.pow/8));
+  var old=r.floor;r.floor=Math.max(1,r.floor-distance);
+  r.key=false;r.portalReady=false;r.shield=0;r.turn++;
+  startFloor();log('Врата Земли возвращают на '+(old-r.floor)+' этажей назад. Побеждённые боссы не возрождаются.');
+  save();draw();return;
+ }
+ if(key==='aoe'||key==='burnall'||key==='freezeall'||key==='drainall'||key==='earthquake'){
+  foes.slice().forEach(function(t){
+   hit(t,magic+(key==='earthquake'?12:0),false);
+   if(t.foe.hp>0&&key==='burnall')t.foe.burn=Math.max(t.foe.burn||0,4);
+   if(t.foe.hp>0&&key==='freezeall')t.foe.stun=Math.max(t.foe.stun||0,t.foe.boss?1:2);
+  });
+  if(key==='drainall')heal(Math.ceil(magic*Math.min(foes.length,5)*.3));
+  if(key==='earthquake')log('Землетрясение открыло '+revealConnected(3)+' соседних клеток.');
+ }else if(key==='healshield'){heal(magic);r.shield+=Math.ceil(magic*.7);r.poisonTurns=0;
+ }else if(key==='holy'||key==='weakness'){
+  var t=target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
+   if(key==='weakness'&&t.foe.hp>0)t.foe.guard=-Math.min(12,Math.floor(st.pow*.5));}
+ }else if(key==='lastlight'){heal(magic);r.shield+=Math.floor(magic*.65);r.resurrection=(r.resurrection||0)+1;
+ }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5);
+ }else if(key==='sunfall'){
+  foes.slice().forEach(function(t){
+   if(t.foe.boss){t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
+   else{t.foe.hp=0;kill(t);}
+  });
+  r.sunBurnTurns=10;
+  log('Второе солнце обрушилось на этаж. Босс обожжён, остальные враги обращены в пепел.');
+ }else if(key==='oceanrewind'){
+  heal(st.hp);r.shield+=Math.round(st.hp*.85);r.poisonTurns=0;
+  if(r.ghost&&r.ghost.hp>0)r.ghost.hp=r.ghost.maxHp;
+  if(r.summon&&r.summon.maxHp)r.summon.hp=r.summon.maxHp;
+  var returned=0;for(var consumed of (r.spellHistory||[]).slice().reverse()){
+   var spell=SYS.bySpell[consumed];if(!spell||spell.rank===6||spell.id==='earthgate')continue;
+   if(returned>=10)break;r.scrolls[consumed]=(r.scrolls[consumed]||0)+1;returned++;
+  }
+  log('Первозданная вода вернула '+returned+' ранее использованных свитков.');
+ }else if(key==='worldrewrite'){
+  foes.slice().forEach(function(t){
+   if(t.foe.boss)t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.65));
+   else{t.foe.hp=0;kill(t);}
+  });
+  r.tiles.forEach(function(t){
+   if(t.kind!=='start'&&!t.revealed){t.revealed=true;if(t.kind==='empty')t.cleared=true;}
+  });
+  r.materials['Кристалл переписанной материи']=(r.materials['Кристалл переписанной материи']||0)+5;
+  log('Материя перестроена. Обязательные ключи и выходы остались на месте.');
+ }else if(key==='timeloop'){
+  r.timeStopTurns=Math.max(r.timeStopTurns||0,13);
+  foes.slice().forEach(function(t){if(!t.foe.boss)t.foe.stun=Math.max(t.foe.stun||0,3);});
+  log('Причинность разорвана. Враги лишены права действовать на следующие ходы.');
+ }else if(key==='firstlight'){
+  heal(st.hp);r.shield+=st.hp*2;r.poisonTurns=0;r.guardCharges=(r.guardCharges||0)+5;r.resurrection=(r.resurrection||0)+2;
+  log('Первый рассвет полностью очищает героя, даёт пять отражений удара и два спасения от смерти.');
+ }else if(key==='soulcovenant'){
+  foes.slice().forEach(function(t){
+   if(t.foe.boss){t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.55));t.foe.stun=Math.max(t.foe.stun||0,1);}
+   else{var n=t.foe.name;t.foe.hp=0;kill(t);addSpiritSoul({kind:'common',name:'Отголосок '+n});}
+  });
+  r.shield+=Math.floor(st.hp*.8);log('Заключён пакт Бездны: души противников переходят к герою.');
+ }else return false;
+ if(r.sunBurnTurns>0&&key!=='sunfall')r.sunBurnTurns=Math.max(0,r.sunBurnTurns);
+ log('Школа '+sp.school+': '+sp.name+'.');
+ finishAction();return true;
+}
+
 function cast(id){
  if(r){r.fx='skill';r.fxUntil=Date.now()+420;}
  var sp=SPELLS.find(function(x){return x.id===id;});if(!sp)return;
  var error=spellValid(sp);if(error){toast(error);return;}
  r.scrolls[id]--;r.mp-=manaCost(sp);
+ if(sp.rank!==6&&sp.id!=='earthgate'){
+  if(!Array.isArray(r.spellHistory))r.spellHistory=[];
+  r.spellHistory.push(id);r.spellHistory=r.spellHistory.slice(-40);
+ }
+ if(advancedCast(sp))return;
  var tar=target(),st=stats();
  var magic=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
  if(sp.kind==='heal'){r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
