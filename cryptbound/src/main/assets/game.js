@@ -1089,7 +1089,7 @@ function advancedCast(sp){
   var old=r.floor;r.floor=Math.max(1,r.floor-distance);
   r.key=false;r.portalReady=false;r.shield=0;r.turn++;
   startFloor();log('Врата Земли возвращают на '+(old-r.floor)+' этажей назад. Побеждённые боссы не возрождаются.');
-  save();draw();return;
+  save();draw();return true;
  }
  if(key==='aoe'||key==='burnall'||key==='freezeall'||key==='drainall'||key==='earthquake'){
   foes.slice().forEach(function(t){
