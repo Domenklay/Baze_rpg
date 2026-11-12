@@ -1,0 +1,33 @@
+name: Restore Archived Cryptbound v0.3 APK
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-cryptbound-v03.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download verified original v0.3 build artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          gh run download 43164563932 --repo Domenklay/Baze_rpg --name Cryptbound-Offline-Android --dir dist
+          test -f dist/Cryptbound-v0.3.0-offline-Android.apk
+          cat dist/SHA256SUMS.txt
+          (cd dist && sha256sum -c SHA256SUMS.txt)
+      - name: Restore v0.3 release assets without rebuilding anything
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload cryptbound-v0.3.0 \
+            dist/Cryptbound-v0.3.0-offline-Android.apk \
+            dist/SHA256SUMS.txt \
+            --repo Domenklay/Baze_rpg --clobber
