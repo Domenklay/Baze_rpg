@@ -14,3 +14,15 @@
 .dungeon-board .tile-boss{outline:2px solid #a75261;outline-offset:-2px;z-index:2}
 .dungeon-board .tile-boss svg{transform:scale(1.18);transform-origin:center bottom}
 .dungeon-board .hero-on-board{animation:hero-tile-hop .14s ease-in-out both}
+
+/* 3 × 3 pocket dungeon with individually targetable guards. */
+.chamber-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;max-width:330px;margin:12px auto}
+.chamber-cell{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1;min-width:0;border:1px solid #5d5550;border-radius:6px;background:linear-gradient(135deg,#39332f,#211e20);color:#d8d0bd;font-size:24px;padding:3px;overflow:hidden}
+.chamber-cell span{font-size:9px;color:#e0cdb2;text-align:center;line-height:1.1}
+.chamber-cell svg{max-height:62%;max-width:92%;height:auto}
+.chamber-cell .clicker-hero-art{max-width:100%;max-height:78%;object-fit:contain}
+.chamber-center{background:#494032;color:#edcf77}
+.chamber-enemy{outline:1px solid #994c4b;cursor:pointer}
+.chamber-enemy:active{transform:scale(.95)}
+.chamber-player{border-color:#b39f65}
+.chamber-hidden{border-color:#c8ad58;color:#dfc87d;cursor:pointer}

@@ -811,6 +811,7 @@ function consumeTurn(){
   var counter=bonus('thorns')+(Math.random()*100<bonus('reflect')?Math.max(1,Math.floor(stats().atk*.45)):0);
   if(counter>0&&e.hp>0){e.hp-=counter;log('Ответный урон: '+counter+'.');if(e.hp<=0)kill(t);}
  });
+ if(r.chamberActive!=null)chamberEnemyPhase();
  if(r.hp<=0){die();return false;}
  return true;
 }
@@ -1149,56 +1150,122 @@ function discoverCorpse(t){
 
 /* A small instanced side chamber, saved on its original dungeon tile.
    The main map never grants its secret during automatic normal-tile clearing. */
+
+/* Optional 3×3 encounter map, stored in the source tile to survive saves. */
+function roomSecretAvailable(room){
+ return !!(lvl('scavenger')||lvl('phantom'))&&(room.secret||lvl('phantom')>0);
+}
+function newSideRoom(){
+ var reg=currentRegion(),count=r.floor>=35?4:3,slots=[1,3,5,2],guards=[];
+ for(var i=0;i<count;i++){
+  var m=pick(reg.mobs),scale=1+Math.floor(r.floor/10)*.1;
+  var hp=Math.max(8,Math.round((m.hp||14)*.6*scale));
+  guards.push({name:m.name,visual:CR.visualId(m.name),slot:slots[i],hp:hp,maxHp:hp,
+   atk:Math.max(2,Math.round((m.atk||6)*.55*scale)),cooldown:2+i%3,
+   skill:m.skillName||'Особый удар'});
+ }
+ return {guards:guards,guardHp:guards.reduce(function(n,g){return n+g.hp;},0),
+  rewardTaken:false,secretTaken:false,secret:Math.random()<.45,turns:0};
+}
 function openChamber(t){
  if(!t||t.kind!=='chamber'||!t.revealed||t.cleared)return;
- var enter=!t.entered;
- if(!t.room)t.room={guardHp:Math.max(14,Math.floor(16+r.floor*1.7)),rewardTaken:false,secretTaken:false,secret:Math.random()<.45};
- t.entered=true;
- r.chamberActive=t.id;
- if(enter){log('Найдена пещера с одиноким стражем и наградой в центре.');finishAction();}
+ var first=!t.entered;
+ if(!t.room||!Array.isArray(t.room.guards)){
+  var replaceRoom=newSideRoom();
+  if(t.room){replaceRoom.rewardTaken=!!t.room.rewardTaken;replaceRoom.secretTaken=!!t.room.secretTaken;replaceRoom.secret=!!t.room.secret;}
+  t.room=replaceRoom;
+ }
+ t.entered=true;r.chamberActive=t.id;
+ if(first){log('Открыт вход в побочное помещение: '+currentRegion().name+'.');finishAction();}
  if(r)showChamber(t);
 }
 function showChamber(t){
  if(!r||!t||!t.room||t.kind!=='chamber')return;
- var room=t.room,secret=!!(lvl('scavenger')||lvl('phantom'))&&(room.secret||lvl('phantom')>0);
- var html='<div class="emblem">⌂</div><div class="subhead">ПОБОЧНОЕ ПОМЕЩЕНИЕ</div><h2>ПОТЕРЯННЫЙ ПРИДЕЛ</h2>'+
- '<p>Страж охраняет сундук в центре. Вдоль стены тянется потрескавшаяся кладка.</p>'+ 
- (lvl('stealth')>0?(room.secret?'<p class="golden">Следопыт ощущает подозрительный холод у края помещения.</p>':'<p class="fine muted">Следопыт не заметил тайного прохода.</p>'):'')+
- '<div class="unit-skill"><strong>'+(room.guardHp>0?'Страж комнаты: '+room.guardHp+' HP':'Страж побеждён')+'</strong></div>';
- if(room.guardHp>0)html+='<button class="btn wide" data-action="chamber-fight" data-id="'+t.id+'">⚔ Атаковать стража · 1 ход</button>';
- else if(!room.rewardTaken)html+='<button class="btn wide" data-action="chamber-reward" data-id="'+t.id+'">Забрать центральную награду · 1 ход</button>';
- else html+='<p class="golden">Награда получена.</p>';
- if(room.guardHp<=0&&room.rewardTaken&&secret&&!room.secretTaken){
-  html+='<button class="btn gold wide space-top" data-action="chamber-secret" data-id="'+t.id+'">✦ Подсвеченный тайник у края · 1 ход</button>';
- }else if(!secret){html+='<p class="fine muted">Особых секретов не обнаружено.</p>';}
- html+='<button class="btn alt wide space-top" data-action="close">Выйти из помещения</button>';
+ var room=t.room,secret=roomSecretAvailable(room);
+ var board='';
+ for(var k=0;k<9;k++){
+  var guard=room.guards.find(function(g){return g.slot===k;});
+  if(k===4){
+   board+='<div class="chamber-cell chamber-center">'+(room.guardHp>0?'▣':'◈')+'<span>Сокровище</span></div>';continue;
+  }
+  if(k===7){board+='<div class="chamber-cell chamber-player">'+window.CryptArt.miniHero(r.class,'idle')+'<span>Герой</span></div>';continue;}
+  if(guard&&guard.hp>0){
+   board+='<button class="chamber-cell chamber-enemy" data-action="chamber-fight" data-id="'+t.id+':'+k+'" aria-label="'+esc(guard.name)+'">'+
+    monsterVisual(guard)+'<span>♥ '+guard.hp+'/'+guard.maxHp+'</span></button>';continue;
+  }
+  if(k===8&&secret&&room.guardHp===0&&room.rewardTaken&&!room.secretTaken){
+   board+='<button class="chamber-cell chamber-hidden" data-action="chamber-secret" data-id="'+t.id+'" aria-label="Секретная ниша">✦<span>Тайник</span></button>';continue;
+  }
+  board+='<div class="chamber-cell chamber-stone">·</div>';
+ }
+ var html='<div class="subhead">ПОБОЧНАЯ КОМНАТА · '+esc(currentRegion().name)+'</div>'+
+ '<h2>Заброшенное убежище</h2><p>Врагов: '+room.guards.filter(function(x){return x.hp>0;}).length+
+ ' · Центральная награда охраняется, пока жив хотя бы один враг.</p>'+
+ '<div class="chamber-board">'+board+'</div>'+
+ (lvl('stealth')>0?(room.secret?'<p class="golden">Следопыт замечает необычную кладку у края комнаты.</p>':'<p class="fine muted">Следопыт не обнаружил скрытого прохода.</p>'):'');
+ if(room.guardHp>0)html+='<button class="btn wide space-top" data-action="chamber-fight" data-id="'+t.id+'">⚔ Удар по ближайшему врагу · 1 ход</button>';
+ else if(!room.rewardTaken)html+='<button class="btn wide space-top" data-action="chamber-reward" data-id="'+t.id+'">Забрать награду в центре · 1 ход</button>';
+ else html+='<p class="golden">Центральная награда собрана.</p>';
+ if(room.guardHp===0&&room.rewardTaken&&secret&&!room.secretTaken)
+  html+='<button class="btn gold wide space-top" data-action="chamber-secret" data-id="'+t.id+'">✦ Исследовать тайник у края · 1 ход</button>';
+ html+='<button class="btn dark wide space-top" data-action="close">Выйти в основной лабиринт</button>';
  dialog(html);
 }
+function chamberEnemyPhase(){
+ if(!r||r.chamberActive==null)return;
+ var t=tile(r.chamberActive),room=t&&t.room;if(!room)return;
+ room.turns++;
+ room.guards.forEach(function(g){
+  if(g.hp<=0||r.hp<=0)return;
+  g.cooldown=Math.max(0,(g.cooldown||3)-1);
+  if(g.cooldown>0)return;
+  g.cooldown=3;
+  if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
+  var damage=Math.max(1,g.atk+rand(-1,1)-stats().def);
+  if(r.summon&&r.summon.hp>0&&Math.random()<.45){
+   r.summon.hp=Math.max(0,r.summon.hp-damage);
+   if(r.summon.hp===0){r.summon=null;r.summonTile=null;}
+   log('Спутник принимает удар '+g.name+'.');return;
+  }
+  if(r.shield>0){var absorbed=Math.min(r.shield,damage);r.shield-=absorbed;damage-=absorbed;}
+  r.hp=Math.max(0,r.hp-damage);log(g.name+' наносит '+damage+' урона в побочной комнате.');
+ });
+}
 function fightChamber(id){
- var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp<=0)return;
- t.room.guardHp=Math.max(0,t.room.guardHp-Math.max(1,stats().atk-2));
- if(t.room.guardHp>0)r.hp=Math.max(0,r.hp-Math.max(1,3+Math.floor(r.floor*.25)-stats().def));
- else log('Страж побочного помещения побеждён.');
+ if(!r)return;
+ var parts=String(id).split(':'),t=tile(parts[0]);if(!t||t.kind!=='chamber'||!t.room||t.cleared)return;
+ var room=t.room;
+ if(room.guardHp<=0)return;
+ var slot=parts.length>1?Number(parts[1]):null;
+ var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
+ if(!g)return;
+ r.chamberActive=t.id;r.fx='attack';r.fxUntil=Date.now()+420;
+ var dmg=Math.max(1,stats().atk+rand(0,3)-Math.max(0,Math.floor(r.floor/15)));
+ g.hp=Math.max(0,g.hp-dmg);
+ room.guardHp=room.guards.reduce(function(sum,x){return sum+x.hp;},0);
+ if(room.guardHp===0)log('Все стражи побочной комнаты побеждены.');
+ else log('Удар по '+g.name+': '+dmg+' урона.');
  finishAction();if(r)showChamber(t);
 }
 function chamberReward(id){
- var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||t.room.rewardTaken)return;
- t.room.rewardTaken=true;
- var coins=addGold(20+r.floor*2);
+ var t=tile(id);if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||t.room.rewardTaken)return;
+ var room=t.room;
+ var coins=addGold(Math.round((20+r.floor*2)*depthMultiplier()));
+ room.rewardTaken=true;
  if(Math.random()<.6)addItem(pick(Object.keys(SLOT)),1);
- log('Найдена награда в побочной комнате: '+coins+' монет.');
- var secret=!!(lvl('scavenger')||lvl('phantom'))&&(t.room.secret||lvl('phantom')>0);
+ log('Центральная награда: '+coins+' монет.');
+ var secret=roomSecretAvailable(room);
  if(!secret){t.cleared=true;t.kind='empty';}
- finishAction();if(r&&secret)showChamber(t);else {if(r)r.chamberActive=null;close();}
+ finishAction();if(r&&secret)showChamber(t);else close();
 }
 function chamberSecret(id){
- var t=tile(id);if(!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||
-  !(lvl('scavenger')||lvl('phantom'))||!(t.room.secret||lvl('phantom')>0))return;
+ var t=tile(id);
+ if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||!roomSecretAvailable(t.room))return;
  t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
  if(lvl('phantom'))addItem('relic',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
- log('Тайновед обнаружил дополнительный тайник в дальней стене.');
- finishAction();if(r)r.chamberActive=null;close();
+ log('В боковой стене найдена тайная ниша.');
+ finishAction();close();
 }
 function gainSecret(e){
  r.secrets++;r.ep+=bonus('secretEp');
