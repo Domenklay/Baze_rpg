@@ -1161,6 +1161,8 @@ function consumeTurn(){
  if(r.rageTurns>0)r.rageTurns--;
  if(r.reflectionTurns>0)r.reflectionTurns--;
  if(r.barrierTurns>0)r.barrierTurns--;
+ if(r.regenTurns>0){r.regenTurns--;r.hp=Math.min(stats().hp,r.hp+Math.max(1,Math.ceil(stats().hp*.05)));}
+ if(r.burnWardTurns>0)r.burnWardTurns--;
  var frozen=!!(r.timeStopTurns>0);
  if(r.timeStopTurns>0)r.timeStopTurns--;
  var alive=r.chamberActive!=null?[]:enemies();
@@ -1193,7 +1195,8 @@ function consumeTurn(){
  }
  if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
   r.hp=Math.max(0,r.hp-bleed);log('Кровотечение: −'+bleed+' чистого урона.');}
- if(r.burnTurns>0){r.burnTurns--;var flames=Math.max(2,Math.ceil(r.floor*.45));
+ if(r.burnTurns>0&&r.burnWardTurns>0){r.burnTurns--;log('Печать пепельного легиона поглощает горение.');}
+ else if(r.burnTurns>0){r.burnTurns--;var flames=Math.max(2,Math.ceil(r.floor*.45));
   var absorbed=Math.min(r.shield,flames);r.shield-=absorbed;r.hp=Math.max(0,r.hp-flames+absorbed);
   log('Горение: −'+Math.max(0,flames-absorbed)+' магического урона.');}
  if(r.silenceTurns>0)r.silenceTurns--;
@@ -2152,7 +2155,17 @@ function usePreparedPotion(index){
    if(!available.length)break;var t=pick(available);t.revealed=true;if(t.kind==='empty')t.cleared=true;}
  }else if(id==='phoenix'){r.resurrection=(r.resurrection||0)+1;
  }else if(id==='reflection'){r.reflectionTurns=Math.max(r.reflectionTurns||0,6);
- }else if(id==='barrier'){r.shield+=Math.ceil(stats().hp*.65);r.barrierTurns=Math.max(r.barrierTurns||0,11);}
+ }else if(id==='barrier'){r.shield+=Math.ceil(stats().hp*.65);r.barrierTurns=Math.max(r.barrierTurns||0,11);
+ }else if(id==='forgeguard'){r.guardCharges=(r.guardCharges||0)+2;r.shield+=Math.ceil(stats().hp*.25)+Math.ceil(r.floor*.6);
+ }else if(id==='wildheart'){r.poisonTurns=0;r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.40));r.regenTurns=Math.max(r.regenTurns||0,6);
+ }else if(id==='ashvow'){r.rageTurns=Math.max(r.rageTurns||0,11);r.guardCharges=(r.guardCharges||0)+1;r.burnWardTurns=Math.max(r.burnWardTurns||0,5);
+ }else if(id==='deepveil'){r.shield+=Math.ceil(stats().hp*.75);r.mp=Math.min(stats().mp,r.mp+Math.ceil(stats().mp*.35));
+ }else if(id==='soulmemory'){
+  r.mp=Math.min(stats().mp,r.mp+Math.ceil(stats().mp*.50));
+  for(var j=0;j<2;j++){var found=rollSpell(5);grantScroll(found.id,1,'alchemy');}
+ }else if(id==='dreamtruce'){r.timeStopTurns=Math.max(r.timeStopTurns||0,6);r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.25));
+ }else if(id==='stormroot'){r.rageTurns=Math.max(r.rageTurns||0,16);r.shield+=Math.ceil(stats().hp*.45);
+ }else if(id==='astraloath'){r.resurrection=(r.resurrection||0)+1;r.guardCharges=(r.guardCharges||0)+3;}
  log('Алхимик: использовано «'+p.name+'».');finishAction();
 }
 
