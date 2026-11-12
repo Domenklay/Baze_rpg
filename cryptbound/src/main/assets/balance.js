@@ -104,6 +104,9 @@ function combat(act,location,floor,roleId,elite,boss,id){
   cooldown:cooldown,role:boss?'boss':roleId,
   threat:p.threat,act:Number(act)+1,floor:level};
 }
+function training(act){var n=clamp(Math.floor(Number(act)||0),0,9);
+ return {atk:n*7,def:n*3,hp:n*34,mp:n*8,pow:n*5};
+}
 function loot(act,location,floor,elite,boss){
  var actFactor=1+clamp(Number(act)||0,0,9)*.16;
  var locationFactor=1+(Number(location)||0)*.075;
@@ -112,6 +115,6 @@ function loot(act,location,floor,elite,boss){
 }
 window.CryptBalance={
  profiles:profiles,roles:roleMods,abilities:abilities,
- hash:hash,role:role,ability:ability,actProfile:actProfile,combat:combat,loot:loot
+ hash:hash,role:role,ability:ability,actProfile:actProfile,combat:combat,training:training,loot:loot
 };
 })();

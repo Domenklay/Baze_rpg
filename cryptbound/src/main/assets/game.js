@@ -87,12 +87,12 @@ function item(id){return r.items.find(function(x){return x.id===Number(id);})||n
 function equippedItem(slot){return item(r.equip[slot]);}
 function setBonus(k){var obj=CR.bonuses(r.equip,r.items);return obj[k]||0;}
 function stats(){
- var c=C[r.class],e=r.equip;
- var a=c.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
- var def=c.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def')+setBonus('def');
- var hp=c.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
- var mp=c.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
- var pow=c.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
+ var c=C[r.class],e=r.equip,training=BAL.training(r.actIndex||0);
+ var a=c.atk+training.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
+ var def=c.def+training.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def')+setBonus('def');
+ var hp=c.hp+training.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
+ var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
+ var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
@@ -107,6 +107,12 @@ function newItem(slot,floor,variant){
  var src=CR.gear(slot,sourceFloor,rand(0,1));
  var star=variant==null?rarityRoll():Math.max(1,Math.min(6,Math.floor(Number(variant)||1)));
  src.rarity=star;
+ // High-act items use existing placeholder art but gain their own balanced stats.
+ var tier=1+(r.actIndex||0)*.38+(r.locationIndex||0)*.08;
+ var rarityFactor=1+(star-1)*.13;
+ ['atk','def','hp','mp','pow'].forEach(function(stat){
+  if(src[stat]>0)src[stat]=Math.max(1,Math.ceil(src[stat]*tier*rarityFactor));
+ });
  if(star===6){
   var unique=['storm','freespell','rebirth','bulwark','devour'];
   src.uniqueEffect=pick(unique);src.setId=null;src.setName=null;
@@ -1340,7 +1346,7 @@ function kill(t){
   r.bossClears[r.floor]=true;r.portalReady=true;
   var q=currentRegion().questItem;
   if(q&&r.questItems.indexOf(q)<0){r.questItems.push(q);log('Получен квестовый предмет: '+q+'.');}
-  drop.diamonds=Math.max(1,Math.floor(depthMultiplier()*(1+Math.floor((r.actIndex||0)/3))));
+  drop.diamonds=Math.max(1,Math.ceil(depthMultiplier()*(1+(r.actIndex||0))));
   log('Босс повержен! Безопасный портал открыт на этом этаже.');fairyRemark('boss');
   drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
   if(r.floor>=40&&Math.random()<.025)drop.scroll=rollSpell(6).id;
@@ -1892,7 +1898,7 @@ function fightChamber(id){
 function chamberReward(id){
  var t=tile(id);if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||t.room.rewardTaken)return;
  var room=t.room;
- var coins=addGold(Math.round((20+r.floor*2)*depthMultiplier()));
+ var coins=addGold(Math.round((20+r.floor*2)*depthMultiplier()*(1+(r.actIndex||0)*.16)));
  room.rewardTaken=true;
  if(Math.random()<.6)addItem(pick(Object.keys(SLOT)),1);
  log('Центральная награда: '+coins+' монет.');
