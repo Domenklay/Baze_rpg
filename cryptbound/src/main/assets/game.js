@@ -327,7 +327,7 @@ function renderHero(){
   '<div class="gear-slots gear-right">'+right.map(gearSlotButton).join('')+'</div></div>'+
   '<p class="fine muted space-top">Нажмите ячейку экипировки, чтобы открыть сумку с подходящими предметами.</p>')+
  frame('ХАРАКТЕРИСТИКИ',statsHtml)+
- frame('ОТРЯД И ПУТЬ','<div class="kpis"><div><b>'+r.floor+'</b><small>Этаж</small></div><div><b>'+r.kills+'</b><small>Убийств</small></div><div><b>'+r.secrets+'</b><small>Тайн</small></div></div>'+
+ '<button class="btn gold wide space-top space-bottom" data-action="hero-stats" data-id="'+r.class+'">✥ Постоянное развитие '+C[r.class].name+'</button>'+frame('ОТРЯД И ПУТЬ','<div class="kpis"><div><b>'+r.floor+'</b><small>Этаж</small></div><div><b>'+r.kills+'</b><small>Убийств</small></div><div><b>'+r.secrets+'</b><small>Тайн</small></div></div>'+
  (r.summon?'<p class="fine golden space-top">☠ Ваш скелет: '+r.summon.hp+' HP, '+r.summon.atk+' ATK</p>':'')+
  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>')+
  '<div class="btnrow"><button class="btn dark wide" data-action="abandon">Завершить забег</button></div>';
@@ -871,15 +871,21 @@ function scrap(id){
 }
 function die(){
  if(!r)return;
- var depth=r.floor,kills=r.kills,secret=r.secrets;
+ var depth=r.floor,kills=r.kills,secret=r.secrets,hero=r.class;
  var gain=3+depth*2+Math.floor(kills/3)+secret*2;
- s.meta.souls+=gain;s.meta.best=Math.max(s.meta.best,depth);s.meta.runs++;
+ var essence=3+depth*2+Math.floor(kills/2);
+ s.meta.souls+=gain;s.meta.best=Math.max(s.meta.best,depth);
+ s.meta.runs++;s.meta.totalSecrets=(s.meta.totalSecrets||0)+secret;
+ s.meta.heroEssence[hero]=(s.meta.heroEssence[hero]||0)+essence;
  s.run=null;r=null;save();draw();
  dialog('<div class="emblem">☠</div><div class="subhead red">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</div><h2>ПЕПЕЛ ПОМНИТ</h2>'+
- '<p>Ваш след оборвался в подземелье. Но смерть принесла знание, которое останется после любого забега.</p>'+
- '<div class="kpis space-bottom"><div><b>'+depth+'</b><small>Этаж</small></div><div><b>'+kills+'</b><small>Побед</small></div><div><b>+'+gain+'</b><small>Памяти</small></div></div>'+
+ '<p>Титулы забега потеряны. Но память, сущность героя и коллекционные реликвии сохраняются навсегда.</p>'+
+ '<div class="kpis space-bottom"><div><b>'+depth+'</b><small>Этаж</small></div><div><b>'+kills+'</b><small>Побед</small></div>'+
+ '<div><b>+'+gain+'</b><small>Памяти</small></div></div>'+
+ '<p class="golden">+'+essence+' эссенции: '+C[hero].name+'.</p>'+
  '<button class="btn wide" data-action="choose">НОВАЯ ЭКСПЕДИЦИЯ</button>'+
- '<button class="btn alt wide space-top" data-action="camp">Память предков</button>');
+ '<button class="btn alt wide space-top" data-action="camp">Усилить героев</button>'+
+ '<button class="btn dark wide space-top" data-action="chronicles">Хроники и реликвии</button>');
 }
 function abandon(){
  if(!r){close();return;}
@@ -888,13 +894,84 @@ function abandon(){
 }
 function camp(){
  var m=s.meta,up=m.upgrades;
- function line(key,name,bonus){var price=5+up[key]*4;return '<div class="row space-bottom"><span class="fine">'+name+'<br><span class="muted">Ранг '+up[key]+'/5 · '+bonus+'</span></span>'+
- '<button class="btn small" data-action="permanent" data-id="'+key+'" '+(m.souls<price||up[key]>=5?'disabled':'')+'>'+price+' ✧</button></div>';}
- dialog('<div class="emblem">✥</div><div class="subhead">ПОСТОЯННЫЕ УЛУЧШЕНИЯ</div><h2>ПАМЯТЬ ПРЕДКОВ</h2>'+
- '<p>Осколков памяти: <b class="golden">'+m.souls+'</b>. Они переживают смерть и дают преимущества всем героям в новых забегах.</p>'+
- line('hp','Крепкое тело','+12 HP за ранг')+line('atk','Стальное наследие','+2 ATK за ранг')+line('mp','Тайная мудрость','+8 MP за ранг')+
- '<button class="btn alt wide" data-action="close">Вернуться</button>');
+ function line(key,name,desc){
+  var price=5+up[key]*4;
+  return '<div class="meta-upgrade"><div><strong>'+name+'</strong><small>Ранг '+up[key]+'/5 · '+desc+'</small></div>'+
+  '<button class="btn small" data-action="permanent" data-id="'+key+'" '+(m.souls<price||up[key]>=5?'disabled':'')+'>'+price+' ✧</button></div>';
+ }
+ var heroes=Object.keys(C).map(function(id){
+  var c=C[id],rank=m.heroRanks[id]||0,essence=m.heroEssence[id]||0,cost=EX.upgradeCost(rank);
+  return '<div class="meta-hero-row"><span class="meta-hero-portrait">'+window.CryptArt.hero(id)+'</span>'+
+   '<div><strong>'+c.name+' · '+rank+'/5</strong><small>'+EX.heroMastery[id].effect+'</small>'+
+   '<small>☽ Эссенция: '+essence+'</small></div>'+
+   '<button class="btn small" data-action="hero-rank" data-id="'+id+'" '+(rank>=5||essence<cost?'disabled':'')+'>'+
+   (rank>=5?'МАКС':cost+' ☽')+'</button></div>';
+ }).join('');
+ dialog('<div class="emblem">✥</div><div class="subhead">МЕТАПРОГРЕССИЯ</div><h2>ПАМЯТЬ ПРЕДКОВ</h2>'+
+  '<p>Память общая: <b class="golden">'+m.souls+' ✧</b>. Эссенция у каждого героя своя. Титулы внутри забега — общие и временные.</p>'+
+  '<div class="frame-title">ОБЩИЕ УЛУЧШЕНИЯ</div>'+
+  line('hp','Крепкое тело','HP +12')+line('atk','Стальное наследие','Атака +2')+line('mp','Тайная мудрость','Мана +8')+
+  '<div class="frame-title space-top">РАЗВИТИЕ ГЕРОЕВ</div>'+heroes+
+  '<button class="btn gold wide space-top" data-action="chronicles">✥ Реликварий, бестиарий и испытания</button>'+
+  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
+function rankHero(id){
+ if(!Object.prototype.hasOwnProperty.call(C,id))return;
+ var m=s.meta,rank=m.heroRanks[id]||0,cost=EX.upgradeCost(rank);
+ if(rank>=5||(m.heroEssence[id]||0)<cost)return;
+ m.heroEssence[id]-=cost;m.heroRanks[id]=rank+1;
+ if(r&&r.class===id){
+  if(id==='scout')r.hp+=5;
+  if(id==='necromancer'&&r.summon){r.summon.hp+=9;r.summon.maxHp+=9;r.summon.atk+=3;}
+ }
+ save();draw();camp();
+}
+function heroProgressDialog(id){
+ if(!C[id])return;
+ var rank=s.meta.heroRanks[id]||0,ess=s.meta.heroEssence[id]||0;
+ dialog('<div class="emblem">'+C[id].icon+'</div><div class="subhead">ЛИЧНОЕ РАЗВИТИЕ ГЕРОЯ</div>'+
+  '<h2>'+C[id].name+'</h2><p>'+C[id].description+'</p>'+
+  '<p><b class="golden">Ранг '+rank+'/5</b> · Эссенция '+ess+' ☽</p>'+
+  '<div class="unit-skill"><strong>'+EX.heroMastery[id].title+'</strong><p>'+EX.heroMastery[id].effect+'</p></div>'+
+  '<button class="btn wide" data-action="hero-rank" data-id="'+id+'" '+
+    (rank>=5||ess<EX.upgradeCost(rank)?'disabled':'')+'>Усилить · '+EX.upgradeCost(rank)+' ☽</button>'+
+  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>');
+}
+function chronicles(){
+ var m=s.meta;
+ var goalRows=EX.challenges.map(function(x){
+  var done=!!m.milestones[x.id],ready=x.check(m);
+  return '<div class="meta-goal"><div><strong>'+(done?'✓ ':'')+x.name+'</strong><small>'+x.desc+'</small></div>'+
+   '<button class="btn small" data-action="milestone" data-id="'+x.id+'" '+
+    ((!ready||done)?'disabled':'')+'>'+(done?'ГОТОВО':'+'+x.reward+' ✧')+'</button></div>';
+ }).join('');
+ var collection=EX.relics.map(function(x){
+  var n=m.relics[x.id]||0;
+  return '<div class="meta-relic '+(n?'found':'')+'"><span>'+x.icon+'</span>'+
+    '<strong>'+x.name+'</strong><small>'+(n?'Собрано ×'+n+' · '+x.bonus:'Не обнаружено · '+x.desc)+'</small></div>';
+ }).join('');
+ var beasts=Object.keys(m.bestiary).filter(function(k){return m.bestiary[k]>0;}).sort().map(function(id){
+  var found=MOBS.find(function(mob){return mob.id===id;});
+  return '<span class="pill">'+esc(found?found.name:id)+' ×'+m.bestiary[id]+'</span>';
+ }).join(' ');
+ dialog('<div class="emblem">✥</div><div class="subhead">ДОЛГОСРОЧНЫЕ ЦЕЛИ</div><h2>ХРОНИКИ И РЕЛИКВАРИЙ</h2>'+
+  '<p>Лучший этаж: '+m.best+' · Боссов побеждено: '+(m.bossKills||0)+
+  ' · Обнаружено секретов: '+(m.totalSecrets||0)+'.</p>'+
+  '<div class="frame-title">ИСПЫТАНИЯ</div>'+goalRows+
+  '<div class="frame-title space-top">ШЕСТЬ РЕЛИКВИЙ БЕЗДНЫ</div>'+
+  '<p class="fine muted">С каждого босса можно получить реликвию. Первая находка постоянно усиливает всех героев.</p>'+
+  '<div class="meta-relics">'+collection+'</div>'+
+  '<div class="frame-title space-top">БЕСТИАРИЙ</div><div class="beast-list">'+
+    (beasts||'<span class="fine muted">Никто ещё не повержен.</span>')+'</div>'+
+  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>'+
+  '<button class="btn dark wide space-top" data-action="close">Закрыть</button>');
+}
+function claimMilestone(id){
+ var m=s.meta,t=EX.challenges.find(function(c){return c.id===id;});
+ if(!t||m.milestones[id]||!t.check(m))return;
+ m.milestones[id]=true;m.souls+=t.reward;save();chronicles();toast('Испытание выполнено: +'+t.reward+' памяти.');
+}
+
 function permanent(id){
  var ups=s.meta.upgrades;if(!Object.prototype.hasOwnProperty.call(ups,id))return;
  var n=ups[id],cost=5+n*4;if(n>=5||s.meta.souls<cost)return;
