@@ -48,3 +48,13 @@
 .town-resources span b{color:#eac58d}
 .gear-two-columns+.compact-set-help{margin:4px 0}
 @media(max-width:365px){.gear-picker{grid-template-columns:repeat(4,minmax(0,1fr))}.gear-compare-stat{font-size:9px}.dungeon-key{font-size:9px}}
+
+/* Pixel-consistent three-frame action playback inside both hero HUDs. */
+.clicker-hero-sequence{width:100%;height:100%;display:block;position:relative;overflow:hidden}
+.clicker-hero-sequence .seq-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;image-rendering:auto;filter:drop-shadow(1px 3px 2px #000)}
+.clicker-hero-sequence .frame-1{animation:crypt-frame-one .44s linear both}
+.clicker-hero-sequence .frame-2{animation:crypt-frame-two .44s linear both}
+.clicker-hero-sequence .frame-3{animation:crypt-frame-three .44s linear both}
+@keyframes crypt-frame-one{0%,31%{opacity:1}33%,100%{opacity:0}}
+@keyframes crypt-frame-two{0%,32%{opacity:0}33%,65%{opacity:1}66%,100%{opacity:0}}
+@keyframes crypt-frame-three{0%,65%{opacity:0}66%,100%{opacity:1}}
