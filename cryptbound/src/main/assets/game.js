@@ -166,6 +166,7 @@ function placeSummon(){
  r.summonTile=spot.tile.id;return true;
 }
 function startFloor(){
+ r.chamberActive=null;
  r.tiles=distributeTiles();r.key=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
@@ -213,6 +214,7 @@ function load(){
   if(!Array.isArray(v.run.journalNotes))v.run.journalNotes=[];
   if(!v.run.uniqueFinds)v.run.uniqueFinds={};
   if(!v.run.poisonTurns)v.run.poisonTurns=0;
+  v.run.chamberActive=null; // A modal room is reopened explicitly after loading.
   for(var enemyTile of v.run.tiles){if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=enemy.ranged?{name:'Дальний выстрел',every:3,description:'Стреляет каждые три хода.',kind:'shot'}:EX.monster(enemy.visual||CR.visualId(enemy.name));
   if(enemy.ranged&&enemy.attackCooldown==null)enemy.attackCooldown=3;
   if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
@@ -553,7 +555,7 @@ function toast(msg){
  clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('shown');},2400);
 }
 function dialog(content){$('overlay').innerHTML='<div class="veil"><div class="dialog">'+content+'</div></div>';}
-function close(){$('overlay').innerHTML='';}
+function close(){$('overlay').innerHTML='';if(r)r.chamberActive=null;}
 function choose(){
  var opts=Object.keys(C).map(function(k){
   var c=C[k];return '<button class="class-option" data-action="begin" data-id="'+k+'">'+window.CryptArt.hero(k)+
