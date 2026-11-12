@@ -25,6 +25,29 @@ var potionIngredients={
 };
 potions.forEach(function(p){p.ingredients=potionIngredients[p.id]||[];});
 
+
+/* One new preparation recipe per late act (T3–T10).
+   Recipes use named drops already present in each regional loot table. */
+var latePotions=[
+{id:'forgeguard',name:'Снадобье подгорного кузнеца',level:2,cost:8,description:'Два магических отражения удара и прочный щит, зависящий от этажа.',icon:'♜',
+ ingredients:[['Подгорный железнокорень',3],['Медный мох',2]]},
+{id:'wildheart',name:'Живое сердце рощи',level:2,cost:8,description:'Исцеляет героя, снимает яд и даёт восстановление здоровья на несколько ходов.',icon:'❀',
+ ingredients:[['Сердцелист',3],['Лесной янтарь',2]]},
+{id:'ashvow',name:'Печать пепельного легиона',level:3,cost:9,description:'Усиливает атаки и ограждает от трёх ударов вражеской огненной стихии.',icon:'♨',
+ ingredients:[['Рожок пепельного беса',3],['Пепельный зверобой',2]]},
+{id:'deepveil',name:'Настой чёрной глубины',level:3,cost:10,description:'Создаёт долговременный защитный барьер и восстанавливает ману.',icon:'≈',
+ ingredients:[['Черноводная ламинария',3],['Бездонный синий кварц',2]]},
+{id:'soulmemory',name:'Слеза забытого хранителя',level:4,cost:10,description:'Восстанавливает ману и создаёт до двух полезных свитков соответствующего уровня.',icon:'☽',
+ ingredients:[['Плач-трава',3],['Памятный сланец',2]]},
+{id:'dreamtruce',name:'Покой полуночного сада',level:4,cost:12,description:'Останавливает время на пять ходов и лечит тяжёлые раны.',icon:'☾',
+ ingredients:[['Полуночная сон-трава',3],['Звёздная пыльца феи',2]]},
+{id:'stormroot',name:'Корень четырёх стихий',level:5,cost:12,description:'Долгий боевой подъём и щит против разрушительных атак.',icon:'ϟ',
+ ingredients:[['Искроцвет',3],['Грозовой фульгурит',2]]},
+{id:'astraloath',name:'Астральный обет',level:5,cost:14,description:'Предотвращает одну смерть и создаёт три защитных заряда.',icon:'✺',
+ ingredients:[['Звёздная астра',3],['Сияющий хондрит',2]]}
+];
+for(var p of latePotions)potions.push(p);
+
 var spells=[];
 function sp(id,school,rank,name,kind,base,cost,description,icon){spells.push({id,school,rank,name,kind,base,cost,description,icon,rarity:rank});}
 /* Five ordinary spell tiers follow the six classic elemental utility archetypes;
