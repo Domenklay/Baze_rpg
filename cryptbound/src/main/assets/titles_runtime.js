@@ -197,7 +197,7 @@ function onKill(r,e,drop,h){
 function beforeAttack(r){return has(r,'war_novice')&&Math.random()<.05+.05*level(r,'war_novice');}
 function attack(r,e,dmg,h){
  if(has(r,'adv_demon_hunter')&&undead(e))dmg=Math.ceil(dmg*(1+.05+.05*level(r,'adv_demon_hunter')));
- if(has(r,'war_templar')&&undead(e))dmg=Math.ceil(dmg*(1+.25*level(r,'war_templar')));
+ if(has(r,'war_templar')&&undead(e))dmg=Math.ceil(dmg*(1+.25+.25*level(r,'war_templar')));
  if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*1.5);
  if(has(r,'war_magic')&&Math.random()<.05+.05*level(r,'war_magic'))dmg+=h.stats().pow;
  if(has(r,'war_dancer')&&curSup(r,'sword_scroll')>0&&Math.random()<.08){supply(r,'sword_scroll',-1);dmg=Math.ceil(dmg*1.45);h.log('Техника мастера меча усилила удар.');}
@@ -208,6 +208,7 @@ function attack(r,e,dmg,h){
  return dmg;
 }
 function incoming(r,e,damage){
+ if(r.guardCharges>0){r.guardCharges--;damage=Math.max(1,damage-5);}
  if(e&&e.ranged&&has(r,'war_heavy'))damage*=1-(.1+.1*level(r,'war_heavy'));
  return Math.max(1,Math.ceil(damage));
 }
