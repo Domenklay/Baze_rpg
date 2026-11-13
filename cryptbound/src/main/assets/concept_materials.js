@@ -225,5 +225,18 @@ window.CryptConceptMaterials={
  "Осколок посоха Патриарха": "t9_concept_oskolok_posokha_patriarkha",
  "Осколок сердечного камня Тектониса": "t9_concept_oskolok_serdechnogo_kamnia_tektonisa",
  "Печать Древнего голема": "t9_concept_pechat_drevnego_golema",
- "Перо Верховного штормокрыла": "t9_concept_pero_verkhovnogo_shtormokryla"
+ "Перо Верховного штормокрыла": "t9_concept_pero_verkhovnogo_shtormokryla",
+ "Первая искра Старейшины": "t9_concept_pervaia_iskra_stareishiny",
+ "Первая сердцевина голема": "t9_concept_pervaia_serdtsevina_golema",
+ "Первичный огнехвост": "t9_concept_pervichnyi_ognekhvost",
+ "Пламелист": "t9_concept_plamelist",
+ "Шестерня первородного голема": "t9_concept_shesternia_pervorodnogo_golema",
+ "Стихийный поршневой сердечник": "t9_concept_stikhiinyi_porshnevoi_serdechnik",
+ "Титаническая форель": "t9_concept_titanicheskaia_forel",
+ "Титанический сланец": "t9_concept_titanicheskii_slanets",
+ "Титанолист": "t9_concept_titanolist",
+ "Застывшая капля тигля": "t9_concept_zastyvshaia_kaplia_tiglia",
+ "Жало Матки кристаллических туннелей": "t9_concept_zhalo_matki_kristallicheskikh_tunnelei",
+ "Кометный карп": "t10_concept_kometnyi_karp",
+ "Компас Тринадцати Орбит": "t10_concept_kompas_trinadtsati_orbit"
 };
