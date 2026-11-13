@@ -1421,9 +1421,51 @@ function kill(t){
   log('Полная зачистка: '+opened+' обычных клеток раскрыто, +'+bonusGold+' монет.');
  }
 }
+/* An engaged monster gets the initiative before a direct hit. One response
+   per round: the regular phase still advances timers and statuses, but never
+   strikes the same target a second time. */
+function counterBeforeHero(enemy,mainTile,room){
+ if(!enemy||enemy.hp<=0||!r)return false;
+ enemy.counteredAt=r.turn+1;enemy.provoked=false;
+ if(enemy.stun>0||r.timeStopTurns>0)return true;
+ var interval=Math.max(1,(enemy.skill&&enemy.skill.every)||3);
+ var ready=(enemy.cooldown==null?interval:enemy.cooldown)<=1,raw=Math.max(1,enemy.atk);
+ if(ready)enemy.cooldown=interval+1;
+ if(enemy.boss&&mainTile){raw=bossAttack(mainTile,enemy,raw,ready);if(raw==null)return true;}
+ else if(ready)raw=monsterSpecial(enemy,raw,room||false);
+ var damage=incomingDamage(raw);
+ if(FD)FD.actor(enemy,ready?'skill':'attack',ready?(enemy.abilityName||'Особый приём'):'Ответный удар');
+ if(Math.random()*100<stats().dodge){log('Уклонение от '+enemy.name+'.');return true;}
+ if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
+  if(Math.random()*100>=r.ghost.dodge){r.ghost.hp=Math.max(0,r.ghost.hp-damage);if(!r.ghost.hp)r.ghost=null;}
+  return true;
+ }
+ if(r.guardCharges>0){r.guardCharges--;log('Защитный заряд блокирует атаку '+enemy.name+'.');return true;}
+ if(r.summon&&r.summon.hp>0&&Math.random()<(room?.45:.72)){
+  var reflected=Math.max(1,damage-(room?0:(r.summon.def||0)));
+  r.summon.hp=Math.max(0,r.summon.hp-reflected);
+  if(!r.summon.hp){r.summon=null;r.summonTile=null;}
+  log('Спутник перехватывает удар '+enemy.name+'.');return true;
+ }
+ if(r.setShieldRemaining>0){var setAbs=Math.min(damage,r.setShieldRemaining);r.setShieldRemaining-=setAbs;damage-=setAbs;}
+ if(r.shield>0){var absorb=Math.min(damage,r.shield);r.shield-=absorb;damage-=absorb;}
+ r.hp=Math.max(0,r.hp-damage);
+ if(damage)log(enemy.name+' отвечает первым: −'+damage+' HP.');
+ if(damage&&r.reflectionTurns>0&&enemy.hp>0){
+  enemy.hp-=Math.max(1,Math.ceil(damage*.5));
+  if(enemy.hp<=0&&mainTile)kill(mainTile);
+ }
+ if(r.hp<=0){
+  if(r.resurrection>0){r.resurrection--;r.hp=Math.max(1,Math.ceil(stats().hp*.45));r.poisonTurns=0;log('Печать возрождения спасает героя.');}
+  else{die();return false;}
+ }
+ return true;
+}
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  setHeroPose('attack');
+ if(!counterBeforeHero(t.foe,t,null)||!r)return;
+ if(t.foe.hp<=0){finishAction();return;}
   provoke(t.foe);
   if(t.foe.evadeCharges>0){
   t.foe.evadeCharges--;if(Math.random()<.45){
@@ -2119,7 +2161,10 @@ function fightChamber(id){
  var slot=parts.length>1?Number(parts[1]):null;
  var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
  if(!g)return;
- r.chamberActive=t.id;setHeroPose('attack');provoke(g);
+ r.chamberActive=t.id;setHeroPose('attack');
+ if(!counterBeforeHero(g,null,room)||!r)return;
+ if(g.hp<=0){room.guardHp=room.guards.reduce(function(n,x){return n+Math.max(0,x.hp);},0);finishAction();return;}
+ provoke(g);
   if(g.evadeCharges>0){g.evadeCharges--;
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
  var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
