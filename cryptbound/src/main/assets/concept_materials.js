@@ -199,5 +199,18 @@ window.CryptConceptMaterials={
  "Светящийся рог сновидческого зверя": "t8_concept_svetiashchiisia_rog_snovidcheskogo_zveria",
  "Светохвостая лунная рыба": "t8_concept_svetokhvostaia_lunnaia_ryba",
  "Цветок пробуждения": "t8_concept_tsvetok_probuzhdeniia",
- "Узел нити сна": "t8_concept_uzel_niti_sna"
+ "Узел нити сна": "t8_concept_uzel_niti_sna",
+ "Венчик королевы цветения": "t8_concept_venchik_korolevy_tsveteniia",
+ "Вуаль Первой придворной": "t8_concept_vual_pervoi_pridvornoi",
+ "Зеркалоцвет": "t8_concept_zerkalotsvet",
+ "Живой лепестковый шёлк": "t8_concept_zhivoi_lepestkovyi_shiolk",
+ "Чаша Великого тигля": "t9_concept_chasha_velikogo_tiglia",
+ "Чешуя младшего титана": "t9_concept_cheshuia_mladshego_titana",
+ "Громодуб": "t9_concept_gromodub",
+ "Грозовое перо штормовой птицы": "t9_concept_grozovoe_pero_shtormovoi_ptitsy",
+ "Грозовой лосось": "t9_concept_grozovoi_losos",
+ "Искроцвет": "t9_concept_iskrotsvet",
+ "Каменная связка великана": "t9_concept_kamennaia_sviazka_velikana",
+ "Каменный щиток элементаля": "t9_concept_kamennyi_shchitok_elementalia",
+ "Капля первородного пламени": "t9_concept_kaplia_pervorodnogo_plameni"
 };
