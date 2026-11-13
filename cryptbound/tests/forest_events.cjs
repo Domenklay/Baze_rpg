@@ -106,6 +106,11 @@ A('close');
 const victim=r.tiles.find(t=>t.foe&&t.foe.hp>0);
 assert.ok(victim);
 victim.revealed=true;victim.foe.hp=10000;
+// A visible target is unusable by traps until a navigable corridor reaches it.
+const entryId=window.ClickerRules.near(victim.id).find(id=>r.tiles[id]&&!r.tiles[id].foe);
+assert.notEqual(entryId,undefined);
+const entry=r.tiles[entryId];entry.kind='empty';entry.revealed=true;entry.cleared=true;entry.drops=null;
+r.heroTile=entryId;
 const turn2=r.turn;
 A('forest-use','bleed_trap');
 assert.equal(r.pendingForestUse,'bleed_trap');
