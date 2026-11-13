@@ -186,5 +186,18 @@ window.CryptConceptMaterials={
  "Осколок маски Ложной королевы": "t8_concept_oskolok_maski_lozhnoi_korolevy",
  "Осколок зеркала Первого Отражённого": "t8_concept_oskolok_zerkala_pervogo_otrazhionnogo",
  "Отражённая серебряная нить": "t8_concept_otrazhionnaia_serebrianaia_nit",
- "Печать Канцлера желаний": "t8_concept_pechat_kantslera_zhelanii"
+ "Печать Канцлера желаний": "t8_concept_pechat_kantslera_zhelanii",
+ "Полуночная сон-трава": "t8_concept_polunochnaia_son_trava",
+ "Рог Древнего сновидца": "t8_concept_rog_drevnego_snovidtsa",
+ "Рог призрачного оленя": "t8_concept_rog_prizrachnogo_olenia",
+ "Сердце стеклянного чудовища": "t8_concept_serdtse_stekliannogo_chudovishcha",
+ "Серебристая шкура лунного зверя": "t8_concept_serebristaia_shkura_lunnogo_zveria",
+ "Шип кошмарного рыцаря": "t8_concept_ship_koshmarnogo_rytsaria",
+ "Шпора маршала теневых грёз": "t8_concept_shpora_marshala_tenevykh_grioz",
+ "Сонная ветвь Ноктурна": "t8_concept_sonnaia_vetv_nokturna",
+ "Стеклянная чешуя зверя": "t8_concept_stekliannaia_cheshuia_zveria",
+ "Светящийся рог сновидческого зверя": "t8_concept_svetiashchiisia_rog_snovidcheskogo_zveria",
+ "Светохвостая лунная рыба": "t8_concept_svetokhvostaia_lunnaia_ryba",
+ "Цветок пробуждения": "t8_concept_tsvetok_probuzhdeniia",
+ "Узел нити сна": "t8_concept_uzel_niti_sna"
 };
