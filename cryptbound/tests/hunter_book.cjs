@@ -10,9 +10,10 @@ const document={hidden:false,getElementById:el,querySelector(){return null;},que
 const ctx={window,document,Date,Math,localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-for(const name of ['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js',
+for(const name of ['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js',
  'clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js',
  'balance.js','hunter_bestiary.js','forest_encounters.js','game.js']){
+ if(name==='gumballs_titles_reference.js')window.CryptLegacyTitles=window.CryptTitles;
  vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx,{filename:name,timeout:12000});
 }
 const H=window.CryptHunterBook,A=window.Crypt.debug.action,api=window.Crypt;
