@@ -625,12 +625,40 @@ function panelDialog(panel){
  var body=panel==='bag'||panel==='hero'?inventoryPanel():panel==='spells'?renderSpells():renderTalents();
  dialog('<div class="panel-heading"><h2>'+titles[panel]+'</h2><button class="panel-close" data-action="close" aria-label="Закрыть окно">×</button></div><div class="panel-body panel-'+panel+'">'+body+'</div>');uiPanel=panel;
 }
+function renderBackpackSupplies(){
+ var pockets=(r.lootBag||[]).filter(function(x){return x.qty>0;});
+ var scrolls=Object.entries(r.scrolls||{}).filter(function(x){return x[1]>0;});
+ var souls=r.soulBag||[],forestItems=FE.ensure(r).items;
+ var forestCount=Object.keys(forestItems).filter(function(k){return forestItems[k]>0;}).length;
+ var cards='<div class="backpack-supply-grid">'+
+  '<button class="backpack-consumable" data-action="potion" '+(!r.potions||r.hp>=stats().hp?'disabled':'')+'>'+uiIcon('potion')+'<b>Целебный эликсир</b><small>×'+r.potions+'</small></button>'+
+  pockets.map(function(x){return '<button class="backpack-consumable '+(x.kind==='trinket'?'junk':'')+'" data-action="'+(x.kind==='trinket'?'pocket-info':'use-pocket')+'" data-id="'+x.id+'">'+uiIcon(x.kind==='trinket'?'bag':'potion')+'<b>'+esc(x.name)+'</b><small>×'+x.qty+'</small></button>';}).join('')+
+  (r.preparedPotions||[]).map(function(id,index){var p=SYS.byPotion[id];return p?'<button class="backpack-consumable" data-action="use-prepared" data-id="'+index+'">'+uiIcon('potion')+'<b>'+esc(p.name)+'</b><small>Готовое зелье</small></button>':'';}).join('')+
+ '</div>';
+ if(scrolls.length)cards+='<div class="backpack-section-title">Свитки</div><div class="backpack-supply-grid">'+
+  scrolls.map(function(x){var sp=SYS.bySpell[x[0]];return '<button class="backpack-consumable" data-action="spell-detail" data-id="'+esc(x[0])+'">'+uiIcon('scroll')+'<b>'+esc(sp?sp.name:x[0])+'</b><small>×'+x[1]+'</small></button>';}).join('')+'</div>';
+ if(forestCount)cards+='<div class="backpack-section-title">Лесные предметы и ловушки</div><div class="backpack-forest">'+FE.inventory(r)+'</div>';
+ if(souls.length)cards+='<div class="backpack-section-title">Собранные души</div><div class="backpack-forest">'+
+  souls.map(function(x){return '<div class="forest-pocket-row">'+uiIcon('skull')+'<span><b>'+esc(x.name)+'</b></span><button class="btn small" data-action="consume-soul" data-id="'+x.id+'">Применить</button></div>';}).join('')+'</div>';
+ if((r.questItems||[]).length)cards+='<div class="backpack-section-title">Квестовые предметы</div><div class="backpack-supply-grid">'+
+  r.questItems.map(function(x){return '<div class="backpack-consumable">'+uiIcon('key')+'<b>'+esc(x)+'</b></div>';}).join('')+'</div>';
+ return '<section class="backpack-supplies"><div class="inventory-divider"><b>Расходники и находки</b></div>'+cards+'</section>';
+}
+function usePocket(id){
+ var obj=(r.lootBag||[]).find(function(x){return x.id===Number(id)&&x.qty>0;});if(!obj||obj.kind==='trinket')return;
+ var hp=obj.kind==='vial-hp',maximum=hp?stats().hp:stats().mp,old=hp?r.hp:r.mp;
+ if(old>=maximum){toast(hp?'Здоровье уже полное.':'Мана уже полная.');return;}
+ var restored=Math.min(maximum-old,rand(1,2));
+ if(hp)r.hp+=restored;else r.mp+=restored;
+ obj.qty--;if(obj.qty===0)r.lootBag=r.lootBag.filter(function(x){return x!==obj;});
+ log(obj.name+': +'+restored+(hp?' HP.':' MP.'));finishAction();
+}
 function inventoryPanel(){
  var st=stats(),items=r.items.slice().sort(function(a,b){return b.rarity-a.rarity;});
  var empty='';for(var i=items.length;i<Math.max(30,Math.ceil(items.length/5)*5);i++)empty+='<div class="inventory-empty" aria-hidden="true"></div>';
- return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Рюкзак</b><span>'+r.items.length+'/30</span></div><div class="inventory-grid">'+itemGrid(items)+empty+'</div>'+
+ return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Экипировка</b><span>'+r.items.length+'/48</span></div><div class="inventory-grid">'+itemGrid(items)+empty+'</div>'+
  (HB.owned(s.meta)?'<div class="hb-inventory-access"><button class="hb-special-item" data-action="hunter-book">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Особый предмет · постоянный · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов</small></span><strong>Открыть</strong></button></div>':'')+
- '<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы, души и записи</button>';
+ renderBackpackSupplies()+'<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы, души и записи</button>';
 }
 function gearArt(it,slot){
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
@@ -807,7 +835,7 @@ function compareStat(it,other,key){
 }
 function renderBag(){
  var materials=Object.entries(r.materials||{}).filter(function(x){return x[1]>0;});
- var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>'],['СОБРАННЫЕ ДУШИ',(r.soulBag||[]).map(function(x){return '<div class="supply-soul"><span>'+esc(x.name)+'</span><button class="btn small" data-action="consume-soul" data-id="'+x.id+'">Применить</button></div>';}).join('')||'<p>Души пока не найдены.</p>'],['Записи и находки',(r.questItems||[]).concat(r.journalNotes||[]).map(function(x){return '<p>'+esc(x)+'</p>';}).join('')||'<p>Записей пока нет.</p>'],['Лесные находки',r.actIndex===0?FE.inventory(r):'<p class="fine muted">Лесные припасы остаются в Пограничных землях.</p>']];
+ var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>'],['Записи похода',(r.journalNotes||[]).map(function(x){return '<p>'+esc(x)+'</p>';}).join('')||'<p>Записей пока нет.</p>']];
  return '<div class="supply-ledger"><div class="supply-totals"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('scroll')+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</span><span>'+uiIcon('potion')+r.potions+'</span></div>'+sections.map(function(x){return '<section><h3>'+x[0]+'</h3>'+x[1]+'</section>';}).join('')+'</div>';
 }
 function renderMenu(){
@@ -2793,6 +2821,8 @@ function action(name,id){
  if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
+ if(name==='use-pocket'){usePocket(id);return;}
+ if(name==='pocket-info'){var trinket=(r.lootBag||[]).find(function(x){return x.id===Number(id);});if(trinket)dialog('<h2>'+esc(trinket.name)+'</h2><p>'+esc(trinket.description)+'</p><button class="btn wide" data-action="close">Закрыть</button>');return;}
  if(name==='chamber-exit'){if(r)r.chamberActive=null;close();draw();save();return;}
  if(name==='inspect-chamber-enemy'){inspectUnit('chamber-enemy',id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}
