@@ -1562,17 +1562,22 @@ function kill(t){
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
  if(!r.floorCleared&&hiddenEnemies().length===0){
   r.floorCleared=true;r.clearAnimationStarted=Date.now();
-  var opened=0,armedTraps=0;
+  var opened=0,disarmedTraps=0;
   r.tiles.forEach(function(t){
-   // Full-clearing ordinary slabs must never silently reveal or disarm traps.
-   if(!t.revealed&&t.kind==='trap'){
-    t.cleared=false;t.trapSpent=false;t.trapActive=false;armedTraps++;return;
+   // Full clearance is a free safe sweep: reveal AND disarm every floor trap.
+   // No trap damage, statuses, animation turns or manual interaction.
+   if(t.kind==='trap'){
+    if(!t.revealed){t.revealed=true;t.autoOpened=opened++;}
+    if(!t.trapSpent)disarmedTraps++;
+    t.trapSpent=true;t.trapActive=false;t.cleared=true;
+    if(r.trappedTile===t.id)r.trappedTile=null;
+    return;
    }
    if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
     t.revealed=true;t.autoOpened=opened++;if(t.kind==='empty')t.cleared=true;
    }
   });
-  if(armedTraps)log('После зачистки осталось '+armedTraps+' закрытых капканов. Они по-прежнему опасны.');
+  if(disarmedTraps)log('Зачистка автоматически обезвредила '+disarmedTraps+' капкан(ов) без урона и дополнительных ходов.');
   var bonusGold=Math.max(1,Math.round(6*depthMultiplier()));addGold(bonusGold);
   log('Полная зачистка: '+opened+' обычных клеток раскрыто, +'+bonusGold+' монет.');
  }
