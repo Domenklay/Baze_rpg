@@ -173,7 +173,7 @@ A('begin','necromancer');r=state.run;r.hp=5000;r.mp=5000;
 test('A hidden archer has a three-round attack interval and does not block exploration',()=>{
  r.tiles.forEach(t=>{if(t.foe){t.foe.hp=0;}});
  r.summon=null;r.summonTile=null;r.shield=0;r.poisonTurns=0;
- const t=r.tiles[0];t.kind='enemy';t.revealed=true;
+ const t=r.tiles.find(t=>t.kind!=='start');assert.ok(t);t.kind='enemy';t.revealed=true;
  t.foe={id:'ranger_test',name:'Разбойник-лучник',visual:'cultist',hp:70,maxHp:70,
   atk:12,def:0,ranged:true,attackCooldown:3,cooldown:3,skill:{name:'Дальний выстрел',every:3,kind:'shot'},burn:0,stun:0,poison:0,loot:[]};
  const oldHp=r.hp;
