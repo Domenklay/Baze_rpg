@@ -2017,8 +2017,9 @@ function newSideRoom(){
   guards.push({id:m.id,name:m.name,visual:CR.visualId(m.name),role:role,
    roleName:BAL.roles[role].name,ability:spec.id,abilityName:spec.name,abilityDescription:spec.description,
    slot:slots[i],hp:hp,maxHp:hp,def:Math.max(0,scaled.def-1),
-   atk:Math.max(2,Math.ceil(scaled.atk*.68)),cooldown:3,
-   guard:0,guardTurns:0,evadeCharges:0,summons:0,stun:0,burn:0,poison:0,
+   atk:Math.max(2,Math.ceil(scaled.atk*.68)),baseAtk:Math.max(2,Math.ceil(scaled.atk*.68)),cooldown:3,
+    ranged:role==='marksman',attackCooldown:role==='marksman'?2:0,provoked:false,
+    guard:0,guardTurns:0,evadeCharges:0,summons:0,stun:0,burn:0,poison:0,
    skill:{name:m.skillName||spec.name,every:3,description:spec.description,kind:spec.id}});
  }
  return {guards:guards,guardHp:guards.reduce(function(n,g){return n+g.hp;},0),
@@ -2048,7 +2049,7 @@ function renderChamberTiles(t){
   if(k===0){html+='<button class="tile cave-exit" data-action="chamber-exit" aria-label="Выйти в основной лабиринт">'+icon('chamber')+'<span class="cave-label">Выход</span></button>';continue;}
   if(k===4){html+='<button class="tile cave-loot '+(room.rewardTaken?'taken':'')+'" data-action="chamber-reward" data-id="'+t.id+'" '+(room.guardHp>0||room.rewardTaken?'disabled':'')+' aria-label="'+(room.rewardTaken?'Сокровище собрано':room.guardHp>0?'Сокровище охраняется':'Забрать сокровище')+'">'+(room.rewardTaken?'':icon('chest'))+'<span class="cave-label">'+(room.rewardTaken?'Собрано':room.guardHp>0?'Под охраной':'Забрать')+'</span></button>';continue;}
   if(k===7){html+='<div class="tile cave-player"><span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span></div>';continue;}
-  if(g){html+='<button class="tile tile-danger cave-enemy'+(r.pendingSpell?' spell-target-valid':'')+'" data-action="'+(r.pendingSpell?'cast-target':'chamber-fight')+'" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span><span class="unit-corner unit-atk">⚔'+g.atk+'</span></button>';continue;}
+  if(g){html+='<button class="tile tile-danger cave-enemy'+(r.pendingSpell?' spell-target-valid':'')+'" data-action="'+(r.pendingSpell?'cast-target':'chamber-fight')+'" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span>'+damageBadge(g)+'</button>';continue;}
   if(k===6&&r.summon&&r.summon.hp>0){html+='<button class="tile tile-summon" data-unit="summon" data-action="inspect-summon" aria-label="Костяной страж">'+summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span></button>';continue;}
   if(k===8&&(room.secret||known)&&!room.secretTaken){
    var ready=known&&room.guardHp<=0&&room.rewardTaken;
@@ -2067,15 +2068,25 @@ function chamberEnemyPhase(frozen){
   if(g.guardTurns>0){g.guardTurns--;if(!g.guardTurns)g.guard=0;}
   if(g.burn>0){g.burn--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().pow*.45)));}
   if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
-  if(g.hp<=0)return;
-  if(g.stun>0){g.stun--;return;}
-  if(frozen)return;
-  g.cooldown=Math.max(0,(g.cooldown||3)-1);
-  if(g.cooldown>0)return;
-  g.cooldown=3;
-  if(FD)FD.actor(g,'skill',g.abilityName||g.skill.name);
-  var damage=Math.max(1,g.atk+rand(-1,1)-Math.max(0,stats().def-(r.armorBreakPower||0)));
-  damage=monsterSpecial(g,damage,room);
+  if(g.hp<=0){g.provoked=false;return;}
+   var provoked=!!g.provoked;g.provoked=false;
+   if(g.stun>0){g.stun--;return;}
+   if(frozen)return;
+   var attacks=provoked;
+   if(g.ranged){
+    var clock=g.attackCooldown==null?2:g.attackCooldown;
+    clock=Math.max(0,clock-1);
+    if(clock===0){attacks=true;g.attackCooldown=2;}
+    else g.attackCooldown=clock;
+   }
+   if(!attacks)return;
+   var interval=Math.max(1,(g.skill&&g.skill.every)||3);
+   var remaining=g.cooldown==null?interval:g.cooldown;
+   var ready=remaining<=1;g.cooldown=ready?interval:remaining-1;
+   if(FD)FD.actor(g,ready?'skill':'attack',ready?(g.abilityName||g.skill.name):'Удар');
+   var damage=Math.max(1,g.atk);
+   if(ready)damage=monsterSpecial(g,damage,room);
+   damage=incomingDamage(damage);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -2102,8 +2113,8 @@ function fightChamber(id){
  var slot=parts.length>1?Number(parts[1]):null;
  var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
  if(!g)return;
- r.chamberActive=t.id;setHeroPose('attack');
- if(g.evadeCharges>0){g.evadeCharges--;
+ r.chamberActive=t.id;setHeroPose('attack');provoke(g);
+  if(g.evadeCharges>0){g.evadeCharges--;
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
  var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
  g.guard=0;g.hp=Math.max(0,g.hp-dmg);
