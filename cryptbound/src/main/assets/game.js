@@ -2512,16 +2512,22 @@ function gainTitleMastery(id){
 function titleToolDialog(){
  var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
  var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Магические руны: '+TR.curSup(r,'rune'):'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
- dialog('<h2>'+esc(title)+'</h2><p>'+esc(t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Работает со свитками магии.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.')+'</p><p>'+esc(counts)+'</p>'+
- (t?'<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>':'')+
+ var description=t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Разбирает свитки или объединяет два одинаковых в заклинание более высокого ранга.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.';
+ var controls=t&&t.kind==='rune'?(function(){
+   var holy=TR.has(r,'adv_holy_rune'),eligible=SPELLS.filter(function(sp){return sp.rank<5&&(r.scrolls[sp.id]||0)>=(holy?2:1);});
+   return '<div class="title-rune-list"><strong>'+(holy?'Объединить два одинаковых свитка':'Разобрать один свиток')+'</strong>'+
+    (eligible.length?eligible.map(function(sp){return '<button data-action="title-tool-use" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<span>'+esc(sp.name)+' · '+sp.rank+'★</span><small>×'+r.scrolls[sp.id]+'</small></button>';}).join(''):'<p class="fine">Нет подходящих свитков</p>')+'</div>';
+  })():(t?'<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>':'');
+ dialog('<h2>'+esc(title)+'</h2><p>'+esc(description)+'</p><p>'+esc(counts)+'</p>'+controls+
  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
-function titleToolUse(){
- var message=TR.useTool(r,titleHelpers());
+function titleToolUse(selected){
+ var message=TR.useTool(r,titleHelpers(),selected);
  if(!message)return;
- if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Нужно надетое/.test(message)){toast(message);return;}
+ if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Выберите|Нужно надетое/.test(message)){toast(message);return;}
  log(message);close();finishAction();
 }
+
 function equip(id){
  var i=item(id);if(!i)return;
  r.equip[i.slot]=i.id;r.hp=Math.min(stats().hp,r.hp);r.mp=Math.min(stats().mp,r.mp);
@@ -2888,7 +2894,7 @@ function action(name,id){
  if(name==='title-detail'){selectedTitle=id;panelDialog('talents');return;}
   if(name==='title-mastery'){gainTitleMastery(id);return;}
   if(name==='title-tool'){titleToolDialog();return;}
-  if(name==='title-tool-use'){titleToolUse();return;}
+  if(name==='title-tool-use'){titleToolUse(id);return;}
  if(name==='spell-detail'){var detail=SPELLS.find(function(x){return x.id===id;});if(!detail)return;var err=spellValid(detail);dialog('<div class="panel-heading"><h2>Книга заклинаний</h2><button class="panel-close" data-action="ui-panel" data-id="spells" aria-label="Назад в книгу">←</button></div><article class="spell-detail-page"><div class="spell-detail-seal">'+uiIcon(schoolIcon(detail.school))+'</div><div class="sheet-kicker">'+esc((SYS.schools.find(function(x){return x.id===detail.school;})||{}).name||'')+' · '+detail.rank+'★</div><h2>'+esc(detail.name)+'</h2><p>'+esc(detail.description)+'</p><div class="spell-detail-cost"><span>'+manaCost(detail)+'<small>маны</small></span><span>'+(r.scrolls[id]||0)+'<small>свитков</small></span><span>1<small>ход</small></span></div><div class="spell-detail-note">'+esc(err||'Готово к применению')+'</div></article><button class="btn wide space-top" data-action="cast-modal" data-id="'+id+'" '+(err?'disabled':'')+'>Применить · 1 ход</button>');return;}
  if(name==='pin-spell'){r.quickSpells=[id].concat((r.quickSpells||[]).filter(function(x){return x!==id;})).slice(0,3);save();draw();panelDialog('spells');toast('Заклинание добавлено в быстрый доступ');return;}
  if(name==='hunter-book'){hunterBookDialog();return;}
