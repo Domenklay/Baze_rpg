@@ -2566,7 +2566,7 @@ function puzzleAnswer(id){
  close();finishAction();
 }
 function titleHelpers(){
- return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,addMaterial:function(name,qty){r.materials[name]=(r.materials[name]||0)+qty;},
+ return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,addMaterial:function(name,qty){r.materials[name]=(r.materials[name]||0)+qty;},addFood:function(kind,qty){var stock=FE.ensure(r).items;stock[kind]=(stock[kind]||0)+Math.max(1,Number(qty)||1);},
  targets:function(){return enemies();},hiddenTargets:function(){return hiddenEnemies();},reachable:reachableEnemy,kill:kill,
  hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
  flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
@@ -2592,20 +2592,28 @@ function gainTitleMastery(id){
 function titleToolDialog(){
  var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
  var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Магические руны: '+TR.curSup(r,'rune'):t.kind==='compass'?'Применений: '+TR.curSup(r,'compass'):'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
- var description=t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Разбирает свитки или объединяет два одинаковых в заклинание более высокого ранга.':t.kind==='compass'?'Позволяет получить ресурсы во время экспедиции.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.';
- var controls=t&&t.kind==='rune'?(function(){
-   var holy=TR.has(r,'adv_holy_rune'),eligible=SPELLS.filter(function(sp){return sp.rank<5&&(r.scrolls[sp.id]||0)>=(holy?2:1);});
-   return '<div class="title-rune-list"><strong>'+(holy?'Объединить два одинаковых свитка':'Разобрать один свиток')+'</strong>'+
-    (eligible.length?eligible.map(function(sp){return '<button data-action="title-tool-use" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<span>'+esc(sp.name)+' · '+sp.rank+'★</span><small>×'+r.scrolls[sp.id]+'</small></button>';}).join(''):'<p class="fine">Нет подходящих свитков</p>')+'</div>';
-  })():(t?'<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>':'');
+ var description=t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел по выбранному доступному противнику.':t.kind==='rune'?'Разобрать выбранный свиток либо объединить два одинаковых в более сильный.':t.kind==='compass'?'Находит скрытые припасы или золото. Работает не чаще одного раза за два этажа.':'Разбор предметов, изготовление реликвий или усиление выбранной экипировки.':'Получите звание авантюриста, выдающее инструмент.';
+ var controls='';
+ if(t&&t.kind==='rune'){
+  var holy=TR.has(r,'adv_holy_rune'),eligible=SPELLS.filter(function(sp){return sp.rank<5&&(r.scrolls[sp.id]||0)>=(holy?2:1);});
+  controls='<div class="title-rune-list"><strong>'+(holy?'Объединить два одинаковых свитка':'Разобрать один свиток')+'</strong>'+
+   (eligible.length?eligible.map(function(sp){return '<button data-action="title-tool-use" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<span>'+esc(sp.name)+' · '+sp.rank+'★</span><small>×'+r.scrolls[sp.id]+'</small></button>';}).join(''):'<p class="fine">Нет подходящих свитков</p>')+'</div>';
+ }else if(t&&t.kind==='bow'){
+  var victims=enemies().filter(reachableEnemy);
+  controls='<div class="title-rune-list"><strong>Выберите цель выстрела</strong>'+
+   (victims.length?victims.map(function(tile){return '<button data-action="title-tool-use" data-id="'+tile.id+'">'+uiIcon('crossbow')+'<span>'+esc(tile.foe.name)+'</span><small>♥ '+tile.foe.hp+'</small></button>';}).join(''):'<p class="fine">Доступных противников нет.</p>')+'</div>';
+ }else if(t&&t.kind==='forge'&&(TR.has(r,'adv_great_enchanter')||TR.has(r,'adv_great_swordsmith'))){
+  var equipped=(r.items||[]).filter(function(it){return !Object.values(r.equip).every(function(id){return id!==it.id;})&&(it.plus||0)<9;});
+  controls='<div class="title-rune-list"><strong>Выберите предмет для улучшения</strong>'+
+   (equipped.length?equipped.map(function(it){return '<button data-action="title-tool-use" data-id="'+it.id+'">'+gearArt(it)+'<span>'+esc(it.name)+'</span><small>+'+(it.plus||0)+'</small></button>';}).join(''):'<p class="fine">Нет подходящего надетого предмета.</p>')+'</div>';
+ }else if(t)controls='<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>';
  dialog('<h2>'+esc(title)+'</h2><p>'+esc(description)+'</p><p>'+esc(counts)+'</p>'+controls+
  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
 function titleToolUse(selected){
- var message=TR.useTool(r,titleHelpers(),selected);
- if(!message)return;
- if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Выберите|Нужно надетое|уже использован/.test(message)){toast(message);return;}
- log(message);close();finishAction();
+ var result=TR.useTool(r,titleHelpers(),selected);
+ if(!result||!result.ok){toast(result&&result.message||'Нельзя использовать предмет.');return;}
+ log(result.message);close();finishAction();
 }
 
 function equip(id){
