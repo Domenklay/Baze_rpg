@@ -9,7 +9,7 @@ window.CryptTitles=data;
 var spellRewards={
  mag_apprentice:['ward',3],mag_black:['flame',3],mag_white:['heal',3],
  mag_wizard:['meteor',2],mag_conjuror:['shadows',3],mag_priest:['holy',3],
- mag_bishop:['frost',3],mag_fire:['flame',5],mag_dark:['shadows',4],
+ mag_bishop:['ward',3],mag_fire:['flame',5],mag_dark:['shadows',4],
  mag_earth:['earthquake',2],mag_air:['chain',5],mag_light:['holy',4],mag_water:['frost',3],
  war_dancer:['flame',1],war_great_sword:['stormchain',1],war_faith:['ward',1]
 };
@@ -26,9 +26,10 @@ function statBonuses(r){
   var m;while((m=re.exec(t.stats))!==null){
    var k=/^атака$/i.test(m[1])?'atk':/^магия$/i.test(m[1])?'pow':m[1].toLowerCase();
    var vals=m[2].split('/').map(Number);
-   for(var i=0;i<Math.min(n,vals.length);i++)st[k]+=vals[i];
+   st[k]+=vals[Math.min(Math.max(1,n),vals.length)-1];
   }
  });
+ if(r.titleSupplies&&r.titleSupplies.license){st.atk+=2*r.titleSupplies.license;st.pow+=2*r.titleSupplies.license;}
  return st;
 }
 function init(r){
@@ -76,7 +77,8 @@ function reward(r,t,levelNum,h){
  if(t.id==='adv_royal_blacksmith')supply(r,'smith_piece',1);
  if(t.id==='adv_weapon_master'){supply(r,'license',1);}
  if(t.id==='adv_elven_ranger')supply(r,'leopard',1);
- if(t.id==='war_faith')supply(r,'holy_badge',1);
+ if(t.id==='adv_demon_hunter')supply(r,'arrow',3+2*levelNum);
+ if(t.id==='war_faith'){supply(r,'holy_badge',1);r.guardCharges=(r.guardCharges||0)+1;}
  if(t.id==='war_dancer'||t.id==='war_great_sword')supply(r,'sword_scroll',1);
  if(t.id==='war_commander'&&levelNum===1)h.addItem('amulet',6);
  if(t.id==='war_paladin'&&levelNum===1){r.hp=Math.ceil(h.stats().hp*1.1);r.titlePaladinBonus=.10;}
@@ -129,10 +131,10 @@ function floor(r,h){
  if(has(r,'adv_night_walker')&&Math.random()<.2+.17*level(r,'adv_night_walker')){var key=r.tiles.find(function(t){return t.hasKey||t.drops&&t.drops.key;});if(key){key.hinted=true;h.log('Фонарь указывает на камень, за которым спрятан ключ.');}}
  if(has(r,'adv_seeker')){var mobs=r.tiles.filter(function(t){return t.foe&&t.foe.hp>0;});for(var i=0;i<Math.min(mobs.length,2+level(r,'adv_seeker'));i++){mobs[i].hinted=true;}}
  if(has(r,'adv_god_thieves')){r.tiles.filter(function(t){return t.kind==='chamber'||t.kind==='secret';}).forEach(function(t){t.hinted=true;});}
- if(has(r,'adv_elf_king')&&has(r,'adv_demon_hunter'))autoShot(r,h,25+10*rank5(r,'adv_elf_king','atk'));
+ if(has(r,'adv_elf_king')&&has(r,'adv_demon_hunter'))autoShot(r,h,25+10*rank5(r,'adv_elf_king','atk'),true);
 }
-function autoShot(r,h,power){
- var target=h.targets().find(function(t){return t.foe&&t.foe.hp>0&&h.reachable(t);});if(!target)return false;
+function autoShot(r,h,power,hidden){
+ var target=(hidden&&h.hiddenTargets?h.hiddenTargets():h.targets()).find(function(t){return t.foe&&t.foe.hp>0&&(hidden||h.reachable(t));});if(!target)return false;
  var dmg=Math.max(1,Math.ceil(power)-target.foe.def);target.foe.hp-=dmg;
  h.log('Арбалет охотника поражает '+target.foe.name+': '+dmg+'.');
  if(target.foe.hp<=0)h.kill(target);
@@ -152,7 +154,7 @@ function turn(r,h){
   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*.5)-v.foe.def);
   v.foe.hp-=amount;h.log('Тотем наносит '+amount+' урона.');if(v.foe.hp<=0)h.kill(v);
  }
- if(alive.length&&curSup(r,'leopard')>0&&r.titleTurnTick%3===0){
+ if(alive.length&&curSup(r,'leopard')>0&&r.titleTurnTick%(has(r,'adv_elf_king')?2:3)===0){
   var g=alive[0],hit=Math.max(1,Math.floor(h.stats().atk*.5)+curSup(r,'leopard')*2-g.foe.def);
   g.foe.hp-=hit;h.log('Чёрная пантера наносит '+hit+' урона.');if(g.foe.hp<=0)h.kill(g);
  }
@@ -174,6 +176,7 @@ function attack(r,e,dmg,h){
  if(has(r,'war_templar')&&undead(e))dmg=Math.ceil(dmg*(1+.25*level(r,'war_templar')));
  if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*1.5);
  if(has(r,'war_magic')&&Math.random()<.05+.05*level(r,'war_magic'))dmg+=h.stats().pow;
+ if(has(r,'war_dancer')&&curSup(r,'sword_scroll')>0&&Math.random()<.08){supply(r,'sword_scroll',-1);dmg=Math.ceil(dmg*1.45);h.log('Техника мастера меча усилила удар.');}
  if(has(r,'war_dark_arbiter')&&Math.random()<.05)h.flash(Math.max(6,h.stats().pow*1.2));
  if(has(r,'war_hell')&&Math.random()<.05)h.flash(Math.max(12,h.stats().pow*2));
  if(has(r,'war_titan')&&Math.random()<.05)e.stun=Math.max(e.stun||0,1);
@@ -192,15 +195,16 @@ function spellMultiplier(r,sp){
  if(has(r,'mag_legendary')&&['heal','shield','healshield','lastlight','timestop','reveal'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_legendary','pow');
  if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)result+=.30;
  if(has(r,'mag_dark_priest')&&sp.school==='dark'&&Math.random()<.5)result*=2;
+ if(has(r,'mag_pope')&&sp.school==='light'&&sp.kind==='holy')result*=2;
  return result;
 }
 function spellCast(r,sp,h){
- if(has(r,'mag_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)r.titleHealAtk=(r.titleHealAtk||0)+5*level(r,'mag_bishop');
+ if(has(r,'mag_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)r.titleHealAtk=Math.max(r.titleHealAtk||0,5*level(r,'mag_bishop'));
  if(has(r,'mag_time')&&sp.school==='air'&&!h.targets().some(function(t){return t.foe&&t.foe.boss&&t.foe.hp>0;})&&Math.random()<.5)r.timeStopTurns=(r.timeStopTurns||0)+1;
- if(has(r,'mag_archbishop')&&sp.school==='water'&&sp.kind==='stun'&&Math.random()<.15)r.shield+=Math.ceil(h.stats().pow*3);
+ if(has(r,'mag_archbishop')&&(sp.kind==='shield'||sp.kind==='healshield')&&Math.random()<.15)r.shield+=Math.ceil(h.stats().pow*3);
  if(has(r,'mag_destruction')&&sp.id==='flame'&&Math.random()<(.12+.06*rank5(r,'mag_destruction','pow')))h.flash(Math.ceil(h.stats().pow*2));
  if(has(r,'mag_wizard')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].indexOf(sp.kind)>=0&&Math.random()<.1+.1*level(r,'mag_wizard'))h.flash(Math.ceil(h.stats().pow*.6));
- if(has(r,'mag_pope')&&sp.school==='light'&&sp.kind==='holy')h.flash(Math.ceil(h.stats().pow*.7));
+ /* Light Bishop/Pope repeated hit is applied to the spell's original target in spellMultiplier. */
 }
 function scrollCount(r,sp,count,source){
  if(source==='title'||source==='forge')return count;
@@ -248,6 +252,13 @@ function useTool(r,h){
   r.scrolls[sp.id]-=2;h.grant(next[0].id,1,'forge');return 'Два свитка преобразованы в '+next[0].name+'.';
  }
  if(tool.kind==='forge'){
+  if(has(r,'adv_great_enchanter')||has(r,'adv_great_swordsmith')){
+   var kind=has(r,'adv_great_enchanter')?'pow':'atk',target=(r.items||[]).find(function(it){return Object.keys(r.equip||{}).some(function(slot){return r.equip[slot]===it.id;})&&(it.plus||0)<9;});
+   if(!target)return 'Нужно надетое улучшаемое снаряжение.';
+   if(curSup(r,'quench')<2)return 'Нужно 2 закалочные эссенции.';
+   supply(r,'quench',-2);target.plus=(target.plus||0)+1;target[kind]=(target[kind]||0)+2;
+   return 'Наковальня усилила «'+target.name+'» до +'+target.plus+'.';
+  }
   if(!has(r,'adv_holy_blacksmith'))return 'Создание реликвий открывается Святым кузнецом.';
   if(curSup(r,'quench')<3)return 'Нужно 3 закалочные эссенции.';
   supply(r,'quench',-3);h.addItem('amulet',6);return 'Наковальня создала редкую реликвию.';
