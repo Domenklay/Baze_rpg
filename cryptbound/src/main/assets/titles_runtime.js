@@ -175,7 +175,7 @@ function toolOf(r){
 }
 function undead(e){return /нежит|скел|мертв|лич|зомб|труп|костян|призрак/i.test((e&&e.name)||'');}
 function floor(r,h){
- init(r);r.titleFloorAtk=0;r.titleHealAtk=0;
+ init(r);r.titleFloorAtk=0;r.titleHealAtk=0;r.titleTotemTurns=0;
  // Panther stays on this floor; statues remain in the backpack.
  r.titlePanther=null;
  if(has(r,'adv_explorer'))r.ep+=10+5*(level(r,'adv_explorer')-1);
@@ -200,10 +200,15 @@ function turn(r,h){
  r.titleTurnTick=(r.titleTurnTick||0)+1;
  if(has(r,'adv_legendary_hunter')&&r.titleTurnTick%5===0)autoShot(r,h,Math.max(10,Math.ceil(h.stats().atk*.6)));
  var alive=h.targets().filter(function(t){return t.foe&&t.foe.hp>0&&h.reachable(t);});
- if(alive.length&&r.titleTotemTurns>0){
+ if(r.titleTotemTurns>0){
+  // Totem lasts exactly 3/6/9 turns, including empty turns; never stays alive forever.
   r.titleTotemTurns--;
-  var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*.5)-v.foe.def);
-  v.foe.hp-=amount;h.log('Тотем наносит '+amount+' урона.');if(v.foe.hp<=0)h.kill(v);
+  if(alive.length&&alive[0].foe.hp>0){
+   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*(.5+.10*level(r,'mag_conjuror')))-(v.foe.def||0));
+   v.foe.hp=Math.max(0,v.foe.hp-amount);
+   h.log('Тотем призывателя наносит '+amount+' магического урона.');
+   if(v.foe.hp<=0)h.kill(v);
+  }
  }
  var panther=r.titlePanther;
  if(panther&&panther.hp>0){
