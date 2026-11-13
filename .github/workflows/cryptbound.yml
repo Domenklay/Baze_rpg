@@ -69,8 +69,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.6.5-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.6.5-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.3-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.3-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -83,7 +83,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.6.5 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.6.5 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.6.5 — охотничий бестиарий Лесной окраины" --notes "Охотничий бестиарий для Лесной окраины: обязательная находка книги у погибшего охотника на первом этаже; доступ из правого верхнего угла и инвентаря; три раздела Звери, Трофеи, Бонусы; накопительное изучение 10 видов по порогам 5/10/20/40; сохранение изучения между экспедициями; повторяемые лесные колодцы с вероятностью 25 процентов и накапливаемыми временными характеристиками. Первая версия интерфейса выполнена в рисованном тёмном стиле. Особые охоты и полная библиотека 50 лесных событий — следующий этап."
+          if ! gh release view cryptbound-v0.7.3 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.3 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.3 — охотничий бестиарий Лесной окраины" --notes "Охотничий бестиарий для Лесной окраины: обязательная находка книги у погибшего охотника на первом этаже; доступ из правого верхнего угла и инвентаря; три раздела Звери, Трофеи, Бонусы; накопительное изучение 10 видов по порогам 5/10/20/40; сохранение изучения между экспедициями; повторяемые лесные колодцы с вероятностью 25 процентов и накапливаемыми временными характеристиками. Первая версия интерфейса выполнена в рисованном тёмном стиле. Особые охоты и полная библиотека 50 лесных событий — следующий этап."
           fi
-          gh release upload cryptbound-v0.6.5 dist/Cryptbound-v0.6.5-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.3 dist/Cryptbound-v0.7.3-offline-Android.apk dist/SHA256SUMS.txt --clobber
