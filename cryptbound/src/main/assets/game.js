@@ -1729,23 +1729,34 @@ function forestUse(id){
 }
 function forestWellDialog(id){
  var t=tile(id);if(!t||!t.revealed||t.cleared||t.kind!=='forest-well')return;
- var cost=10+2*r.floor+5*(r.forestWellUses||0);
- dialog('<div class="emblem">♜</div><h2>Лесной колодец</h2><p>Бросьте золото, чтобы получить случайную прибавку к характеристикам до конца экспедиции.</p>'+
- '<p class="golden">Цена: '+cost+' монет. Возможны: атака, защита, максимальное HP, MP или магия.</p>'+
- '<button class="btn gold wide" data-action="forest-well-offer" data-id="'+id+'" '+(r.gold<cost?'disabled':'')+'>Бросить '+cost+' ◈</button>'+
- '<button class="btn dark wide space-top" data-action="close">Оставить колодец</button>');
+ var cost=15+5*(r.forestWellUses||0),hasCoin=(FE.ensure(r).items.forest_coin||0)>0;
+ dialog('<div class="forest-event-dialog"><div class="sheet-kicker">НАХОДКА 02/50 · КОЛОДЕЦ</div><h2>Колодец желаний</h2>'+
+  '<div class="forest-event-picture">'+FE.image('F01_018')+'</div>'+
+  '<p>Из глубины тянет холодом. На каменном бортике выбиты два знака: обычные монеты и редкий дар леса.</p>'+
+  '<button class="btn wide space-top" data-action="forest-well-offer" data-id="'+id+'" '+(r.gold<cost?'disabled':'')+'>Бросить '+cost+' золота · случайный параметр +1</button>'+
+  '<button class="btn gold wide space-top" data-action="forest-well-coin" data-id="'+id+'" '+(!hasCoin?'disabled':'')+'>Лесная монетка · параметр +2 и свиток</button>'+
+  (!hasCoin?'<p class="fine muted">Лесную монетку можно получить за помощь белке Рыжухе.</p>':'')+
+  '<button class="btn dark wide space-top" data-action="close">Оставить колодец</button></div>');
 }
-function forestWellOffer(id){
+function forestWellOffer(id,coin){
  var t=tile(id);if(!t||!t.revealed||t.cleared||t.kind!=='forest-well')return;
- var cost=10+2*r.floor+5*(r.forestWellUses||0);
- if(r.gold<cost){toast('Не хватает золота.');return;}
- r.gold-=cost;r.forestWellUses=(r.forestWellUses||0)+1;
+ var cost=15+5*(r.forestWellUses||0),bag=FE.ensure(r).items;
+ if(coin){if(!bag.forest_coin){toast('Нет лесной монетки.');return;}bag.forest_coin--;}
+ else {if(r.gold<cost){toast('Не хватает золота.');return;}r.gold-=cost;}
+ r.forestWellUses=(r.forestWellUses||0)+1;
  if(!r.forestWellStats)r.forestWellStats={};
- var pool=[['atk',1,'+1 атака'],['def',1,'+1 защита'],['hp',4,'+4 максимального HP'],['mp',3,'+3 максимального MP'],['pow',1,'+1 магической мощи']];
- var result=pick(pool);r.forestWellStats[result[0]]=(r.forestWellStats[result[0]]||0)+result[1];
- if(result[0]==='hp')r.hp+=4;if(result[0]==='mp')r.mp+=3;
- t.cleared=true;log('Колодец: '+result[2]+'.');finishAction();
- if(r){draw();dialog('<h2>Ответ леса</h2><p>Монеты исчезают в тёмной воде.</p><p class="golden">'+result[2]+' до завершения экспедиции.</p><button class="btn wide" data-action="close">Продолжить</button>');}
+ var pool=[['atk','атаки'],['def','защиты'],['hp','максимального HP'],['mp','максимального MP'],['pow','магической мощи']];
+ var result=pick(pool),amount=coin?2:1;
+ r.forestWellStats[result[0]]=(r.forestWellStats[result[0]]||0)+amount;
+ if(result[0]==='hp')r.hp+=amount;
+ if(result[0]==='mp')r.mp+=amount;
+ var bonusScroll='';
+ if(coin){var sp=rollSpell(3);grantScroll(sp.id,1,'forest-well');bonusScroll=' и свиток «'+sp.name+'»';}
+ t.cleared=true;log('Колодец: +'+amount+' '+result[1]+bonusScroll+'.');
+ close();finishAction();
+ if(r){dialog('<h2>Ответ леса</h2><p>Подношение скрывается под водой. На ладонях выступает голубоватое сияние.</p>'+
+  '<p class="golden">+'+amount+' '+result[1]+bonusScroll+' до конца экспедиции.</p>'+
+  '<button class="btn wide" data-action="close">Продолжить</button>');}
 }
 function claimTile(t){
  if(!t||!t.revealed||t.cleared)return;
@@ -2599,6 +2610,7 @@ function action(name,id){
  if(name==='hunter-tab'){if(['beasts','trophies','bonuses'].indexOf(id)>=0){r.hunterBookTab=id;hunterBookDialog();}return;}
  if(name==='hunter-select'){if(HB.beasts.some(function(x){return x.id===id;})){r.hunterBookSelected=id;hunterBookDialog();}return;}
  if(name==='forest-well-offer'){forestWellOffer(id);return;}
+ if(name==='forest-well-coin'){forestWellOffer(id,true);return;}
  if(name==='reveal'){reveal(id);return;}
  if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
