@@ -212,5 +212,18 @@ window.CryptConceptMaterials={
  "Искроцвет": "t9_concept_iskrotsvet",
  "Каменная связка великана": "t9_concept_kamennaia_sviazka_velikana",
  "Каменный щиток элементаля": "t9_concept_kamennyi_shchitok_elementalia",
- "Капля первородного пламени": "t9_concept_kaplia_pervorodnogo_plameni"
+ "Капля первородного пламени": "t9_concept_kaplia_pervorodnogo_plameni",
+ "Ключ командира печати": "t9_concept_kliuch_komandira_pechati",
+ "Ключ шести замков": "t9_concept_kliuch_shesti_zamkov",
+ "Клык Владыки белого выводка": "t9_concept_klyk_vladyki_belogo_vyvodka",
+ "Клык вожака камнегривов": "t9_concept_klyk_vozhaka_kamnegrivov",
+ "Корона Наследника хребта": "t9_concept_korona_naslednika_khrebta",
+ "Кристалл первопечати": "t9_concept_kristall_pervopechati",
+ "Ледяной звериный гребень": "t9_concept_ledianoi_zverinyi_greben",
+ "Молот Главного кузнеца": "t9_concept_molot_glavnogo_kuznetsa",
+ "Нить стихийного равновесия": "t9_concept_nit_stikhiinogo_ravnovesiia",
+ "Осколок посоха Патриарха": "t9_concept_oskolok_posokha_patriarkha",
+ "Осколок сердечного камня Тектониса": "t9_concept_oskolok_serdechnogo_kamnia_tektonisa",
+ "Печать Древнего голема": "t9_concept_pechat_drevnego_golema",
+ "Перо Верховного штормокрыла": "t9_concept_pero_verkhovnogo_shtormokryla"
 };
