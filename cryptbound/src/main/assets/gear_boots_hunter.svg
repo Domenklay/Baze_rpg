@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="a" x1=".25" x2=".8" y1="0" y2="1"><stop stop-color="#846141"/><stop offset=".3" stop-color="#553727"/><stop offset=".75" stop-color="#38221d"/><stop offset="1" stop-color="#1e1714"/></linearGradient><linearGradient id="s"><stop stop-color="#bfa17a"/><stop offset=".5" stop-color="#6e5439"/><stop offset="1" stop-color="#d8b67c"/></linearGradient><linearGradient id="m"><stop stop-color="#e5cb8d"/><stop offset=".5" stop-color="#937139"/><stop offset="1" stop-color="#ebcb8d"/></linearGradient></defs>
+<ellipse cx="68" cy="108" rx="54" ry="11" fill="#0b0909" opacity=".45"/>
+<path d="M23 19Q27 14 46 19L52 66Q53 72 73 82L78 98Q73 110 57 110H13Q7 106 11 90L25 70Z" fill="#160f0e" stroke="#181211" stroke-width="7" stroke-linejoin="round"/>
+<path d="M27 18 47 21 49 69Q52 75 69 82L71 96Q64 102 55 104H16L17 89 29 72Z" fill="url(#a)" stroke="#ae8760" stroke-width="2"/>
+<path d="M67 12Q83 9 95 16L96 64Q99 72 112 78L120 94Q119 103 107 109H67Q59 102 63 92L75 66Z" fill="#160f0e" stroke="#0e0a09" stroke-width="7" stroke-linejoin="round"/>
+<path d="M70 17Q84 14 92 18L93 66Q96 73 110 81L114 95Q109 102 101 104H71L68 94 79 67Z" fill="url(#a)" stroke="#b28b64" stroke-width="2"/>
+<path d="M18 102Q43 105 70 99M69 101Q92 109 115 98" stroke="#0f0c0b" stroke-width="8" fill="none" stroke-linecap="round"/>
+<path d="M18 95Q46 99 69 94M69 94Q97 100 114 92" stroke="#b59a76" stroke-width="3" fill="none" opacity=".7"/>
+<path d="M29 26 45 27M29 39 46 40M29 52 46 54M73 25 90 25M73 38 91 38M75 52 92 53" stroke="url(#s)" stroke-width="6" fill="none" stroke-linecap="round"/>
+<path d="M29 29 45 31M28 43 47 44M30 57 49 57M72 28 91 29M73 42 91 42M74 57 93 57" stroke="#171411" stroke-width="2" fill="none"/>
+<path d="M40 23 45 33 37 40 45 47 37 55 47 65M85 20 90 30 81 38 92 47 81 55 93 64" stroke="#c09b63" stroke-width="2.5" fill="none"/>
+<g fill="url(#m)" stroke="#372717" stroke-width="1.8"><rect x="28" y="34" width="10" height="8" rx="1"/><rect x="75" y="32" width="10" height="8" rx="1"/><rect x="30" y="51" width="10" height="8" rx="1"/><rect x="76" y="49" width="10" height="8" rx="1"/></g>
+<path d="M30 19 43 20M73 17 89 17" stroke="#e4c491" stroke-width="2" opacity=".65"/>
+</svg>
