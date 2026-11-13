@@ -52,6 +52,20 @@ A('hunter-tab','beasts');
 A('hunter-select','r1_0');
 assert.match(el('overlay').innerHTML,/Лесной волк/);
 A('close');
+const decorated=H.render(state.meta,'beasts','r1_0');
+assert.ok(decorated.indexOf('hb-beast-list')<decorated.indexOf('hb-detail'),'Left creature list before right details');
+assert.ok((decorated.match(/pose-idle/g)||[]).length>=10,'All ten species use real idle sprites');
+for(const art of ['hunter_spread.svg','hunter_stage.svg','hunter_row.svg','hunter_progress.svg','hunter_milestone.svg',
+ 'gear_ring_hunter.svg','gear_boots_hunter.svg']){
+ const file=path.join(root,art);assert.ok(fs.existsSync(file),'Missing illustrated sprite '+art);
+ assert.ok(fs.statSync(file).size>450,'Sprite cannot be empty: '+art);
+}
+const css=fs.readFileSync(path.join(root,'hunter_bestiary.css'),'utf8');
+assert.match(css,/grid-template-columns:minmax\(0,44%\) minmax\(0,56%\)/,'Two facing book pages on narrow phones');
+A('ui-panel','bag');
+assert.match(el('overlay').innerHTML,/gear_boots_hunter\.svg/);
+assert.match(el('overlay').innerHTML,/gear_ring_hunter\.svg/);
+A('close');
 const beforeAtk=api.debug.stats().atk;
 for(let n=0;n<40;n++)H.gain(state.meta,r,{id:'r1_0',elite:false,boss:false},n+200);
 assert.equal(H.score(state.meta,'r1_0'),40);
@@ -78,6 +92,28 @@ assert.equal(r.forestWellUses,1);
 const stableGold=r.gold;
 A('forest-well-offer',well.id);
 assert.equal(r.gold,stableGold,'Well cannot be exploited repeatedly');
+/* Main-maze target selection must be explicit and free until a target is chosen. */
+const living=r.tiles.filter(t=>t.foe&&t.foe.hp>0);
+assert.ok(living.length>=2);
+for(const tile of living){tile.revealed=true;Object.assign(tile.foe,{hp:700,maxHp:700,atk:1,def:0,cooldown:99,stun:0});}
+r.scrolls.bolt=3;r.mp=1000;r.hp=100000;
+const chosen=living[living.length-1],other=living[0],initial=chosen.foe.hp,otherInitial=other.foe.hp,turnBeforeAim=r.turn;
+A('cast','bolt');
+assert.equal(r.pendingSpell,'bolt');
+assert.match(el('content').innerHTML,/spell-target-banner/);
+assert.match(el('content').innerHTML,/spell-target-valid/);
+assert.equal(r.turn,turnBeforeAim);
+assert.equal(r.scrolls.bolt,3);
+A('cancel-target');
+assert.equal(r.pendingSpell,null);
+assert.equal(r.turn,turnBeforeAim);
+A('cast','bolt');
+A('cast-target',chosen.id);
+assert.equal(r.pendingSpell,null);
+assert.equal(r.turn,turnBeforeAim+1);
+assert.equal(r.scrolls.bolt,2);
+assert.ok(chosen.foe.hp<initial);
+assert.equal(other.foe.hp,otherInitial,'A single-target scroll hits the selected enemy only');
 api.save();
 const saved=JSON.parse(storage.cryptbound_local_v1);
 assert.equal(saved.meta.hunterBook.owned,true);
