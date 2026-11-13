@@ -69,6 +69,7 @@ function depthMultiplier(){return DN.rewardMultiplier(r.floor);}
 function lvl(n){return (r.talents[n]||0);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
 function hunterStat(k){return r&&r.actIndex===0?HB.bonus(s.meta,k):0;}
+function hunterPoison(turns){if(Math.random()*100<hunterStat('poisonResist')){log('Бестиарий: отравление предотвращено.');return;}r.poisonTurns=Math.max(r.poisonTurns||0,turns);}
 function levelCost(t){var main=C[r.class].type==='Магия'?1:C[r.class].type==='Битва'?0:2;
  var base=2+t.rank*3+lvl(t.id)*3;
  return t.tree===main?base:Math.ceil(base*1.25);
@@ -211,9 +212,24 @@ function distributeTiles(){
  insert('enemy',boss?3:total-(elite?1:0));
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
- insert('chest',boss?1:2);insert('trap',boss?0:1);insert('altar',boss?0:1);insert('shop',boss?0:1);
- insert('event',boss?0:1);insert('puzzle',boss?0:1);insert('secret',boss?0:1);insert('coin',boss?1:2);insert('potion',1);
- insert('corpse',!boss&&r.floor%2===0?1:0);insert('chamber',!boss&&r.floor%3===0?1:0);
+ if(r.actIndex===0&&r.locationIndex===0&&!boss){
+  // Forest outskirts: independent variety, no mandatory treasure / vendor / riddles.
+  insert('chest',Math.random()<.68?rand(1,2):0);
+  if(Math.random()<.35)insert('trap',1);
+  if(Math.random()<.13)insert('altar',1);
+  if(Math.random()<.14)insert('shop',1);
+  if(Math.random()<.45)insert('event',1);
+  // The old abstract riddle quiz is excluded from this story-driven location.
+  if(Math.random()<.22)insert('secret',1);
+  if(Math.random()<.61)insert('coin',rand(1,2));
+  if(Math.random()<.42)insert('potion',1);
+  if(Math.random()<.23)insert('corpse',1);
+  if(Math.random()<.16)insert('chamber',1);
+ }else{
+  insert('chest',boss?1:2);insert('trap',boss?0:1);insert('altar',boss?0:1);insert('shop',boss?0:1);
+  insert('event',boss?0:1);insert('puzzle',boss?0:1);insert('secret',boss?0:1);insert('coin',boss?1:2);insert('potion',1);
+  insert('corpse',!boss&&r.floor%2===0?1:0);insert('chamber',!boss&&r.floor%3===0?1:0);
+ }
  var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
  var tiles=types.map(function(kind,id){var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
@@ -1143,7 +1159,7 @@ function applyRegionalBossAbility(e,spec,damage){
  var v=spec.value;
  if(spec.kind==='guard'){e.guard=Math.max(e.guard||0,v);return damage;}
  if(spec.kind==='summon'){for(var i=0;i<v;i++)bossCallsBackup(e);return damage;}
- if(spec.kind==='poison'){r.poisonTurns=Math.max(r.poisonTurns||0,v);return damage;}
+ if(spec.kind==='poison'){hunterPoison(v);return damage;}
  if(spec.kind==='bleed'){r.bleedTurns=Math.max(r.bleedTurns||0,v);return damage;}
  if(spec.kind==='burn'){r.burnTurns=Math.max(r.burnTurns||0,v);return damage;}
  if(spec.kind==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,v);return damage;}
@@ -1171,7 +1187,7 @@ function bossAttack(t,e,damage,ready){
   log('Особый приём босса: '+e.name+'!');
   if(style===0||style===3)bossCallsBackup(e);
   if(style===1)e.guard=4+Math.floor(r.floor/7);
-  if(style===2)r.poisonTurns=Math.max(r.poisonTurns,move+1);
+  if(style===2)hunterPoison(move+1);
   if(style===4){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.045));log('Босс поглощает жизненную силу.');}
   if(style===5)r.shield=Math.max(0,r.shield-(10+move*5));
   return Math.max(2,Math.round(damage*(move===3?2.4:1.75)));
@@ -1184,7 +1200,7 @@ function bossAttack(t,e,damage,ready){
  if(ready){
   if(style===0&&phase>=2&&e.bossAdds<4&&e.phaseTurn%5===0)bossCallsBackup(e);
   if(style===1)e.guard=Math.max(e.guard||0,2+phase);
-  if(style===2&&phase>=2)r.poisonTurns=Math.max(r.poisonTurns,2);
+  if(style===2&&phase>=2)hunterPoison(2);
   if(style===3&&phase>=2&&e.phaseTurn%4===0)bossCallsBackup(e);
   if(style===4&&phase>=2)e.hp=Math.min(e.maxHp,e.hp+Math.max(1,Math.round(e.maxHp*.012)));
   if(style===5&&phase>=2)damage*=2;
@@ -1229,12 +1245,12 @@ function monsterSpecial(e,damage,room){
  }
  if(k==='flurry')return Math.ceil(damage*1.50);
  if(k==='evade'){e.evadeCharges=1;return Math.ceil(damage*.85);}
- if(k==='poison'){r.poisonTurns=Math.max(r.poisonTurns||0,2+(level>=4?1:0));return damage;}
+ if(k==='poison'){hunterPoison(2+(level>=4?1:0));return damage;}
  if(k==='corrode'){
   r.armorBreakPower=Math.max(r.armorBreakPower||0,1+Math.floor((level+2)/3));
   r.armorBreakTurns=Math.max(r.armorBreakTurns||0,3);return damage;
  }
- if(k==='toxicmana'){r.poisonTurns=Math.max(r.poisonTurns||0,2);
+ if(k==='toxicmana'){hunterPoison(2);
   r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.55)));return Math.ceil(damage*.8);}
  if(k==='manaburn'){r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.75)));return Math.ceil(damage*.7);}
  if(k==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,level>=6?2:1);return Math.ceil(damage*.75);}
@@ -1243,7 +1259,7 @@ function monsterSpecial(e,damage,room){
   log('Восстановлено здоровье: '+target.name+'.');return Math.ceil(damage*.45);}
  if(k==='regenerate'){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.12));return Math.ceil(damage*.6);}
  if(k==='pierce')return Math.max(Math.ceil(e.atk*1.12),Math.ceil(damage*1.3));
- if(k==='venomshot'){r.poisonTurns=Math.max(r.poisonTurns||0,2);return Math.ceil(damage*1.05);}
+ if(k==='venomshot'){hunterPoison(2);return Math.ceil(damage*1.05);}
  if(k==='silenceshot'){r.silenceTurns=Math.max(r.silenceTurns||0,1);return damage;}
  if(k==='call'){if(!room)callMonsterMinion(e);return Math.ceil(damage*.65);}
  return damage;
@@ -1750,7 +1766,7 @@ function claimTile(t){
   r.hp=Math.max(0,r.hp-dmg);
   if(dmg>0){
    if(hazard.kind==='bleed')r.bleedTurns=Math.max(r.bleedTurns||0,2);
-   if(hazard.kind==='poison')r.poisonTurns=Math.max(r.poisonTurns||0,2);
+   if(hazard.kind==='poison')hunterPoison(2);
    if(hazard.kind==='burn')r.burnTurns=Math.max(r.burnTurns||0,2);
    if(hazard.kind==='silence')r.silenceTurns=Math.max(r.silenceTurns||0,2);
    if(hazard.kind==='corrode'){r.armorBreakTurns=3;r.armorBreakPower=Math.max(2,r.armorBreakPower||0);}
