@@ -121,10 +121,15 @@ function exploreStatus(t,tiles){
  return {ok:true,reason:''};
 }
 function summonSpot(tiles){
- var start=tiles.find(function(x){return x.kind==='start';});
+ if(!Array.isArray(tiles)||!tiles.length)return {tile:null,opened:false};
+ var start=tiles.find(function(x){return x.kind==='start';})||
+  tiles.find(function(x){return x.revealed&&x.cleared;})||tiles[0];
+ var adjacent=new Set(near(start.id));
  var valid=tiles.filter(function(t){return t.revealed&&t.kind==='empty'&&!t.summon&&!t.drops&&!t.foe;});
- if(valid.length){valid.sort(function(a,b){return near(start.id).includes(a.id)?-1:near(start.id).includes(b.id)?1:a.id-b.id;});
-  return {tile:valid[0],opened:false};}
+ if(valid.length){
+  valid.sort(function(a,b){var aNear=adjacent.has(a.id),bNear=adjacent.has(b.id);return aNear===bNear?a.id-b.id:aNear?-1:1;});
+  return {tile:valid[0],opened:false};
+ }
  var closed=tiles.filter(function(t){return t.kind==='empty'&&!t.revealed&&!t.foe;});
  if(closed.length)return {tile:closed[Math.floor(Math.random()*closed.length)],opened:true};
  return {tile:null,opened:false};
