@@ -542,8 +542,9 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  assert.equal(run.hp,hp,'Time stop prevents guard damage in both turns');
  assert.equal(tile.room.guards[0].cooldown,1);
  run.guardCharges=3;
- A('wait');
- assert.equal(run.guardCharges,0,'All three incoming attacks are blocked');
+  for(const g of tile.room.guards){g.provoked=true;g.cooldown=1;}
+  A('wait');
+  assert.equal(run.guardCharges,0,'All three provoked attacks are blocked');
  assert.equal(run.hp,hp);A('chamber-exit');
 });
 
@@ -708,14 +709,14 @@ test('Monster active special is applied only on its cooldown and saved with iden
  const t=choices[0];t.revealed=true;t.foe.hp=10000;t.foe.maxHp=10000;
  const enemy=t.foe;enemy.ability='poison';enemy.abilityName='Ядовитый укус';enemy.skill.every=3;
  enemy.ranged=false;enemy.cooldown=2;enemy.stun=0;
- A('wait');assert.equal(run.poisonTurns,0,'Special cannot fire before cooldown');
- A('wait');assert.ok(run.poisonTurns>=2,'Poison must be applied by special on cooldown');
+ enemy.provoked=true;A('wait');assert.equal(run.poisonTurns,0,'Special cannot fire before cooldown');
+  enemy.provoked=true;A('wait');assert.ok(run.poisonTurns>=2,'Poison must be applied by special on cooldown');
  enemy.ability='call';enemy.abilityName='Призыв прислужника';enemy.summons=0;enemy.cooldown=1;
  const before=run.tiles.filter(t=>t.foe&&t.foe.summoned).length;
- A('wait');
+  enemy.provoked=true;A('wait');
  const after=run.tiles.filter(t=>t.foe&&t.foe.summoned).length;
  assert.equal(after,before+1);
- enemy.cooldown=1;A('wait');
+ enemy.cooldown=1;enemy.provoked=true;A('wait');
  assert.equal(run.tiles.filter(t=>t.foe&&t.foe.summoned).length,after,
   'One summoner cannot spam unlimited helpers');
 });
@@ -805,7 +806,10 @@ test('Combat feedback separates healing from retaliation and does not damage uni
  live.debug.action('cast','heal');
  const emitted=win.CryptFeedback.events().filter(x=>x.id>mark&&x.actor==='hero');
  assert.ok(emitted.some(x=>x.kind==='heal'&&x.text==='+20'),'Heal is reported before the enemy turn');
- assert.ok(emitted.some(x=>x.kind==='damage'),'Retaliation is reported independently of the positive net HP change');
+ assert.ok(!emitted.some(x=>x.kind==='damage'),'Healing does not provoke an untouched melee enemy');
+  const afterHeal=win.CryptFeedback.events().at(-1)?.id||0;
+  live.debug.action('strike',foe.id);
+  assert.ok(win.CryptFeedback.events().some(x=>x.id>afterHeal&&x.actor==='hero'&&x.kind==='damage'),'A direct hit causes a retaliatory attack');
  const chamber=run.tiles.find(t=>t.kind==='empty'&&!t.foe);chamber.kind='chamber';chamber.revealed=true;chamber.cleared=false;
  const before=win.CryptFeedback.events().at(-1)?.id||0;live.debug.action('pickup',chamber.id);
  assert.equal(run.chamberActive,chamber.id);
