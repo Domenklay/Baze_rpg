@@ -101,7 +101,7 @@ function stats(){
  hp=Math.round(hp*(1+(lvl('war_knight')*.10)+(lvl('war_paladin')>0?.10:0)));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
