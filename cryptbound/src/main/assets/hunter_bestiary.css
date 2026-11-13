@@ -1,214 +1,137 @@
-/* Hand-drawn Darkest-Dungeon-like hunter field journal.
-   Responsive landscape overlay on top of the unchanged portrait game. */
-#overlay .dialog.hb-dialog{width:min(96vw,930px);max-width:930px;max-height:94dvh;padding:0;overflow:hidden;border:0;box-shadow:none;background:transparent;color:#e6cfaa}
-.hb-window{--ink:#100e0d;--paper:#b99a70;--edge:#9b6942;--red:#8b342c;position:relative;display:flex;flex-direction:column;overflow:hidden;height:min(92dvh,730px);border:4px solid #100b0b;border-radius:11px 8px 13px 8px;box-shadow:0 0 0 2px #765338,inset 0 0 32px #080606,0 18px 45px #000e;background:radial-gradient(ellipse at 85% 35%,#403025 0,#221b19 50%,#120e0e 90%);font-family:Georgia,'Times New Roman',serif;text-align:left}
-.hb-window:before{content:'';pointer-events:none;z-index:2;position:absolute;inset:4px;border:1px solid #6f4b35;border-radius:8px;opacity:.65}
-.hb-window:after{content:'';pointer-events:none;z-index:2;position:absolute;inset:0;background:repeating-linear-gradient(107deg,transparent 0 48px,#d3b18608 49px,transparent 50px 97px),radial-gradient(ellipse at top left,transparent 32%,#0008 100%);mix-blend-mode:screen;opacity:.37}
-.hb-head{position:relative;min-height:126px;flex:none;isolation:isolate;text-align:center;padding:58px 42px 12px;background:linear-gradient(180deg,#1a1817 0%,#282018 80%,#12100f 100%);border-bottom:5px ridge #67462c}
-.hb-head-art{position:absolute;inset:0 0 auto;z-index:-1;height:83px;overflow:hidden;background:radial-gradient(ellipse at 48% -5%,#a08c6a 0%,#695c43 32%,#343026 67%,#151714 100%)}
-.hb-head-art:before{content:'♠   ♠   ♠     ♠    ♠    ♠    ♠   ♠  ♠';position:absolute;bottom:-22px;left:-5%;width:110%;font:normal 97px/1 Georgia;color:#121710;letter-spacing:-21px;text-shadow:0 -8px 2px #1d251c;white-space:nowrap}
-.hb-head-art:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(167deg,transparent 0 18px,#15161238 19px,transparent 20px 45px);pointer-events:none}
-.hb-head-mark{position:absolute;bottom:2px;left:30px;color:#d6b78c;font-size:30px;opacity:.7}
-.hb-head-tree{position:absolute;bottom:6px;right:36px;font-size:24px;color:#c7a575;opacity:.6}
-.hb-head h2{margin:0;color:#eac99a;font:bold clamp(19px,3.7vw,32px)/1.1 Georgia,serif;letter-spacing:-.5px;text-shadow:2px 3px #050505,0 0 8px #0a0707}
-.hb-head p{margin:6px 0 0;color:#bba88a;font:11px/1.35 Georgia,serif;letter-spacing:.8px}
-.hb-close{position:absolute;right:8px;top:8px;z-index:5;width:39px;height:40px;border:2px solid #bd9560;background:linear-gradient(135deg,#513121,#1a1210);box-shadow:inset 0 0 0 2px #261811;color:#f1cf92;font:bold 29px/30px Georgia;cursor:pointer;border-radius:2px}
-.hb-close:active{transform:translateY(2px)}
-.hb-tabs{z-index:3;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;flex:none;background:#100e0d;border-bottom:2px solid #75533c;padding:5px 8px 0}
-.hb-tabs button{min-height:39px;padding:5px 3px;background:linear-gradient(160deg,#312821,#181615);border:1px solid #79604c;color:#bdae96;font:bold clamp(12px,2.4vw,17px) Georgia;cursor:pointer;box-shadow:inset 0 0 0 2px #1a1411;text-shadow:1px 1px #000}
-.hb-tabs button span{color:#b98f58;margin-right:6px}
-.hb-tabs button.selected{background:linear-gradient(130deg,#8e3426,#4d241b);border-color:#bf8c5b;color:#f2dcad;box-shadow:inset 0 0 0 2px #5b221e}
-.hb-inner{position:relative;flex:1;min-height:0;overflow:auto;padding:8px;background:linear-gradient(110deg,#2a211d,#171514 38%,#33281f 99%)}
-.hb-beasts-layout{height:100%;min-height:0;display:grid;grid-template-columns:minmax(155px,39%) minmax(0,1fr);gap:8px}
-.hb-beast-list{overflow:auto;min-height:0;padding:4px;border:2px solid #5f4633;box-shadow:inset 0 0 8px #0009;background:#171412}
-.hb-beast{display:flex;align-items:center;gap:8px;width:100%;min-height:64px;padding:5px;text-align:left;background:linear-gradient(120deg,#28211b,#1b1815);border:1px solid #594332;color:#e6cdac;cursor:pointer;font:12px Georgia,serif;margin-bottom:4px}
-.hb-beast.on{border:2px solid #cfac6a;background:linear-gradient(105deg,#433022,#241d17);box-shadow:0 0 8px #b1824a52,inset 0 0 9px #af784a33}
-.hb-small-portrait{display:flex;align-items:center;justify-content:center;flex:none;width:50px;height:51px;border:2px solid #66472f;background:radial-gradient(#4b4534,#131313);overflow:hidden}
-.hb-small-portrait img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
-.hb-beast-placeholder{font-size:26px;filter:grayscale(.55) sepia(.4);text-shadow:2px 2px #000}
-.hb-beast-meta{flex:1;min-width:0}
-.hb-beast-meta b{font-size:12px;display:block;line-height:1.2;margin-bottom:6px}
-.hb-progress-track{height:9px;background:#14130e;border:1px solid #70573e;box-shadow:inset 0 0 3px #000;overflow:hidden}
-.hb-progress-track i{display:block;height:100%;background:linear-gradient(180deg,#9cb65e,#52692f);box-shadow:0 0 5px #a5bc6533;max-width:100%}
-.hb-count{font-size:11px;color:#dcbf8e;white-space:nowrap;align-self:start}
-.hb-detail{padding:7px 12px;background:radial-gradient(ellipse at 70% 20%,#48392b,#211a18 72%);border:2px solid #685038;overflow:auto;box-shadow:inset 0 0 13px #000b}
-.hb-detail-header{display:flex;justify-content:space-between;align-items:start}
-.hb-detail-header h3{margin:0;font:700 clamp(19px,3vw,27px) Georgia;color:#f0d5a8;text-shadow:2px 2px #000}
-.hb-detail-header small{display:block;color:#bd9d6f;margin-top:2px}
-.hb-pawmark{color:#7c6041;font-size:28px;opacity:.4}
-.hb-hero-portrait{height:min(20dvh,155px);min-height:105px;display:flex;justify-content:center;align-items:center;margin:3px 0;background:radial-gradient(ellipse,#59462c 0,#2b271e 42%,transparent 72%);position:relative}
-.hb-hero-portrait img{max-width:90%;height:100%;width:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(2px 4px 2px #000a)}
-.hb-hero-portrait .hb-beast-placeholder{font-size:78px}
-.hb-description{font:13px/1.35 Georgia;color:#d5bea0;margin:8px 0;max-width:650px}
-.hb-study{padding:5px 0;border-top:1px solid #735439;color:#d5b481;font-size:13px}
-.hb-study .hb-progress-track{height:12px;margin-top:4px}
-.hb-detail h4{font:bold 15px Georgia;color:#d6a56b;margin:9px 0 7px}
-.hb-detail h4 small{font-size:11px;color:#bbb095}
-.hb-milestones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
-.hb-milestones>div{min-height:42px;display:grid;grid-template-columns:22px 1fr;gap:0 4px;align-items:center;padding:5px;border:1px solid #796844;background:#343222;font:12px Georgia}
-.hb-milestones>div.locked{opacity:.55;filter:grayscale(.7);background:#292420}
-.hb-milestone-symbol{grid-row:span 2;text-align:center;color:#a0bf65;font:bold 18px Georgia}
-.hb-milestones strong{color:#ddc399;font-size:12px}
-.hb-milestones span:last-child{color:#c4ba96;font-size:11px}
-.hb-trophy-intro{padding:6px 9px;color:#ccb493;font:13px/1.45 Georgia;border-bottom:1px solid #795a3a}
-.hb-trophy-list{display:grid;grid-template-columns:1fr;gap:6px;padding:9px 3px}
-.hb-trophy{display:flex;align-items:center;gap:10px;min-height:65px;padding:7px;border:1px solid #674b35;background:linear-gradient(90deg,#30241d,#201915);box-shadow:inset 0 0 8px #0008}
-.hb-trophy-icon{display:grid;place-items:center;width:51px;height:50px;flex:none;border:2px solid #594b42;color:#a8895c;font:28px Georgia;background:linear-gradient(115deg,#302b26,#141111)}
-.hb-trophy-icon.yes{color:#d8bd7b;border-color:#9c7843}
-.hb-trophy span:nth-child(2){flex:1}
-.hb-trophy b,.hb-trophy strong,.hb-trophy small{display:block}
-.hb-trophy b{font:700 16px Georgia;color:#e6cfaf}
-.hb-trophy strong{font:13px Georgia;color:#91b767;margin:3px 0}
-.hb-trophy small{color:#c8b29a;font:12px Georgia}
-.hb-trophy-state{color:#9cb86e;font-size:20px}
-.hb-bonus-title{padding:8px;color:#dcaf6c;font:bold 18px Georgia;text-align:center}
-.hb-bonus-list{max-width:660px;margin:auto}
-.hb-bonus-list>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;border-bottom:1px solid #6e5239;font:14px Georgia;color:#d3bba2}
-.hb-bonus-list strong{color:#a5c879;font:700 16px Georgia;white-space:nowrap}
-.hb-footer{display:flex;justify-content:space-between;gap:10px;flex:none;min-height:27px;padding:7px 13px;color:#9f8060;background:linear-gradient(#241a15,#120e0d);border-top:2px solid #785638;font:10px Georgia}
-.hb-book-icon{width:25px;height:27px;object-fit:contain;vertical-align:middle;filter:drop-shadow(1px 2px 1px #000)}
-.hb-quick{display:flex;gap:5px;flex:none;align-items:center}
-.hb-quick .dungeon-key{display:flex;align-items:center;justify-content:center;min-width:36px;height:34px;padding:2px 5px;font:bold 18px Georgia}
-.hb-quick .hb-open{display:grid;place-items:center;position:relative;flex:none;width:36px;height:34px;background:#231b17;border:1px solid #926b4a;box-shadow:inset 0 0 0 2px #39241a;cursor:pointer}
-.hb-open .hb-bang{position:absolute;top:-6px;right:-4px;background:#9f3227;border:1px solid #ecc791;color:#ffe0b1;border-radius:50%;width:14px;height:14px;line-height:13px;font:bold 11px Georgia}
-.hb-special-item{display:flex;align-items:center;gap:12px;padding:10px;background:#261e1c;border:1px solid #78583e}
-.hb-special-item .hb-book-icon{width:47px;height:50px}
-.hb-special-item>span{flex:1;min-width:0}
-.hb-special-item b,.hb-special-item small{display:block}
-.hb-special-item small{color:#ac997f;margin-top:3px}
-.hb-corpse-art{display:flex;align-items:center;justify-content:center;gap:2px;font:23px Georgia;color:#ac9b83;text-shadow:1px 2px #000}
-.hb-corpse-art img{width:25px;height:28px;object-fit:contain}
-@media(max-width:630px){
- #overlay .dialog.hb-dialog{width:96vw;max-height:95dvh}
- .hb-window{height:92dvh}
- .hb-head{min-height:105px;padding:45px 27px 10px}
- .hb-head-art{height:69px}.hb-head-art:before{font-size:75px;bottom:-16px}
- .hb-head p{font-size:9px;letter-spacing:0}
- .hb-beasts-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
- .hb-beast-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:150px;gap:4px}
- .hb-beast{min-height:54px;margin:0;padding:3px;gap:5px}
- .hb-small-portrait{width:33px;height:36px}
- .hb-beast-meta b{font-size:10px}
- .hb-count{font-size:10px}
- .hb-detail{min-height:0;padding:6px 9px}
- .hb-hero-portrait{height:91px;min-height:72px}
- .hb-hero-portrait .hb-beast-placeholder{font-size:58px}
- .hb-description{font-size:12px}
- .hb-milestones{gap:4px}
- .hb-footer{font-size:9px}
- .hb-trophy b{font-size:14px}
- .hb-trophy small{font-size:11px}
-}
-@media(max-height:650px){.hb-head{min-height:76px;padding-top:27px}.hb-head-art{height:44px}.hb-head-art:before{font-size:60px}.hb-hero-portrait{height:70px;min-height:60px}.hb-beast-list{max-height:115px}}
-
-/* v0.7.2 painted portrait HUD integration. Keep the original top-row controls. */
-.expedition-effects .charge-strip .hb-v072-access{position:relative;flex:none;display:grid;place-items:center;min-width:29px;width:30px;height:29px;padding:1px;border:4px solid transparent;border-image:var(--ui-frame) 85 fill stretch;background:transparent;border-radius:0;box-shadow:none}
-.hb-v072-access .hb-book-icon{width:21px;height:23px;image-rendering:auto;filter:drop-shadow(0 1px #120b06)}
-.expedition-effects .charge-strip .hb-v072-access .hb-bang{position:absolute;top:-5px;right:-4px;display:grid;place-items:center;width:14px;height:14px;border-radius:50%;border:1px solid #e1ba83;background:#8f3021;color:#f6e1b3;font:700 11px/12px Georgia;pointer-events:none}
-.hb-inventory-access{padding:7px 2px 1px}
-#overlay .hb-inventory-access .hb-special-item{width:100%;background:linear-gradient(90deg,#332820,#211a16);text-align:left;cursor:pointer;border:4px solid transparent;border-image:var(--ui-frame) 85 fill stretch;display:flex;gap:9px;align-items:center;min-height:58px;color:#f1dab2}
-.hb-inventory-access .hb-special-item .hb-book-icon{flex:none;width:35px;height:42px}
-.hb-inventory-access .hb-special-item strong{white-space:nowrap;color:#e3bf7b;font:13px Georgia}
-.hb-inventory-access .hb-special-item span{flex:1;min-width:0}
-.hb-inventory-access .hb-special-item b{font:700 14px Georgia}
-.hb-inventory-access .hb-special-item small{font:10px Georgia;color:#c3aa85;display:block}
-@media(max-width:370px){.hb-inventory-access .hb-special-item strong{font-size:11px}.hb-inventory-access .hb-special-item b{font-size:12px}.hb-inventory-access .hb-special-item .hb-book-icon{width:30px;height:34px}}
-
-/* v0.7.5: hand-painted real open-book sprite, two persistent facing pages
-   in a PORTRAIT game. Art is a standalone offline SVG sprite; actual creatures
-   continue to use the same packaged idle sprites as the maze. */
-#overlay .dialog.hb-dialog{width:min(96vw,620px);max-width:620px;max-height:96dvh;padding:0;border:0!important;border-image:none!important;background:none!important;box-shadow:none}
+/* Cryptbound • Hunter's field journal v0.7.6.
+ * One layout for the portrait phone: fixed illustrations, contained scrolling,
+ * two facing pages, and explicit readable ink colors. No legacy overrides. */
+#overlay .veil:has(.hb-dialog){display:flex;align-items:center;justify-content:center;padding:3px;overflow:hidden}
+#overlay .dialog.hb-dialog{display:block;position:relative;width:min(calc(100vw - 6px),620px);max-width:620px;height:auto;max-height:calc(100dvh - 6px);margin:0;padding:0;border:0!important;border-image:none!important;border-radius:0;box-shadow:none;background:none!important;overflow:hidden;text-align:left}
 #overlay .dialog.hb-dialog:before,#overlay .dialog.hb-dialog:after{display:none}
-.hb-window{height:min(94dvh,900px);min-height:440px;border:0;border-radius:0;box-shadow:0 16px 38px #000c;background:transparent url("hunter_spread.svg") center / 100% 100% no-repeat;overflow:hidden}
+.hb-window{position:relative;isolation:isolate;display:flex;flex-direction:column;width:100%;height:min(96dvh,900px);max-height:calc(100dvh - 6px);min-height:0;overflow:hidden;color:#322215;font-family:Georgia,'Times New Roman',serif;background:#3b281f url("hunter_spread.svg") center/100% 100% no-repeat;border:0;border-radius:0;box-shadow:0 12px 36px #000b}
 .hb-window:before,.hb-window:after{display:none}
-.hb-head{height:105px;min-height:105px;flex:none;padding:49px 35px 5px;background:transparent;border:0;text-align:center}
-.hb-head-art{display:none}
-.hb-head h2{font:700 clamp(18px,4.4vw,29px)/1 Georgia,serif;color:#efcf98;text-shadow:0 2px 2px #110c09,1px 0 #1e130e}
-.hb-head p{font:clamp(8px,1.55vw,11px)/1.25 Georgia;color:#edd3aa;letter-spacing:0;margin-top:6px;text-shadow:0 1px #100c09}
-.hb-close{right:18px;top:18px;border:3px solid #be925b;color:#f2c787;width:38px;height:38px;background:linear-gradient(140deg,#633623,#231410);box-shadow:inset 0 0 0 2px #30180e;border-radius:3px;z-index:7}
-.hb-tabs{z-index:3;flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:2px 24px 0;background:transparent;border:0;height:43px}
-.hb-tabs button{height:40px;min-height:0;border:3px solid #9b6d3f;border-radius:5px 5px 2px 2px;box-shadow:inset 0 0 0 1px #26160d,0 2px 2px #180f0b;cursor:pointer;background:linear-gradient(#3a2b24,#1d1915 65%,#35241c);color:#dfc59c;font:700 clamp(11px,2.3vw,16px)/1 Georgia;padding:3px 1px}
-.hb-tabs button.selected{background:linear-gradient(#9f442e,#70241d 62%,#451a18);color:#f3ddad;border-color:#d9a45b}
-.hb-tabs button span{color:#e6b46b;font-size:1.12em;margin-right:5px}
-.hb-inner{z-index:3;flex:1;min-height:0;padding:9px clamp(20px,5.8vw,42px) 0;background:transparent;overflow:hidden}
-.hb-beasts-layout{display:grid;grid-template-columns:minmax(0,46%) minmax(0,54%);grid-template-rows:minmax(0,1fr);height:100%;gap:8px}
-.hb-beast-list{display:block;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#8e6b3e transparent;max-height:none;min-height:0;padding:5px 2px;border:0;background:transparent;box-shadow:none}
-.hb-beast{min-height:64px;display:flex;align-items:center;gap:6px;width:100%;margin:0 0 6px;padding:5px 4px;border:2px solid #665038;border-radius:2px;box-shadow:0 1px #e4c4924d;background:#211b17 url("hunter_row.svg") center / 100% 100% no-repeat;color:#e6d0a8}
-.hb-beast.on{border:2px solid #efc579;background:#2b2118 url("hunter_row.svg") center / 100% 100% no-repeat;box-shadow:0 0 0 2px #a76b26,0 0 12px #d79b4685}
-.hb-small-portrait{width:45px;height:47px;flex:none;display:grid;place-items:center;border:2px solid #b78b54;background:radial-gradient(circle at 50% 25%,#4f4132,#131411);overflow:hidden}
-.hb-small-portrait img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
-.hb-beast-meta{flex:1;min-width:0}
-.hb-beast-meta b{font:700 clamp(10px,1.8vw,13px)/1.2 Georgia;color:#f0dbad;margin-bottom:6px;white-space:normal}
-.hb-count{flex:none;font:clamp(9px,1.6vw,11px)/1 Georgia;color:#e5c58a;margin-top:3px}
-.hb-progress-track{height:13px;border:0;background:#101710 url("hunter_progress.svg") center / 100% 100% no-repeat;box-shadow:inset 0 1px 2px #0009;padding:3px 6px;overflow:hidden}
-.hb-progress-track i{display:block;height:100%;background:linear-gradient(#bed971,#729d31 43%,#425e20);box-shadow:inset 0 1px #e3ec9d,0 0 3px #91ba52;max-width:100%}
-.hb-detail{padding:8px 5px 4px;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#956c42 transparent;background:transparent;border:0;box-shadow:none;color:#2c1c12}
-.hb-detail-header{min-height:53px;align-items:center;justify-content:center;text-align:center}
-.hb-detail-header h3{font:700 clamp(17px,3.4vw,30px)/1.1 Georgia;color:#27170e;margin:0;text-shadow:0 1px #f1cf99}
-.hb-detail-header small{font:clamp(10px,1.7vw,13px)/1.2 Georgia;color:#654328}
+.hb-window button{font-family:Georgia,'Times New Roman',serif!important}
+.hb-head{position:relative;flex:none;height:12.3%;min-height:0;margin:0;padding:5.3% 6% 0;background:none;border:0;overflow:visible;text-align:center;isolation:isolate}
+.hb-head-art,.hb-head-mark,.hb-head-tree{display:none}
+.hb-head h2{margin:0;white-space:nowrap;font:700 clamp(15px,4.8vw,27px)/1.1 Georgia!important;letter-spacing:0;color:#f2d9a8;text-shadow:0 2px 3px #110d0a,1px 0 1px #100d0a}
+#overlay .dialog.hb-dialog .hb-head p{margin:4px 0 0;color:#edcfa1!important;font:clamp(8px,1.8vw,11px)/1.22 Georgia!important;letter-spacing:0;text-align:center;text-shadow:0 1px 2px #18110d}
+.hb-close{position:absolute;right:4%;top:9%;z-index:7;display:grid;place-items:center;width:36px;height:38px;padding:0;border:3px solid #c59d67;background:linear-gradient(#543523,#231510);color:#f3d1a0;font:700 27px/1 Georgia!important;box-shadow:inset 0 0 0 2px #2e1c13;border-radius:3px;cursor:pointer}
+.hb-tabs{position:relative;flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;height:5.2%;min-height:31px;margin:0;padding:0 3.5%;background:none;border:0;z-index:2}
+.hb-tabs button{display:flex;align-items:center;justify-content:center;height:100%;min-height:0;margin:0;padding:2px 1px;border:3px solid #a47b4b;border-radius:3px 3px 0 0;background:linear-gradient(#3c2b24,#201a17 66%,#33251d);box-shadow:inset 0 0 0 1px #2d1b14;color:#e6cc9f;font:700 clamp(10px,2.2vw,14px)/1.1 Georgia!important;white-space:nowrap;cursor:pointer}
+.hb-tabs button.selected{color:#f7dfaf;border-color:#e0b477;background:linear-gradient(#9c432f,#6f261e 68%,#451d17)}
+.hb-tabs button span{display:inline-block;flex:none;margin-right:5px;color:#e0b16d;font-size:1.03em}
+.hb-inner{position:relative;z-index:2;flex:none;display:block;width:100%;height:71.2%;min-height:0;max-height:none;padding:12px 4.5% 8px;margin:0;background:none!important;border:0;overflow:hidden}
+.hb-beasts-layout{display:grid;grid-template-columns:minmax(0,50%) minmax(0,50%);grid-template-rows:minmax(0,1fr);column-gap:7px;width:100%;height:100%;min-height:0;min-width:0;overflow:hidden}
+.hb-beast-list{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-height:0;max-height:100%;height:100%;min-width:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#815c34 transparent;padding:1px 2px 1px 1px;background:none;border:0;box-shadow:none}
+.hb-beast{position:relative;flex:none;display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;column-gap:5px;width:100%;height:54px;min-height:54px;max-height:54px;margin:0;padding:5px 5px 5px 4px;overflow:hidden;text-align:left;color:#edd0a3;background:#2b201a url("hunter_row.svg") center/100% 100% no-repeat;border:1px solid #8c6740;border-radius:1px;box-shadow:inset 0 0 0 1px #1c1712;cursor:pointer}
+.hb-beast.on{border-color:#e3b973;box-shadow:inset 0 0 0 2px #e2b46c,0 0 5px #a37632;background-color:#3e2c21}
+.hb-small-portrait{display:grid;place-items:center;flex:none;width:35px;height:39px;margin:0;overflow:hidden;background:radial-gradient(#4d4737,#131713);border:1px solid #96734c}
+.hb-small-portrait img{display:block;max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.hb-beast-placeholder{font:23px/1 Georgia;color:#e1c185}
+.hb-beast-meta{display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;width:100%;overflow:hidden}
+.hb-label-row{display:flex;align-items:flex-start;justify-content:space-between;gap:2px;min-width:0}
+.hb-beast-meta .hb-label-row b{flex:1;min-width:0;max-height:28px;margin:0;overflow:hidden;color:#e9c99a;font:700 clamp(9px,1.8vw,12px)/1.13 Georgia!important;overflow-wrap:break-word}
+.hb-label-row .hb-count{flex:none;min-width:27px;margin:0;padding-top:1px;color:#e2c38f;font:clamp(8px,1.45vw,10px)/1 Georgia!important;text-align:right;white-space:nowrap}
+.hb-progress-track{display:block;position:relative;flex:none;width:100%;height:12px;padding:3px 5px;margin:0;background:#151b12 url("hunter_progress.svg") center/100% 100% no-repeat;border:0;box-shadow:inset 0 0 1px #070a08;overflow:hidden}
+.hb-progress-track>i{display:block;width:0;height:100%;min-height:3px;max-width:100%;background:linear-gradient(#bedd81,#759d3f 55%,#526e25);box-shadow:inset 0 1px #eef2b6}
+.hb-detail{display:block;min-width:0;min-height:0;height:100%;max-height:100%;margin:0;padding:0 6px 4px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#8a633c transparent;border:0;box-shadow:none;background:none}
+.hb-detail-header{display:flex;align-items:center;justify-content:center;min-height:47px;margin:0 0 3px;text-align:center}
+.hb-detail-header>div{min-width:0}
+.hb-detail-header h3{margin:0;color:#352015;font:700 clamp(15px,3.3vw,24px)/1.1 Georgia!important;text-shadow:0 1px #ebce9a;overflow-wrap:anywhere}
+.hb-detail-header small{display:block;margin-top:3px;color:#735134;font:clamp(9px,1.6vw,11px)/1.2 Georgia!important}
 .hb-pawmark{display:none}
-.hb-hero-portrait{height:clamp(108px,21dvh,200px);min-height:108px;max-height:200px;margin:3px 0 7px;display:grid;place-items:center;background:transparent url("hunter_stage.svg") center / 100% 100% no-repeat}
-.hb-hero-portrait img{width:80%;height:87%;max-width:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(2px 4px 1px #09090999)}
-.hb-hero-portrait .hb-beast-placeholder{font-size:65px}
-.hb-description{font:clamp(10px,1.7vw,13px)/1.33 Georgia;color:#332216;margin:6px 1px 9px;text-align:left}
-.hb-study{padding:5px 0;border:0;color:#3c281b;font:700 12px Georgia}
-.hb-study .hb-progress-track{margin-top:5px;height:16px}
-.hb-detail h4{font:700 clamp(12px,2.1vw,16px)/1.2 Georgia;color:#583115;margin:8px 0 6px;text-align:center}
-.hb-detail h4 small{color:#6b5438;font:11px Georgia}
-.hb-milestones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
-.hb-milestones>div{min-height:62px;display:grid;grid-template-columns:20px 1fr;gap:1px 2px;padding:7px 5px;background:#221a16 url("hunter_milestone.svg") center /100% 100% no-repeat;border:0;color:#ead0a0}
-.hb-milestones>div.locked{opacity:.70;filter:grayscale(.75)}
-.hb-milestones>div.unlocked{filter:drop-shadow(0 0 2px #a8c576)}
-.hb-milestone-symbol{font-size:15px;color:#a5bb72}
-.hb-milestones strong{font-size:11px;color:#efd7a6}
-.hb-milestones span:last-child{font-size:10px;color:#d3b580}
-.hb-footer{z-index:3;flex:none;height:39px;min-height:39px;padding:9px 34px 2px;align-items:center;background:transparent;border:0;color:#d6b47e;font:clamp(9px,1.65vw,12px)/1.1 Georgia;text-shadow:1px 2px #0c0705}
+.hb-hero-portrait{display:flex;align-items:center;justify-content:center;position:relative;width:100%;height:clamp(100px,19dvh,170px);min-height:0;max-height:170px;margin:3px 0 7px;padding:7px 12px;background:transparent url("hunter_stage.svg") center/100% 100% no-repeat;border:0;overflow:hidden}
+.hb-hero-portrait img{display:block;max-height:100%;height:100%;max-width:100%;width:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(1px 3px 2px #09100aaa)}
+.hb-hero-portrait .hb-beast-placeholder{font-size:55px}
+#overlay .dialog.hb-dialog .hb-detail .hb-description{display:block;margin:8px 0 9px!important;padding:0 1px;color:#3e291b!important;font:clamp(10px,1.72vw,13px)/1.35 Georgia!important;text-align:left;overflow-wrap:break-word;max-width:none;text-shadow:0 1px #d9b98d55}
+.hb-study{display:block;margin:0;padding:5px 0;border:0;color:#583b25;font:700 clamp(11px,1.8vw,13px)/1.2 Georgia!important}
+.hb-study .hb-progress-track{margin-top:5px;height:15px}
+.hb-detail h4{display:block;margin:7px 0 6px;color:#4e2e1b;font:700 clamp(12px,2vw,16px)/1.2 Georgia!important;text-align:center}
+.hb-detail h4 small{font:clamp(9px,1.5vw,11px)/1 Georgia!important;color:#6c5035}
+.hb-milestones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;padding-bottom:12px}
+.hb-milestones>div{display:flex;align-items:center;gap:5px;min-width:0;min-height:65px;margin:0;padding:7px 5px;background:#2f241d url("hunter_milestone.svg") center/100% 100% no-repeat;border:0;box-shadow:none;color:#ead2a8}
+.hb-milestones>div.locked{filter:saturate(.52);opacity:1}
+.hb-milestones>div.unlocked{filter:drop-shadow(0 0 2px #8eab55)}
+.hb-milestone-symbol{flex:none;width:15px;color:#c4b287;text-align:center;font:700 14px Georgia!important}
+.hb-milestones>div.unlocked .hb-milestone-symbol{color:#aed276}
+.hb-stage-copy{display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0}
+.hb-stage-copy strong{display:block;color:#ead1a2;font:700 clamp(9px,1.55vw,12px)/1.15 Georgia!important}
+.hb-stage-copy span{display:block;color:#ccb891;font:clamp(9px,1.45vw,11px)/1.2 Georgia!important}
+.hb-footer{position:relative;z-index:2;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex:1;min-height:0;margin:0;padding:0 5% 4%;background:none;border:0;color:#ddc292;font:clamp(8px,1.55vw,11px)/1.15 Georgia!important;text-shadow:1px 2px #0f0c09}
 .hb-footer span:last-child{text-align:right}
-.hb-trophy-intro{font:clamp(11px,2vw,15px)/1.4 Georgia;color:#3b2518;border:0;padding:8px 4px 12px;text-align:center}
-.hb-trophy-list{padding:4px;gap:6px}
-.hb-trophy{min-height:68px;background:linear-gradient(100deg,#3c2920,#201916);border:2px solid #86633e;box-shadow:0 1px 3px #3d2610}
-.hb-trophy-icon{width:45px;height:45px}
-.hb-bonus-title{color:#322015}
-.hb-bonus-list>div{border-bottom:1px solid #866844;color:#2f1d11;background:#a9815040}
-.hb-bonus-list strong{color:#3c6020}
-.hb-inner>.hb-description{color:#352518}
-@media(max-width:630px){
- #overlay .dialog.hb-dialog{width:98vw;max-width:98vw;max-height:96dvh}
- .hb-window{height:min(94dvh,890px);min-height:0}
- .hb-head{height:98px;min-height:98px;padding:45px 25px 4px}
- .hb-head h2{font-size:clamp(18px,5vw,25px)}
- .hb-head p{font-size:clamp(8px,1.8vw,10px)}
- .hb-close{right:12px;top:12px;width:34px;height:34px}
- .hb-tabs{height:40px;padding:0 17px;gap:3px}
- .hb-tabs button{min-height:0;height:38px;font-size:clamp(11px,2.6vw,14px)}
- .hb-inner{padding:8px clamp(14px,5vw,28px) 0}
- .hb-beasts-layout{grid-template-columns:minmax(0,44%) minmax(0,56%);grid-template-rows:minmax(0,1fr);gap:5px}
- .hb-beast-list{display:block;max-height:none;padding:2px 0}
- .hb-beast{min-height:54px;gap:4px;margin:0 0 4px;padding:4px 3px}
- .hb-small-portrait{width:36px;height:37px}
- .hb-beast-meta b{font-size:clamp(9px,2.7vw,12px);margin-bottom:4px}
- .hb-count{font-size:9px}
- .hb-detail{padding:3px 2px 2px}
- .hb-detail-header{min-height:42px}
- .hb-detail-header h3{font-size:clamp(16px,4vw,22px)}
- .hb-hero-portrait{height:clamp(102px,21dvh,165px);min-height:0}
- .hb-description{font-size:clamp(10px,2.65vw,12px)}
- .hb-milestones{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
- .hb-milestones>div{min-height:57px;padding:4px 2px}
- .hb-footer{height:34px;min-height:34px;padding:6px 18px}
- .hb-trophy b{font-size:13px}
-}
-@media(max-width:365px){.hb-hero-portrait{height:100px}.hb-head{height:89px;min-height:89px;padding-top:39px}.hb-small-portrait{width:30px;height:32px}.hb-beast{min-height:48px}.hb-count{font-size:8px}.hb-description{font-size:10px}.hb-tabs{height:36px}.hb-tabs button{height:35px}.hb-milestones>div{min-height:48px}.hb-milestones strong{font-size:9px}.hb-milestones span:last-child{font-size:9px}}
-@media(max-height:620px){.hb-window{height:96dvh}.hb-head{height:72px;min-height:72px;padding-top:26px}.hb-tabs{height:34px}.hb-tabs button{height:33px}.hb-hero-portrait{height:84px}.hb-beast{min-height:45px}.hb-footer{height:25px;min-height:25px;padding:4px 17px}}
 
-/* Target-selecting mode for single-target scrolls: the board remains visible. */
+/* Other sections follow the same facing-page geometry and scroll internally. */
+.hb-secondary-pages{display:grid;grid-template-columns:minmax(0,50%) minmax(0,50%);gap:9px;height:100%;min-height:0}
+.hb-secondary-page{min-width:0;min-height:0;overflow-y:auto;padding:9px 6px;scrollbar-width:thin;scrollbar-color:#876743 transparent}
+.hb-secondary-page h3{color:#3f2517;margin:0 0 10px;font:700 18px/1.2 Georgia}
+#overlay .dialog.hb-dialog .hb-secondary-page p{color:#4c3424!important;margin:7px 0!important;font:12px/1.45 Georgia!important}
+.hb-trophy-list{display:flex;flex-direction:column;gap:6px;padding:0;margin:0}
+.hb-trophy{display:flex;align-items:center;gap:6px;min-width:0;min-height:76px;padding:6px;background:#37271f;border:2px solid #9e7949;box-shadow:inset 0 0 0 1px #1b120e;color:#e7ceac}
+.hb-trophy-icon{display:grid;place-items:center;flex:none;width:37px;height:42px;background:linear-gradient(#413529,#1b1814);border:1px solid #ab8953;color:#bba06c;font:24px Georgia}
+.hb-trophy-icon.yes{color:#d8bc7e}
+.hb-trophy>span:nth-child(2){flex:1;min-width:0}
+.hb-trophy b,.hb-trophy strong,.hb-trophy small{display:block}
+.hb-trophy b{color:#ead3a8;font:700 11px/1.2 Georgia}
+.hb-trophy strong{color:#c8b989;font:700 10px/1.3 Georgia;margin:3px 0}
+.hb-trophy small{color:#c6b397;font:10px/1.25 Georgia}
+.hb-trophy-state{font-size:17px;color:#a4c577}
+.hb-bonus-title{margin:0 0 10px;color:#3a2519;font:700 17px Georgia;text-align:center}
+.hb-bonus-list{display:block;margin:0;padding:0}
+.hb-bonus-list>div{display:flex;justify-content:space-between;gap:5px;padding:8px 2px;border-bottom:1px solid #98704d;color:#432b1d;font:11px/1.2 Georgia}
+.hb-bonus-list strong{flex:none;color:#47652b;font:700 12px Georgia}
+
+/* Book access and other gameplay UI must keep working outside this modal. */
+.hb-book-icon{display:block;width:25px;height:27px;object-fit:contain;filter:drop-shadow(1px 2px 1px #0006)}
+.expedition-effects .charge-strip .hb-v072-access{position:relative;flex:none;display:grid;place-items:center;min-width:29px;width:30px;height:29px;padding:1px;border:4px solid transparent;border-image:var(--ui-frame) 85 fill stretch;background:transparent;border-radius:0;box-shadow:none}
+.hb-v072-access .hb-book-icon{width:21px;height:23px}
+.hb-v072-access .hb-bang{position:absolute;top:-5px;right:-4px;width:14px;height:14px;border:1px solid #e0b98a;border-radius:50%;background:#8f3021;color:#ffddaa;font:700 11px/12px Georgia;text-align:center}
+.hb-inventory-access{padding:7px 2px 1px}
+#overlay .hb-inventory-access .hb-special-item{display:flex;align-items:center;gap:9px;width:100%;min-height:58px;padding:8px 6px;border:4px solid transparent;border-image:var(--ui-frame) 85 fill stretch;background:#31251e;text-align:left;color:#f1d5a4;cursor:pointer}
+.hb-inventory-access .hb-special-item .hb-book-icon{flex:none;width:35px;height:42px}
+.hb-inventory-access .hb-special-item>span{flex:1;min-width:0}
+.hb-inventory-access .hb-special-item b{display:block;font:700 13px Georgia}
+.hb-inventory-access .hb-special-item small{display:block;color:#c3ab87;font:10px Georgia}
+.hb-inventory-access .hb-special-item strong{font:700 12px Georgia;color:#e4c084;white-space:nowrap}
+.hb-corpse-art{display:flex;align-items:center;justify-content:center;gap:2px;font:22px Georgia;color:#bca98a;text-shadow:1px 2px #000}
+.hb-corpse-art img{width:25px;height:28px}
+
+/* Target selection + newly drawn fallback equipment icons, preserved from 0.7.5. */
 .spell-target-banner{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-width:0;padding:4px 9px;background:linear-gradient(100deg,#3c2d21,#171b15);border:3px solid #b99459;box-shadow:inset 0 0 0 1px #312518,0 1px 10px #03070299;color:#eee0b9;font:12px/1.3 Georgia}
 .spell-target-banner span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .spell-target-banner b{color:#bfda86}
-.spell-target-banner button{flex:none;min-height:27px;padding:2px 9px;border:2px solid #c29964;background:linear-gradient(#8f3123,#541d19);color:#f2deb0;font:700 11px Georgia;cursor:pointer}
+.spell-target-banner button{flex:none;min-height:27px;padding:2px 9px;border:2px solid #c29964;background:linear-gradient(#8f3123,#541d19);color:#f2deb0;font:700 11px Georgia}
 .dungeon-board .tile.spell-target-valid{outline:3px solid #c7d56c;outline-offset:-2px;box-shadow:inset 0 0 10px #b0df5277,0 0 9px #a1c85e88!important;cursor:crosshair}
 .dungeon-board .tile.spell-target-valid:after{content:"✧";position:absolute;top:0;right:3px;font:14px Georgia;color:#def5a3;text-shadow:0 1px 4px #162009}
 .dungeon-board .tile.spell-target-valid:focus-visible{outline:4px solid #eddfa5;outline-offset:0}
 .illustrated-gear{width:100%;height:100%;min-width:0;object-fit:contain;filter:drop-shadow(1px 2px 1px #0007)}
 .gear-slot .illustrated-gear{width:89%;height:88%;margin:auto}
 .gear-compact-head .illustrated-gear{width:88%;height:88%}
+
+/* Less content on shorter screens; both pages still remain visible. */
+@media(max-width:440px){
+ .hb-window{height:96dvh}
+ .hb-head{height:12%;padding-top:6%}
+ .hb-head h2{font-size:clamp(14px,4.6vw,20px)!important}
+ .hb-tabs{height:5.1%;gap:3px}
+ .hb-inner{height:72%;padding:9px 4% 6px}
+ .hb-beasts-layout{column-gap:5px}
+ .hb-beast{grid-template-columns:29px minmax(0,1fr);height:49px;min-height:49px;max-height:49px;padding:4px 3px;column-gap:3px}
+ .hb-small-portrait{width:29px;height:33px}
+ .hb-beast-meta{gap:3px}
+ .hb-beast-meta .hb-label-row b{font-size:9px!important}
+ .hb-label-row .hb-count{font-size:8px!important;min-width:23px}
+ .hb-hero-portrait{height:clamp(90px,17dvh,134px)}
+ .hb-detail{padding:0 3px 4px}
+ .hb-detail-header{min-height:40px}
+ .hb-milestones{gap:3px}
+ .hb-milestones>div{min-height:59px;padding:5px 3px}
+ .hb-milestone-symbol{font-size:12px;width:12px}
+ .hb-stage-copy strong{font-size:9px!important}
+ .hb-stage-copy span{font-size:9px!important}
+ .hb-footer{padding-bottom:5%}
+}
+@media(max-height:680px){
+ .hb-window{height:97dvh}
+ .hb-head{height:12%}
+ .hb-inner{height:73%;padding-top:8px}
+ .hb-beast{height:44px;min-height:44px;max-height:44px}
+ .hb-hero-portrait{height:85px}
+ .hb-detail-header{min-height:37px}
+ .hb-milestones>div{min-height:52px}
+}
