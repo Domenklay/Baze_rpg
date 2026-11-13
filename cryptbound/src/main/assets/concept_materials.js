@@ -238,5 +238,14 @@ window.CryptConceptMaterials={
  "Застывшая капля тигля": "t9_concept_zastyvshaia_kaplia_tiglia",
  "Жало Матки кристаллических туннелей": "t9_concept_zhalo_matki_kristallicheskikh_tunnelei",
  "Кометный карп": "t10_concept_kometnyi_karp",
- "Компас Тринадцати Орбит": "t10_concept_kompas_trinadtsati_orbit"
+ "Компас Тринадцати Орбит": "t10_concept_kompas_trinadtsati_orbit",
+ "Королевский звездолист": "t10_concept_korolevskii_zvezdolist",
+ "Коронный кварц": "t10_concept_koronnyi_kvarts",
+ "Кристалл небесного конструкта": "t10_concept_kristall_nebesnogo_konstrukta",
+ "Кристалл оси мироздания": "t10_concept_kristall_osi_mirozdaniia",
+ "Крыло Верховного архонта": "t10_concept_krylo_verkhovnogo_arkhonta",
+ "Накидка Проводника вечной ночи": "t10_concept_nakidka_provodnika_vechnoi_nochi",
+ "Осколок матрицы Архитектора": "t10_concept_oskolok_matritsy_arkhitektora",
+ "Осколок метеоритного голема": "t10_concept_oskolok_meteoritnogo_golema",
+ "Осколок руки Титана Перехода": "t10_concept_oskolok_ruki_titana_perekhoda"
 };
