@@ -244,8 +244,8 @@ function useTool(r,h){
   supply(r,'arrow',-1);h.hit(target,Math.round(h.stats().atk*(has(r,'adv_legendary_hunter')?1.4:1)));return 'Арбалет выстрелил по '+target.foe.name+'.';
  }
  if(tool.kind==='rune'){
-  var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=2;});}).filter(Boolean);
-  if(!candidates.length)return 'Нужно два одинаковых свитка ниже 5-го ранга.';
+  var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=(has(r,'adv_holy_rune')?2:1);});}).filter(Boolean);
+  if(!candidates.length)return has(r,'adv_holy_rune')?'Нужно два одинаковых свитка ниже 5-го ранга.':'Нужен хотя бы один свиток ниже 5-го ранга.';
   var sp=candidates[0],next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
   if(!next.length)return 'Подходящий свиток для объединения не найден.';
   if(!has(r,'adv_holy_rune')){
