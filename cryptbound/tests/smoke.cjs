@@ -961,6 +961,33 @@ test('Scout double shot damages target twice and grants temporary +50 evasion',(
  }finally{Math.random=random;}
 });
 
+test('An exposed ranged foe cannot be attacked until its corridor is dug',()=>{
+ const live=win.Crypt;live.debug.action('begin','executioner');
+ const run=live.state().run;
+ run.tiles.forEach(cell=>{cell.kind='empty';cell.revealed=false;cell.cleared=false;cell.foe=null;cell.drops=null;});
+ const origin=run.tiles[12];origin.kind='start';origin.revealed=true;origin.cleared=true;run.heroTile=12;
+ const archer=run.tiles[14];archer.kind='enemy';archer.revealed=true;
+ archer.foe={id:'test_archer',name:'Дальний стрелок',visual:'rat',hp:1000,maxHp:1000,
+  atk:1,baseAtk:1,def:0,guard:0,ranged:true,stun:0,burn:0,poison:0,bleed:0,
+  skill:{name:'Выстрел',every:99,kind:'shot'},cooldown:99,attackCooldown:2,loot:[],ep:0,gold:0};
+ run.hp=10000;run.ghost=null;run.summon=null;run.shield=0;
+ const hp=archer.foe.hp,turn=run.turn;
+ live.debug.action('strike',archer.id);
+ assert.equal(archer.foe.hp,hp,'No attack can cross a hidden tile');
+ assert.equal(run.turn,turn,'Blocked attacks do not consume a turn');
+ const passage=run.tiles[13];passage.revealed=true;passage.cleared=true;
+ live.debug.action('strike',archer.id);
+ assert.ok(archer.foe.hp<hp,'After excavation the target can be hit');
+});
+test('Every scroll rank appears on the same spellbook page',()=>{
+ const live=win.Crypt;live.debug.action('ui-panel','spells');
+ const book=el('overlay').innerHTML;
+ assert.doesNotMatch(book,/data-action="spell-page"/);
+ assert.doesNotMatch(book,/data-action="spell-rank"/);
+ assert.match(book,/6★/);
+ live.debug.action('close');
+});
+
 test('Loading a legacy save removes useless trinkets without deleting real gear',()=>{
  const live=win.Crypt,run=live.state().run;
  run.lootBag=[{id:99002,kind:'trinket',name:'Треснувшая пуговица',qty:1}];
