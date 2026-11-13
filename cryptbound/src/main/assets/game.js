@@ -628,42 +628,47 @@ function panelDialog(panel){
  var body=panel==='bag'||panel==='hero'?inventoryPanel():panel==='spells'?renderSpells():renderTalents();
  dialog('<div class="panel-heading"><h2>'+titles[panel]+'</h2><button class="panel-close" data-action="close" aria-label="Закрыть окно">×</button></div><div class="panel-body panel-'+panel+'">'+body+'</div>');uiPanel=panel;
 }
-function renderBackpackSupplies(){
- var pockets=(r.lootBag||[]).filter(function(x){return x.qty>0;});
- var scrolls=Object.entries(r.scrolls||{}).filter(function(x){return x[1]>0;});
- var souls=r.soulBag||[],forestItems=FE.ensure(r).items;
- var forestCount=Object.keys(forestItems).filter(function(k){return forestItems[k]>0;}).length;
- var cards='<div class="backpack-supply-grid">'+
-  '<button class="backpack-consumable" data-action="potion" '+(!r.potions||r.hp>=stats().hp?'disabled':'')+'>'+uiIcon('potion')+'<b>Целебный эликсир</b><small>×'+r.potions+'</small></button>'+
-  pockets.map(function(x){return '<button class="backpack-consumable '+(x.kind==='trinket'?'junk':'')+'" data-action="'+(x.kind==='trinket'?'pocket-info':'use-pocket')+'" data-id="'+x.id+'">'+uiIcon(x.kind==='trinket'?'bag':'potion')+'<b>'+esc(x.name)+'</b><small>×'+x.qty+'</small></button>';}).join('')+
-  (r.preparedPotions||[]).map(function(id,index){var p=SYS.byPotion[id];return p?'<button class="backpack-consumable" data-action="use-prepared" data-id="'+index+'">'+uiIcon('potion')+'<b>'+esc(p.name)+'</b><small>Готовое зелье</small></button>':'';}).join('')+
- '</div>';
- if(scrolls.length)cards+='<div class="backpack-section-title">Свитки</div><div class="backpack-supply-grid">'+
-  scrolls.map(function(x){var sp=SYS.bySpell[x[0]];return '<button class="backpack-consumable" data-action="spell-detail" data-id="'+esc(x[0])+'">'+uiIcon('scroll')+'<b>'+esc(sp?sp.name:x[0])+'</b><small>×'+x[1]+'</small></button>';}).join('')+'</div>';
- if(forestCount)cards+='<div class="backpack-section-title">Лесные предметы и ловушки</div><div class="backpack-forest">'+FE.inventory(r)+'</div>';
- if(souls.length)cards+='<div class="backpack-section-title">Собранные души</div><div class="backpack-forest">'+
-  souls.map(function(x){return '<div class="forest-pocket-row">'+uiIcon('skull')+'<span><b>'+esc(x.name)+'</b></span><button class="btn small" data-action="consume-soul" data-id="'+x.id+'">Применить</button></div>';}).join('')+'</div>';
- if((r.questItems||[]).length)cards+='<div class="backpack-section-title">Квестовые предметы</div><div class="backpack-supply-grid">'+
-  r.questItems.map(function(x){return '<div class="backpack-consumable">'+uiIcon('key')+'<b>'+esc(x)+'</b></div>';}).join('')+'</div>';
- if((r.journalNotes||[]).length)cards+='<div class="backpack-section-title">Записки и находки</div>'+
-  r.journalNotes.map(function(x){return '<p class="backpack-note">'+esc(x)+'</p>';}).join('');
- return '<section class="backpack-supplies"><div class="inventory-divider"><b>Расходники и находки</b></div>'+cards+'</section>';
+function backpackExtraSlots(){
+ var result=[],add=function(action,id,name,art,qty){
+  result.push('<button class="item bag-extra-item" data-action="'+action+'"'+(id==null?'':' data-id="'+esc(String(id))+'"')+
+   ' title="'+esc(name)+'" aria-label="'+esc(name)+'">'+art+
+   (qty!=null?'<b class="bag-item-count">×'+qty+'</b>':'')+
+   '<span>'+esc(name)+'</span></button>');
+ };
+ if(r.potions>0)add('potion',null,'Целебный эликсир',uiIcon('potion'),r.potions);
+ (r.preparedPotions||[]).forEach(function(id,index){
+  var p=SYS.byPotion[id];if(p)add('use-prepared',index,p.name,uiIcon('potion'),1);
+ });
+ (r.lootBag||[]).filter(function(x){return x.qty>0&&x.kind!=='trinket';}).forEach(function(x){
+  add('use-pocket',x.id,x.name,uiIcon('potion'),x.qty);
+ });
+ var forest=FE.ensure(r).items;
+ Object.keys(forest).filter(function(id){return forest[id]>0;}).forEach(function(id){
+  var def=FE.itemDefs[id]||[id,'F02_001'];
+  var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id);
+  add(usable?'forest-use':'forest-item-info',id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
+ });
+ (r.soulBag||[]).forEach(function(x){add('consume-soul',x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
+ (r.questItems||[]).forEach(function(x){add('quest-item-info',x,x,uiIcon('key'),null);});
+ (r.journalNotes||[]).forEach(function(x,index){add('note-info',index,x,uiIcon('journal'),null);});
+ if(HB.owned(s.meta))add('hunter-book',null,'Охотничий бестиарий',HB.bookIcon(),null);
+ return {html:result.join(''),count:result.length};
 }
 function usePocket(id){
  var obj=(r.lootBag||[]).find(function(x){return x.id===Number(id)&&x.qty>0;});if(!obj||obj.kind==='trinket')return;
  var hp=obj.kind==='vial-hp',maximum=hp?stats().hp:stats().mp,old=hp?r.hp:r.mp;
  if(old>=maximum){toast(hp?'Здоровье уже полное.':'Мана уже полная.');return;}
- var restored=Math.min(maximum-old,rand(1,2));
+ var restored=Math.min(maximum-old,hp?rand(5,20):rand(3,10));
  if(hp)r.hp+=restored;else r.mp+=restored;
  obj.qty--;if(obj.qty===0)r.lootBag=r.lootBag.filter(function(x){return x!==obj;});
  log(obj.name+': +'+restored+(hp?' HP.':' MP.'));finishAction();
 }
 function inventoryPanel(){
- var st=stats(),items=r.items.slice().sort(function(a,b){return b.rarity-a.rarity;});
- var empty='';for(var i=items.length;i<Math.max(30,Math.ceil(items.length/5)*5);i++)empty+='<div class="inventory-empty" aria-hidden="true"></div>';
- return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Экипировка</b><span>'+r.items.length+'/48</span></div><div class="inventory-grid">'+itemGrid(items)+empty+'</div>'+
- (HB.owned(s.meta)?'<div class="hb-inventory-access"><button class="hb-special-item" data-action="hunter-book">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Особый предмет · постоянный · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов</small></span><strong>Открыть</strong></button></div>':'')+
- renderBackpackSupplies()+'<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы для крафта</button>';
+ var st=stats(),items=r.items.filter(function(it){return !equipped(it.id);}).sort(function(a,b){return b.rarity-a.rarity;});
+ var extra=backpackExtraSlots(),count=items.length+extra.count,empty='';
+ for(var i=count;i<Math.max(20,Math.ceil(count/5)*5);i++)empty+='<div class="inventory-empty" aria-hidden="true"></div>';
+ return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Рюкзак</b><span>'+count+' предметов · без ограничения</span></div><div class="inventory-grid">'+itemGrid(items)+extra.html+empty+'</div>'+
+ '<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы для крафта</button>';
 }
 function gearArt(it,slot){
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
@@ -828,7 +833,7 @@ function magicDialog(){panelDialog('spells');}
 function itemGrid(items){
  return items.map(function(i){
   return '<button class="item r'+i.rarity+(r.bagSelected===i.id?' selected':'')+'" data-action="item-select" data-id="'+i.id+'" aria-label="'+esc(i.name)+'" title="'+esc(i.name)+'">'+
-   (equipped(i.id)?'<span class="equipped-tag">НАДЕТО</span>':'')+
+   
     gearArt(i)+
   '<span>'+esc(i.name)+(i.plus?' +'+i.plus:'')+'</span></button>';
  }).join('');
@@ -2828,7 +2833,9 @@ function action(name,id){
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='use-pocket'){usePocket(id);return;}
- if(name==='pocket-info'){var trinket=(r.lootBag||[]).find(function(x){return x.id===Number(id);});if(trinket)dialog('<h2>'+esc(trinket.name)+'</h2><p>'+esc(trinket.description)+'</p><button class="btn wide" data-action="close">Закрыть</button>');return;}
+ if(name==='forest-item-info'){var forestDef=FE.itemDefs[id];if(forestDef)dialog('<h2>'+esc(forestDef[0])+'</h2><p>Находка хранится в рюкзаке и может пригодиться в лесных событиях.</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
+ if(name==='quest-item-info'){dialog('<h2>'+esc(id)+'</h2><p>Квестовый предмет. Используется в подходящем событии.</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
+ if(name==='note-info'){var note=(r.journalNotes||[])[Number(id)];if(note)dialog('<h2>Запись путешественника</h2><p>'+esc(note)+'</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
  if(name==='chamber-exit'){if(r)r.chamberActive=null;close();draw();save();return;}
  if(name==='inspect-chamber-enemy'){inspectUnit('chamber-enemy',id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}
