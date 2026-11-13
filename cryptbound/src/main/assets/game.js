@@ -519,6 +519,7 @@ function activeTileView(t){
    summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
+ if(t.kind==='trap'&&t.trapSpent)return '<button class="tile tile-discovered tile-trap trap-spent" data-action="move-hero" data-id="'+t.id+'" title="Обезвреженный капкан">'+icon('trap')+hero+'</button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
   return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
@@ -537,7 +538,7 @@ function activeTileView(t){
   damageBadge(t.foe)+enemyDebuffs(t.foe):'';
  return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&(r.pendingSpell||r.pendingSkill||r.pendingForestUse)?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
-  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
+  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+(t.kind==='trap'?hero:'')+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+(t.kind==='exit'&&!r.key?'<span class="stairs-locked" title="Нужен ключ">'+uiIcon('key')+' ✕</span>':'')+'</button>';
 }
 function inspectUnit(kind,id){
@@ -642,6 +643,8 @@ function renderBackpackSupplies(){
   souls.map(function(x){return '<div class="forest-pocket-row">'+uiIcon('skull')+'<span><b>'+esc(x.name)+'</b></span><button class="btn small" data-action="consume-soul" data-id="'+x.id+'">Применить</button></div>';}).join('')+'</div>';
  if((r.questItems||[]).length)cards+='<div class="backpack-section-title">Квестовые предметы</div><div class="backpack-supply-grid">'+
   r.questItems.map(function(x){return '<div class="backpack-consumable">'+uiIcon('key')+'<b>'+esc(x)+'</b></div>';}).join('')+'</div>';
+ if((r.journalNotes||[]).length)cards+='<div class="backpack-section-title">Записки и находки</div>'+
+  r.journalNotes.map(function(x){return '<p class="backpack-note">'+esc(x)+'</p>';}).join('');
  return '<section class="backpack-supplies"><div class="inventory-divider"><b>Расходники и находки</b></div>'+cards+'</section>';
 }
 function usePocket(id){
@@ -658,7 +661,7 @@ function inventoryPanel(){
  var empty='';for(var i=items.length;i<Math.max(30,Math.ceil(items.length/5)*5);i++)empty+='<div class="inventory-empty" aria-hidden="true"></div>';
  return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Экипировка</b><span>'+r.items.length+'/48</span></div><div class="inventory-grid">'+itemGrid(items)+empty+'</div>'+
  (HB.owned(s.meta)?'<div class="hb-inventory-access"><button class="hb-special-item" data-action="hunter-book">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Особый предмет · постоянный · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов</small></span><strong>Открыть</strong></button></div>':'')+
- renderBackpackSupplies()+'<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы, души и записи</button>';
+ renderBackpackSupplies()+'<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы для крафта</button>';
 }
 function gearArt(it,slot){
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
@@ -835,7 +838,7 @@ function compareStat(it,other,key){
 }
 function renderBag(){
  var materials=Object.entries(r.materials||{}).filter(function(x){return x[1]>0;});
- var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>'],['Записи похода',(r.journalNotes||[]).map(function(x){return '<p>'+esc(x)+'</p>';}).join('')||'<p>Записей пока нет.</p>']];
+ var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>']];
  return '<div class="supply-ledger"><div class="supply-totals"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('scroll')+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</span><span>'+uiIcon('potion')+r.potions+'</span></div>'+sections.map(function(x){return '<section><h3>'+x[0]+'</h3>'+x[1]+'</section>';}).join('')+'</div>';
 }
 function renderMenu(){
@@ -1563,6 +1566,10 @@ function useSkill(chosenTarget){
  }
  r.pendingSkill=null;
  var t=cave?(selected?{foe:selected,roomGuard:true}:caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):selected||target(),st=stats(),damage=0;
+ if(t&&['executioner','guardian','assassin'].includes(r.class)){
+  if(!counterBeforeHero(t.foe,t.roomGuard?null:t,cave&&cave.room)||!r)return;
+  if(t.foe.hp<=0){finishAction();return;}
+ }
  function skillKill(target){if(target.roomGuard){target.foe.hp=Math.max(0,target.foe.hp);cave.room.guardHp=cave.room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);}else kill(target);}
  if(r.class==='necromancer'){
   var creature={name:'Костяной страж',def:2,specialCooldown:4,
@@ -2030,6 +2037,7 @@ function triggerTrap(t){
  log('Капкан захлопнулся! −'+dmg+' HP, кровотечение до обезвреживания.');
  }
  function reveal(id){
+ if(r.trappedTile!=null){toast('Сперва обезвредьте капкан.');return;}
  var t=tile(id);if(!t||t.revealed)return;
  var access=CR.exploreStatus(t,r.tiles);
  if(!access.ok){toast(access.reason);return;}
@@ -2799,7 +2807,7 @@ function action(name,id){
  if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
  if(name==='ui-panel'){panelDialog(['bag','hero','spells','talents'].includes(id)?id:'bag');return;}
  if(name==='gear-sets'){dialog('<div class="panel-heading"><h2>Комплекты и развитие</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div>'+renderHero());return;}
- if(name==='bag-details'){dialog('<div class="panel-heading"><h2>Припасы и записи</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="Назад в рюкзак">←</button></div>'+renderBag());return;}
+ if(name==='bag-details'){dialog('<div class="panel-heading"><h2>Материалы</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="Назад в рюкзак">←</button></div>'+renderBag());return;}
  if(name==='effect-info'){var effect=effectList().find(function(x){return x[0]===id;});if(effect)dialog('<h2>'+effect[1]+'</h2><p>'+effect[2]+'</p><p>Осталось: '+r[id]+'</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='ghost-info'){dialog('<h2>Призрачный страж</h2><p>Здоровье '+(r.ghost?r.ghost.hp:0)+'. Атакует раз в три хода и сопровождает героя до гибели.</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='key-info'){toast('Ключ найден. Спуститесь по лестнице на следующий этаж.');return;}
