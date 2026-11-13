@@ -54,6 +54,7 @@ jobs:
           node --check cryptbound/src/main/assets/imported_art.js
           node --check cryptbound/src/main/assets/combat_feedback.js
           node --check cryptbound/src/main/assets/hunter_bestiary.js
+          node --check cryptbound/src/main/assets/forest_encounters.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -63,6 +64,7 @@ jobs:
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
           node cryptbound/tests/hunter_book.cjs
+          node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
@@ -73,8 +75,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.6-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.6-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.7-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.7-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -87,7 +89,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.6 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.6 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.6 — исправленный разворот бестиария" --notes "Исправление разворота Охотничьего бестиария: полностью заменены конфликтующие CSS, страницы получили фиксированные границы, прокручиваемый список с компактными строками, читаемый тёмный текст на пергаменте и отдельные карточки этапов. Слева прогресс зверей, справа их штатные idle-спрайты и описание. Дополнительные вкладки Трофеи и Бонусы оформлены как страницы книги. Добавлены браузерные проверки геометрии экрана в Chrome для портретных размеров 544×915 и 390×844. Сохранены функции предыдущей версии: прицеливание заклинаний, иконки сапог и колец, лесная генерация."
+          if ! gh release view cryptbound-v0.7.7 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.7 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.7 — 50 лесных событий" --notes "50 игровых событий Лесной окраины с художественной графикой из 192 прозрачных PNG: цепочка Рыжуха → 3 волка → Лесная монетка → колодец, капканы с выбором цели, карты/топор/верёвка/письмо, раскрываемые тайники, встречи с охотниками и друидами, четыре охоты на альфа-зверей 2×2 с общей полосой здоровья, сюжет больного древа. Уникальные награды не дублируются, повторяемые события сохраняют выбранную частоту; трофеи бестиария закрепляются на безопасном портале. Сохранены вертикальный рисованный интерфейс, выбор целей свитков и вся графика v0.7.6. Автоматические проверки 50 событий, 192 спрайтов и сохранений."
           fi
-          gh release upload cryptbound-v0.7.6 dist/Cryptbound-v0.7.6-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.7 dist/Cryptbound-v0.7.7-offline-Android.apk dist/SHA256SUMS.txt --clobber

@@ -1,0 +1,43 @@
+/* Forest Outskirts: illustrated choices in the existing painted DD-style dialogs.
+   All assets are local 128x128 transparent PNGs, no emoji placeholders. */
+.tile-forest-event{position:relative;isolation:isolate}
+.tile-forest-event .forest-event-image,
+.tile-hunter-corpse .forest-event-image,
+.tile-forest-well .forest-event-image{display:block;width:90%;height:87%;margin:auto;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(1px 3px 1px #0007);pointer-events:none}
+.forest-event-dialog{max-height:81dvh;overflow-y:auto;padding:2px 6px 6px;text-align:center;scrollbar-color:#92714b #2e211b;scrollbar-width:thin}
+.forest-event-dialog .sheet-kicker{color:#bd9463;font:700 11px Georgia,serif;letter-spacing:.08em}
+.forest-event-dialog h2{margin:6px 0 7px;color:#e4c898;font:700 clamp(20px,5vw,28px)/1.13 Georgia,serif;text-shadow:1px 2px #0a0908}
+.forest-event-dialog p{margin:10px 3px!important;color:#e2cfae!important;font:14px/1.4 Georgia,serif!important;text-align:left}
+.forest-event-picture{display:flex;align-items:center;justify-content:center;position:relative;width:100%;height:clamp(128px,26dvh,222px);min-height:110px;margin:5px auto;border:3px solid #946f45;box-shadow:inset 0 0 0 2px #18150d;overflow:hidden;background:radial-gradient(ellipse at 50% 80%,#504638,#302b24 46%,#171611 96%)}
+.forest-event-picture:after{content:'';pointer-events:none;position:absolute;inset:0;background:linear-gradient(transparent 78%,#080a0770)}
+.forest-event-picture .forest-event-image{display:block;object-fit:contain;width:min(66%,196px);height:90%;image-rendering:pixelated;filter:drop-shadow(3px 5px 2px #06080490)}
+.forest-event-dialog .btn{white-space:normal;min-height:42px;height:auto;padding:8px 12px;line-height:1.3;text-align:center}
+.forest-event-dialog .btn[disabled]{opacity:.62;cursor:not-allowed}
+.forest-reward-summary{max-height:75dvh;overflow:auto;text-align:left}
+.forest-reward-summary h2{color:#e1bd87;margin:8px 0}
+.forest-reward-summary p{white-space:normal;overflow-wrap:break-word}
+.forest-pocket-row{display:flex;align-items:center;gap:9px;padding:7px 4px;min-height:56px;border-bottom:1px solid #7c5d39;background:linear-gradient(90deg,#2b251e,#181613);color:#e3d1ae}
+.forest-pocket-icon{display:block;flex:none;width:45px;height:43px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 2px #0008)}
+.forest-pocket-row>span{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px;text-align:left}
+.forest-pocket-row b{font:700 13px/1.2 Georgia,serif;color:#ead8ac}
+.forest-pocket-row small{font:12px Georgia;color:#d3ae7b}
+.forest-pocket-row .btn{min-width:74px;flex:none}
+.supply-ledger .forest-pocket-row{max-width:100%}
+/* One 2x2 alpha has one foe and one HP pool, never four separately killed enemies. */
+.tile.tile-forest-alpha{overflow:hidden;position:relative;z-index:2}
+.tile-forest-alpha .forest-alpha-quarter{position:absolute;inset:0;display:block;overflow:hidden;pointer-events:none}
+.tile-forest-alpha .forest-alpha-quarter img{display:block;position:absolute!important;left:0;top:0;width:200%!important;max-width:none!important;min-width:200%!important;height:200%!important;max-height:none!important;object-fit:contain!important;image-rendering:pixelated!important;filter:drop-shadow(0 2px 1px #0008)}
+.tile-forest-alpha .forest-alpha-quarter.alpha-q1 img{left:-100%!important}
+.tile-forest-alpha .forest-alpha-quarter.alpha-q2 img{top:-100%!important}
+.tile-forest-alpha .forest-alpha-quarter.alpha-q3 img{top:-100%!important;left:-100%!important}
+.tile-forest-alpha .unit-corner{position:absolute;z-index:3}
+@media(max-width:440px){
+ .forest-event-dialog{padding:1px 2px 6px}
+ .forest-event-dialog h2{font-size:20px}
+ .forest-event-dialog p{font-size:12px!important}
+ .forest-event-picture{height:clamp(115px,23dvh,175px)}
+ .forest-event-picture .forest-event-image{width:min(74%,160px)}
+ .forest-pocket-icon{width:34px;height:37px}
+ .forest-pocket-row b{font-size:11px}
+ .forest-pocket-row .btn{font-size:10px;min-width:64px;padding:5px}
+}
