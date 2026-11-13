@@ -82,5 +82,18 @@ window.CryptConceptMaterials={
  "Флакон адского реактива": "t5_concept_flakon_adskogo_reaktiva",
  "Ядро пожирателя стен": "t5_concept_iadro_pozhiratelia_sten",
  "Кандалы Главного палача": "t5_concept_kandaly_glavnogo_palacha",
- "Карта Верховного стратега": "t5_concept_karta_verkhovnogo_stratega"
+ "Карта Верховного стратега": "t5_concept_karta_verkhovnogo_stratega",
+ "Хлыст Пастуха Стаи": "t5_concept_khlyst_pastukha_stai",
+ "Клеймо Архигорновика": "t5_concept_kleimo_arkhigornovika",
+ "Колба верховного ядовара": "t5_concept_kolba_verkhovnogo_iadovara",
+ "Маточное ядро котла": "t5_concept_matochnoe_iadro_kotla",
+ "Огнестойкий клык гончей": "t5_concept_ognestoikii_klyk_gonchei",
+ "Осколок печати Малграса": "t5_concept_oskolok_pechati_malgrasa",
+ "Печать легата марша": "t5_concept_pechat_legata_marsha",
+ "Пепел жертвенной печати": "t5_concept_pepel_zhertvennoi_pechati",
+ "Посох Архимага Малграса": "t5_concept_posokh_arkhimaga_malgrasa",
+ "Префектская сигилла": "t5_concept_prefektskaia_sigilla",
+ "Сердце шлаковой норы": "t5_concept_serdtse_shlakovoi_nory",
+ "Сердце Везриного котла": "t5_concept_serdtse_vezrinogo_kotla",
+ "Шеврон Железного легиона": "t5_concept_shevron_zheleznogo_legiona"
 };
