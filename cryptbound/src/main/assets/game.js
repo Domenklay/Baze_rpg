@@ -304,6 +304,7 @@ function fairyRemark(kind){
 function startFloor(){
  heroMoveToken++;
  r.pendingSpell=null;
+ r.pendingForestUse=null;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
  r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
@@ -472,7 +473,7 @@ function activeTileView(t){
  if(t.forestAlphaAnchor!=null){
   var anchor=r.tiles[t.forestAlphaAnchor];
   if(anchor&&anchor.foe&&anchor.foe.hp>0)return '<button class="tile tile-discovered tile-danger tile-forest-alpha'+(r.pendingSpell?' spell-target-valid':'')+
-   '" data-action="'+(r.pendingSpell?'cast-target':'strike')+'" data-id="'+anchor.id+'" title="'+esc(anchor.foe.name)+'">'+forestAlphaVisual(t)+'</button>';
+   '" data-action="'+(r.pendingSpell?'cast-target':r.pendingForestUse?'forest-target':'strike')+'" data-id="'+anchor.id+'" title="'+esc(anchor.foe.name)+'">'+forestAlphaVisual(t)+'</button>';
  }
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
  var clearAge=Date.now()-(r.clearAnimationStarted||0),opening=t.autoOpened!=null&&clearAge>=0&&clearAge<t.autoOpened*35+260;
@@ -494,12 +495,12 @@ function activeTileView(t){
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
  var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
- var action=alive?(r.pendingSpell?'cast-target':'strike'):t.kind==='exit'?'descend':'pickup';
+ var action=alive?(r.pendingSpell?'cast-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&r.pendingSpell?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&(r.pendingSpell||r.pendingForestUse)?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
@@ -565,6 +566,9 @@ function renderMaze(){
  var focus=room?null:target(),foe=focus&&focus.foe;
  var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+foe.atk+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
  if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
+ if(r.pendingForestUse){
+  encounter='<div class="spell-target-banner"><span><b>Выбор цели</b> · Охотничий капкан</span><button data-action="cancel-forest-target">Отмена</button></div>';
+ }
  if(r.pendingSpell){
   var spellTarget=SPELLS.find(function(x){return x.id===r.pendingSpell;});
   encounter='<div class="spell-target-banner"><span><b>Выбор цели</b> · '+esc(spellTarget?spellTarget.name:'Заклинание')+'</span><button data-action="cancel-target">Отмена</button></div>';
@@ -1732,10 +1736,20 @@ function forestChoose(id){
 }
 function forestPackDialog(){if(!r)return;dialog('<h2>Походный карман</h2><p>Лесные находки, ловушки и предметы для связанных событий.</p>'+
  FE.inventory(r)+'<button class="btn wide" data-action="close">Закрыть</button>');}
-function forestUse(id){
- var used=FE.use(r,id,forestApi(null));
+function forestUse(id,chosenTarget){
+ if(id==='bleed_trap'||id==='stun_trap'){
+  if(chosenTarget==null){
+   if(!target()){toast('Сначала откройте хотя бы одного противника.');return;}
+   r.pendingForestUse=id;close();draw();save();toast('Выберите цель для охотничьего капкана.');return;
+  }
+  var selected=tile(chosenTarget);
+  if(!selected||!selected.revealed||!selected.foe||selected.foe.hp<=0){toast('Капкан можно применить только на живого обнаруженного врага.');return;}
+ }
+ var provider=forestApi(null);
+ if(chosenTarget!=null)provider.target=function(){return tile(chosenTarget);};
+ var used=FE.use(r,id,provider);
  if(!used.ok){toast(used.message||'Применение невозможно');return;}
- log(used.message);close();finishAction();
+ r.pendingForestUse=null;log(used.message);close();finishAction();
  if(r)toast(used.message);
 }
 function forestWellDialog(id){
@@ -2601,6 +2615,9 @@ function action(name,id){
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
  if(name==='cancel-target'){r.pendingSpell=null;draw();save();return;}
+ if(name==='cancel-forest-target'){r.pendingForestUse=null;draw();save();return;}
+ if(name==='forest-target'){if(r.pendingForestUse)forestUse(r.pendingForestUse,id);return;}
+ if(r.pendingForestUse&&name!=='battle-log'){toast('Выберите подсвеченного врага либо отмените ловушку.');return;}
  if(name==='cast-target'){if(r.pendingSpell)cast(r.pendingSpell,id);return;}
  if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
  if(name==='ui-panel'){panelDialog(['bag','hero','spells','talents'].includes(id)?id:'bag');return;}
