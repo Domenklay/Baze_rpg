@@ -1,4 +1,4 @@
-/* Original artwork from RPG Clicker Infinity, embedded for offline use. */
+/* Original RPG Clicker Infinity art embedded for offline dungeon resources. */
 window.CryptConceptMaterials={
  "Малахит": "t3_concept_malakhit",
  "Медный мох": "t3_concept_mednyi_mokh",
@@ -11,5 +11,15 @@ window.CryptConceptMaterials={
  "Ядро Первого механизма врат": "t10_concept_iadro_pervogo_mekhanizma_vrat",
  "Ключ Главного ключника": "t10_concept_kliuch_glavnogo_kliuchnika",
  "Фрагмент печати высшего хранителя": "t10_concept_fragment_pechati_vysshego_khranitelia",
- "Ключ слуги Архитектора": "t10_concept_kliuch_slugi_arkhitektora"
+ "Ключ слуги Архитектора": "t10_concept_kliuch_slugi_arkhitektora",
+ "Арбалетная пружина дворфов": "t3_concept_arbaletnaia_pruzhina_dvorfov",
+ "Чаша архижреца Ковки": "t3_concept_chasha_arkhizhretsa_kovki",
+ "Чеканная пластина королевской гвардии": "t3_concept_chekannaia_plastina_korolevskoi_gvardii",
+ "Детонатор Дренна": "t3_concept_detonator_drenna",
+ "Едкий шахтный реагент": "t3_concept_edkii_shakhtnyi_reagent",
+ "Фрагмент сердечника живого бура Хорвена": "t3_concept_fragment_serdechnika_zhivogo_bura_khorvena",
+ "Герб Первого Короля": "t3_concept_gerb_pervogo_korolia",
+ "Горновой угорь": "t3_concept_gornovoi_ugor",
+ "Изношенная медная оковка кирки": "t3_concept_iznoshennaia_mednaia_okovka_kirki",
+ "Клеймо инквизитора Орда": "t3_concept_kleimo_inkvizitora_orda"
 };
