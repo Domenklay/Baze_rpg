@@ -28,3 +28,10 @@ body,button,input,select,textarea{font-family:var(--ui-font)}#app,#overlay{font-
 .unit-atk.damage-reduced{color:#f28b80!important;text-shadow:0 1px 2px #130807,0 0 4px #6b1b12}
 .unit-atk.damage-boosted{color:#8be3a2!important;text-shadow:0 1px 2px #06140a,0 0 4px #125d30}
 .unit-atk.damage-normal{color:#e7d3aa}
+
+/* Combat state overlays; neither statuses nor lock glyphs intercept a tap. */
+.tile .enemy-debuff-strip{position:absolute;z-index:12;left:2px;right:2px;top:29%;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;pointer-events:none}
+.tile .enemy-debuff-strip>span{font:700 10px/1.1 Georgia,serif;color:#ffd5ad;background:#281819e8;border:1px solid #8c4744;border-radius:3px;padding:1px 3px;text-shadow:0 1px #100a0a;white-space:nowrap}
+.tile .stairs-locked{position:absolute;z-index:13;left:50%;top:48%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:2px;pointer-events:none;color:#f0a49c;background:#220f10df;border:1px solid #b6655a;border-radius:5px;padding:4px 6px;font:900 14px Georgia,serif;text-shadow:0 1px 2px #000}
+.tile .stairs-locked .ui-icon{width:18px;height:18px}
+.tile .tile-loot>.ui-icon,.tile-loot>.ui-icon{width:53%;height:53%;color:#c9a475;filter:drop-shadow(0 2px 3px #000)}
