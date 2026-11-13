@@ -98,7 +98,7 @@ function stats(){
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
  a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)));
- hp=Math.round(hp*(1+(lvl('war_knight')*.10)+(lvl('war_paladin')>0?.10:0)));
+ hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
@@ -874,7 +874,10 @@ function renderTalents(){
  var graph=nodes.map(function(t){var pos=positions[t.id];return '<button class="talent-dot '+(lvl(t.id)?'learned ':'')+(!talentUnlocked(t)?'locked ':'')+(selected.id===t.id?'selected':'')+'" style="left:'+pos.x+'px;top:'+pos.y+'px" data-action="title-detail" data-id="'+t.id+'"><span>'+uiIcon(t.tree===2?'compass':t.tree===1?'staff':'sword')+'</span><b>'+esc(t.name)+'</b><small>'+(t.rank===5?(lvl(t.id)?'★':'0/1'):lvl(t.id)+'/3')+'</small></button>';}).join('');
  var full=lvl(selected.id)>=selected.max_level;
  var reason=talentPathConflict(selected)?'Другая ветка уже выбрана':!talentUnlocked(selected)?'Сначала изучите одно из предыдущих званий':full?'Звание изучено':r.ep<levelCost(selected)?'Недостаточно очков исследования':'Выбранная ветка сохранится до конца экспедиции';
- var advanced=selected.rank===5&&full?'<div class="title-mastery"><strong>Улучшения V ранга · каждое по '+levelCost(selected)+' ОИ</strong><div class="title-mastery-grid">'+TR.masterKeys(selected).map(function(key){var l=TR.rank5(r,selected.id,key);return '<button data-action="title-mastery" data-id="'+selected.id+':'+key+'" '+(l>=3||r.ep<levelCost(selected)?'disabled':'')+'>'+({atk:'Атака',pow:'Магия',hp:'Здоровье',mp:'Мана'}[key]||key)+' '+l+'/3</button>';}).join('')+'</div></div>':'';
+ var advanced=selected.rank===5&&full?'<div class="title-mastery"><strong>Улучшения V ранга · каждое по '+levelCost(selected)+' ОИ</strong><div class="title-mastery-grid">'+TR.masterKeys(selected).map(function(key){
+  var l=TR.rank5(r,selected.id,key),vec=TR.masteryStatValues(selected,key),current=l?vec[l-1]:0,next=l>=3?vec[2]:vec[l],stat=({atk:'Атака',pow:'Магия',hp:'Здоровье',mp:'Мана'}[key]||key);
+  return '<button data-action="title-mastery" data-id="'+selected.id+':'+key+'" '+(l>=3||r.ep<levelCost(selected)?'disabled':'')+'><b>'+stat+' '+l+'/3</b><small>+'+current+(l>=3?' · МАКС':' → +'+next)+'</small></button>';
+ }).join('')+'</div></div>':'';
  return '<div class="talent-tabs">'+['Воин','Маг','Авантюрист'].map(function(n,i){return '<button data-action="tree" data-id="'+i+'" class="'+(tree===i?'active':'')+'">'+uiIcon(['sword','staff','compass'][i])+n+'</button>';}).join('')+'</div><div class="talent-scroll"><div class="talent-canvas" style="width:'+canvasWidth+'px;height:'+canvasHeight+'px"><svg class="talent-lines" style="width:'+canvasWidth+'px;height:'+canvasHeight+'px" viewBox="0 0 '+canvasWidth+' '+canvasHeight+'">'+lines+'</svg>'+graph+'</div></div><div class="talent-inspector"><div><h3>'+esc(selected.name)+'</h3><p>'+esc(selected.mechanic)+'</p><small>'+esc(selected.stats)+'</small><p class="fine">'+reason+'</p></div><button class="btn gold" data-action="talent" data-id="'+selected.id+'" '+(full||r.ep<levelCost(selected)||!talentUnlocked(selected)?'disabled':'')+'>'+(full?'Изучено':levelCost(selected)+' ✧')+'</button></div>'+advanced+'<div class="talent-balance">Очки исследования <b>'+r.ep+'</b><span>Перетащите дерево для обзора всех путей</span></div>';
 }
 
@@ -1762,8 +1765,10 @@ function spellPower(sp,st){
 }
 
 function advancedCast(sp,chosenTarget){
+ var key=sp.kind;
+ if(!['blessing','earthgate','aoe','burnall','freezeall','drainall','earthquake','healshield','holy','weakness','lastlight','timestop','sunfall','oceanrewind','worldrewrite','timeloop','firstlight','soulcovenant'].includes(key))return false;
  var st=stats(),magic=spellPower(sp,st);
- var foes=enemies().filter(reachableEnemy),key=sp.kind;
+ var foes=enemies().filter(reachableEnemy);
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
    if(!t||!t.foe||t.foe.hp<=0)return;
@@ -1877,7 +1882,7 @@ function cast(id,chosenTarget){
  var tar=chosenTarget!=null?tile(chosenTarget):target(),st=stats();
  var magic=spellPower(sp,st);
  if(sp.kind==='heal'){magic=Math.ceil(magic*(1+bonus('healPower')*.01));r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
- else if(sp.kind==='shield'){magic=Math.ceil(magic*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
+ else if(sp.kind==='shield'){magic=Math.ceil(magic*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.shield+=magic;log((r.titleAuroraTriggered?'Барьер Авроры: ':'Магическая защита: ')+magic+' щита.');}
  else if(sp.kind==='reveal'){
   var count=0;
   for(var j=0;j<sp.base;j++){
