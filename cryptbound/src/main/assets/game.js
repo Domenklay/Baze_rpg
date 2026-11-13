@@ -494,7 +494,7 @@ function reachableEnemy(t){
  }}
  return false;
 }
-function target(){return enemies().find(reachableEnemy)||enemies()[0]||null;}
+function target(){return enemies().find(reachableEnemy)||null;}
 function tile(n){return r.tiles[Number(n)]||null;}
 function icon(kind,foe){return window.CryptArt.tile(kind,foe);}
 function hud(){
@@ -612,7 +612,7 @@ function renderMaze(){
  var artPair=[0,2,4,6,0,4,6,2,6,10][r.actIndex||0];
  var room=activeRoom();
  var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
- var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+'" '+(ready<skill.turns||r.mp<skill.cost||(room&&r.class==='scout')?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small>'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
+ var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+'" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small>'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
  var focus=room?null:target(),foe=focus&&focus.foe;
  var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+incomingDamage(foe.atk)+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
  if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
