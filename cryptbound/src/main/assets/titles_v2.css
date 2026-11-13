@@ -1,0 +1,18 @@
+/* Title tree V2 and 4th (unequipped) explorer tool slot. */
+.battle-dock .quick-spells{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,35px);gap:4px;max-width:100%;margin:0;padding:0}
+.battle-dock .quick-spells .quick-spell{height:35px;min-height:35px;min-width:0;max-width:100%}
+.battle-dock .quick-spells .adventurer-tool{color:#d1b17c;border-color:#977341;background:radial-gradient(ellipse,#4c3920,#211d1a 70%)}
+.battle-dock .quick-spells .adventurer-tool .ui-icon{width:23px;height:23px;filter:drop-shadow(0 1px 2px #000)}
+.battle-dock .quick-spells .adventurer-tool small{right:2px;bottom:0;background:#1d1a15a0;border-radius:2px;padding:0 2px;color:#f1db9d}
+.battle-dock .quick-spells .adventurer-tool.ability-empty{opacity:.6}
+.panel-talents .talent-scroll{max-height:49dvh;overscroll-behavior:contain}
+.panel-talents .talent-dot{width:119px;min-height:62px;gap:2px}
+.panel-talents .talent-dot b{font:10px/1.1 Georgia,serif;overflow-wrap:break-word}
+.panel-talents .talent-dot>span{width:34px;height:34px}
+.panel-talents .talent-dot .ui-icon{width:23px;height:23px}
+.title-mastery{margin:9px 0;padding:9px;border-top:1px solid #89714c;border-bottom:1px solid #89714c;color:#bba278}
+.title-mastery>strong{display:block;font:12px Georgia,serif;margin-bottom:8px}
+.title-mastery-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.title-mastery-grid button{border:1px solid #9d7e50;min-height:42px;padding:6px 3px;background:#372d23;color:#d9bf85;font:11px/1.1 Georgia,serif}
+.title-mastery-grid button:disabled{opacity:.45}
+@media (max-width:390px){.battle-dock .quick-spells{grid-template-rows:repeat(2,32px)}.battle-dock .quick-spells .quick-spell{height:32px;min-height:32px}.title-mastery-grid button{font-size:10px}}
