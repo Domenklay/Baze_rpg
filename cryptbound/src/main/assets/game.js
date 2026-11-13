@@ -606,6 +606,8 @@ function renderMaze(){
  var room=activeRoom();
  var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
  var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+'" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small>'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
+ var adventurerTool=TR.toolOf(r);
+ quick+='<button class="quick-spell adventurer-tool '+(adventurerTool?'':'ability-empty')+'" data-action="title-tool" aria-label="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста — не открыт')+'" title="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста')+'">'+(adventurerTool?uiIcon(adventurerTool.icon):'<span>+</span>')+'<small>'+(adventurerTool?(TR.curSup(r,adventurerTool.kind==='lantern'?'wick':adventurerTool.kind==='bow'?'arrow':'quench')||''):'')+'</small></button>';
  var focus=room?null:target(),foe=focus&&focus.foe;
  var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+incomingDamage(foe.atk)+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
  if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
@@ -2158,11 +2160,7 @@ function discoverCorpse(t){
   var gear=addItem(story.slot,1);
   if(gear){gear.name=story.gear;gear.rarity=2;gear.setId=null;gear.setName=null;lines.push('Найден предмет: '+gear.name+'.');}
   r.journalNotes.push(story.name+': '+story.note);lines.push('Найдена записка исследователя.');
-  if(lvl('explorer')>0){var coins=addGold(4*lvl('explorer'));lines.push('Мародёр нашёл дополнительные '+coins+' монет.');}
-  if(lvl('cartographer')>0){var soul=addSpiritSoul({kind:'unique',name:story.soul,storyId:story.id});
-   if(soul)lines.push('Извлечена особая душа: '+soul.name+'.');}
-  if(lvl('navigator')>0){r.ep+=3;lines.push('Анатом: +3 очка исследования.');}
-  if(lvl('pathfinder')>0){r.journalNotes.push('Воспоминание: '+story.name+' знал часть пути к забытой деревне.');lines.push('Открыт фрагмент воспоминаний.');}
+  if(TR.onCorpse(r,story,titleHelpers()))lines.push('Фонарь заточил душу погибшего исследователя.');
  }else{var money=addGold(8+Math.floor(r.floor/2));lines.push('Здесь уже искали улики. Найдено '+money+' монет.');}
  log('Осмотрены останки: '+story.name+'.');fairyRemark('corpse');finishAction();
  if(r)dialog('<div class="emblem">☽</div><div class="subhead">ОСТАНКИ ИССЛЕДОВАТЕЛЯ</div><h2>'+esc(story.name)+'</h2>'+
