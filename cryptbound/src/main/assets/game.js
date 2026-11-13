@@ -114,7 +114,7 @@ function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
  }
  function incomingDamage(rawAttack){return Math.max(1,Math.ceil(rawAttack)-flatDefense());}
- function provoke(enemy){if(enemy&&enemy.hp>0)enemy.provoked=true;}
+ function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
  function enemyDebuffs(enemy){
   var effects=[['poison','☠','Яд'],['bleed','✣','Кровотечение'],['burn','♨','Горение'],['stun','✸','Оглушение']];
   var active=effects.filter(function(x){return enemy&&enemy[x[0]]>0;});
@@ -733,7 +733,7 @@ function castInSideRoom(sp,chosenTarget){
   ['chain'].includes(sp.kind)?[preferred].concat(guards.filter(function(g){return g!==preferred;})).filter(Boolean).slice(0,Math.max(1,3+bonus('chainTargets'))):
   preferred?[preferred]:[];
  function hit(g){
-   provoke(g);
+   // Spell hits do not provoke a melee counterattack.
    var damage=Math.max(1,Math.ceil(power-(g.def||0)));
   g.hp=Math.max(0,g.hp-damage);total+=damage;affected++;
   if(g.hp>0&&['burn','burnall'].includes(sp.kind))g.burn=Math.max(g.burn||0,3);
@@ -1302,7 +1302,7 @@ function consumeTurn(){
  var alive=r.chamberActive!=null?[]:enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
-   provoke(victim.foe);
+   provoke(victim.foe,'summon');
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
   if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
   if(FD)FD.actor(r.summon,r.summon.specialCooldown===4?'skill':'attack',r.summon.specialCooldown===4?'Гробовой раскол':'Костяной удар');
@@ -1312,7 +1312,7 @@ function consumeTurn(){
  if(r.summon&&r.summon.hp>0&&activeRoom()){
   var roomTarget=livingRoomGuards()[0];
   if(roomTarget){
-    provoke(roomTarget);
+    provoke(roomTarget,'summon');
     var strikePower=Math.max(1,r.summon.atk-(roomTarget.def||0));
    r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);var summonSpecial=r.summon.specialCooldown===0;
    if(summonSpecial){strikePower+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;}
@@ -1327,10 +1327,10 @@ function consumeTurn(){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
   if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
    if(activeRoom()){
-     var roomGuard=livingRoomGuards()[0];if(roomGuard){provoke(roomGuard);if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
+     var roomGuard=livingRoomGuards()[0];if(roomGuard){provoke(roomGuard,'ghost');if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
      var room=activeRoom().room;room.guardHp=room.guards.reduce(function(n,g){return n+g.hp;},0);
      log('Призрачный страж бьёт стража комнаты: '+r.ghost.atk+'.');}
-   }else if(targetGhost){provoke(targetGhost.foe);if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
+   }else if(targetGhost){provoke(targetGhost.foe,'ghost');if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
  if(r.trappedTile!=null)r.bleedTurns=Math.max(1,r.bleedTurns||0);
@@ -1346,7 +1346,7 @@ function consumeTurn(){
  alive=r.chamberActive!=null?[]:enemies();
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
-   var provoked=!!e.provoked;e.provoked=false;
+   var provoked=!!e.provoked,retaliationTarget=e.provokedBy||'hero';e.provoked=false;e.provokedBy=null;
    var interval=Math.max(1,(special&&special.every)||3);
    e.cooldown=Math.max(0,(e.cooldown==null?interval:e.cooldown)-1);
    var alreadyCountered=e.counteredAt===r.turn;
@@ -1384,7 +1384,21 @@ function consumeTurn(){
    if(e.boss){
     amount=bossAttack(t,e,amount,ready);if(amount==null)return;
    }else if(ready){amount=monsterSpecial(e,amount,false);}
-   amount=incomingDamage(amount); // Flat defense is applied after buffs and special multipliers.
+   if(provoked&&retaliationTarget==='summon'){
+    if(r.summon&&r.summon.hp>0){
+     var summonHit=Math.max(1,Math.ceil(amount)-(r.summon.def||0));
+     if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
+     r.summon.hp=Math.max(0,r.summon.hp-summonHit);
+     log(e.name+' отвечает призванному существу: −'+summonHit+' HP.');
+     if(!r.summon.hp){log('Призванный скелет разрушен.');r.summon=null;r.summonTile=null;}
+    }
+    return;
+   }
+   if(provoked&&retaliationTarget==='ghost'){
+    if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,Math.ceil(amount)));if(!r.ghost.hp){r.ghost=null;log('Призрачный страж развеялся.');}}
+    return;
+   }
+   amount=incomingDamage(amount); // Player defense only applies to attacks targeting the hero.
    if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -1601,7 +1615,7 @@ function useSkill(chosenTarget){
  }else if(r.class==='sorceress'){
   var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
   targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
-    provoke(enemy.foe);enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
+    enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
  }else if(r.class==='assassin'){
   if(!t){toast('Нужен открытый враг.');return;}
@@ -1645,7 +1659,7 @@ function advancedCast(sp,chosenTarget){
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
    if(!t||!t.foe||t.foe.hp<=0)return;
-   provoke(t.foe);
+   /* Spell effects do not provoke retaliation. */
    var n=Math.max(1,dmg-(t.foe.def||0));
   t.foe.hp=Math.max(capBoss&&t.foe.boss?1:0,t.foe.hp-n);
   if(t.foe.hp<=0)kill(t);
@@ -1679,7 +1693,7 @@ function advancedCast(sp,chosenTarget){
  }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus'));
  }else if(key==='sunfall'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
+   if(t.foe.boss){/* Spell effects do not provoke retaliation. */t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
    else{t.foe.hp=0;kill(t);}
   });
   r.sunBurnTurns=10;
@@ -1695,7 +1709,7 @@ function advancedCast(sp,chosenTarget){
   log('Первозданная вода вернула '+returned+' ранее использованных свитков.');
  }else if(key==='worldrewrite'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.65));}
+   if(t.foe.boss){/* Spell effects do not provoke retaliation. */t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.65));}
    else{t.foe.hp=0;kill(t);}
   });
   r.tiles.forEach(function(t){
@@ -1712,7 +1726,7 @@ function advancedCast(sp,chosenTarget){
   log('Первый рассвет полностью очищает героя, даёт пять отражений удара и два спасения от смерти.');
  }else if(key==='soulcovenant'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.55));t.foe.stun=Math.max(t.foe.stun||0,1);}
+   if(t.foe.boss){/* Spell effects do not provoke retaliation. */t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.55));t.foe.stun=Math.max(t.foe.stun||0,1);}
    else{var n=t.foe.name;t.foe.hp=0;kill(t);addSpiritSoul({kind:'common',name:'Отголосок '+n});}
   });
   r.shield+=Math.floor(st.hp*.8);log('Заключён пакт Бездны: души противников переходят к герою.');
@@ -1760,11 +1774,11 @@ function cast(id,chosenTarget){
   var first=chosenTarget!=null?tile(chosenTarget):target();
    var victims=[first].concat(enemies().filter(function(t){return t!==first;})).filter(Boolean).slice(0,3+bonus('chainTargets'));
   victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
-    provoke(t.foe);t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
+    t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
  }else if(tar){
   var dmg2=Math.max(1,magic-tar.foe.def);
-   provoke(tar.foe);tar.foe.hp-=dmg2;
+   tar.foe.hp-=dmg2;
   if(sp.kind==='burn')tar.foe.burn=3;
   if(sp.kind==='stun')tar.foe.stun=1;
   if(sp.kind==='drain')r.hp=Math.min(st.hp,r.hp+Math.floor(dmg2*.65));
@@ -2204,7 +2218,7 @@ function chamberEnemyPhase(frozen){
   if(g.burn>0){g.burn--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().pow*.45)));}
   if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
   if(g.hp<=0){g.provoked=false;return;}
-   var provoked=!!g.provoked;g.provoked=false;
+   var provoked=!!g.provoked,retaliationTarget=g.provokedBy||'hero';g.provoked=false;g.provokedBy=null;
    var interval=Math.max(1,(g.skill&&g.skill.every)||3);
    g.cooldown=Math.max(0,(g.cooldown==null?interval:g.cooldown)-1);
    var alreadyCountered=g.counteredAt===r.turn;
@@ -2223,6 +2237,19 @@ function chamberEnemyPhase(frozen){
    if(FD)FD.actor(g,ready?'skill':'attack',ready?(g.abilityName||g.skill.name):'Удар');
    var damage=Math.max(1,g.atk);
    if(ready)damage=monsterSpecial(g,damage,room);
+   if(provoked&&retaliationTarget==='summon'){
+    if(r.summon&&r.summon.hp>0){
+     var summonHit=Math.max(1,Math.ceil(damage)-(r.summon.def||0));
+     r.summon.hp=Math.max(0,r.summon.hp-summonHit);
+     log(g.name+' отвечает призванному существу в комнате: −'+summonHit+' HP.');
+     if(!r.summon.hp){r.summon=null;r.summonTile=null;}
+    }
+    return;
+   }
+   if(provoked&&retaliationTarget==='ghost'){
+    if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,damage));if(!r.ghost.hp)r.ghost=null;}
+    return;
+   }
    damage=incomingDamage(damage);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
