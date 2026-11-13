@@ -27,7 +27,7 @@ for(let i=0;i<20;i++)for(const pose of ['idle','attack','skill']){
 for(const [id,name] of Object.entries(spr.portraitRoutes))assert.ok(fs.existsSync(path.join(assetDir,'imported/enemies/portraits/'+name+'.png')),id);
 vm.runInNewContext(fs.readFileSync(path.join(assetDir,'imported/equipment/catalog.js'),'utf8'),sandbox);
 for(const [id,src] of Object.entries(sandbox.window.CryptEquipmentIcons))assert.ok(fs.existsSync(path.join(assetDir,src)),id);
-assert.equal(Object.keys(sandbox.window.CryptEquipmentIcons).length,96);
+assert.equal(Object.keys(sandbox.window.CryptEquipmentIcons).length,132);
 assert.equal(spr.monster({id:'r99_0'},'idle'),null);
 assert.equal(spr.materialStem('Шкура животного'),'animal_hide');
 assert.equal(spr.canonicalMaterial('animal_hide, game_meat (при уместности)'),'Шкура животного');
@@ -37,4 +37,4 @@ for(const id of spr.materialIds){
  const svg=fs.readFileSync(file,'utf8');
  assert.match(svg,/data:image\/png;base64,iVBOR/,'embedded PNG '+id);
 }
-console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 96 equipment icons,',spr.materialIds.length,'material icons');
+console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 132 equipment icons,',spr.materialIds.length,'material icons');

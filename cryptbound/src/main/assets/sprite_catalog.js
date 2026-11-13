@@ -31,7 +31,18 @@ function monster(e,pose){
  var src=path?'imported/enemies/'+path+'/'+pose+'.png':'imported/enemies/portraits/'+portrait+'.png';
  return '<img class="crypt-monster-sprite pose-'+pose+'" src="'+src+'"'+(pose!=='idle'&&e.spriteFxUntil?' style="animation-delay:'+Math.min(0,e.spriteFxUntil-Date.now()-1000)+'ms"':'')+' alt="" draggable="false"/>';
 }
-function gearIcon(it){var src=it&&window.CryptEquipmentIcons&&window.CryptEquipmentIcons[it.catalogId];return src?'<img class="painted-gear" src="'+src+'" alt="" draggable="false"/>':null;}
+function gearIcon(it){
+ var icons=window.CryptEquipmentIcons||{},id=it&&it.catalogId,legacy;
+ if(it&&typeof id==='string'&&it.slot==='bracer'){
+  legacy=/^t[12]_(.+)_cloak$/.exec(id);
+  if(legacy&&icons['adapted_'+legacy[1]+'_bracer'])id='adapted_'+legacy[1]+'_bracer';
+ }else if(it&&typeof id==='string'&&it.slot==='cloak'){
+  legacy=/^(t[12])_(.+)_legs$/.exec(id);
+  if(legacy&&icons[legacy[1]+'_'+legacy[2]+'_cloak'])id=legacy[1]+'_'+legacy[2]+'_cloak';
+ }
+ var src=id&&icons[id];
+ return src?'<img class="painted-gear" src="'+src+'" alt="" draggable="false"/>':null;
+}
 function canonicalMaterial(name){
  if(/animal_hide\s*,\s*game_meat/i.test(name))return 'Шкура животного';
  if(/^game_meat\s*\(/i.test(name))return 'Мясо дичи';
