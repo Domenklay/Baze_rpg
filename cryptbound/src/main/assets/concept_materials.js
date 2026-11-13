@@ -1,4 +1,4 @@
-/* Original Clicker sprites, embedded for offline resources. */
+/* Original art from RPG Clicker Infinity, embedded offline. */
 window.CryptConceptMaterials={
  "Малахит": "t3_concept_malakhit",
  "Медный мох": "t3_concept_mednyi_mokh",
@@ -43,5 +43,18 @@ window.CryptConceptMaterials={
  "Жало матки паразитов": "t3_concept_zhalo_matki_parazitov",
  "Жаростойкий глубинный лишайник": "t3_concept_zharostoikii_glubinnyi_lishainik",
  "Жаровое ядро голема": "t3_concept_zharovoe_iadro_golema",
- "Знак командора караула": "t3_concept_znak_komandora_karaula"
+ "Знак командора караула": "t3_concept_znak_komandora_karaula",
+ "Знак маршала ворот": "t3_concept_znak_marshala_vorot",
+ "Алолунный карась": "t4_concept_alolunnyi_karas",
+ "Алолунный лотос": "t4_concept_alolunnyi_lotos",
+ "Чаша Алого обряда": "t4_concept_chasha_alogo_obriada",
+ "Гравированная гвардейская бронзопластина": "t4_concept_gravirovannaia_gvardeiskaia_bronzoplastina",
+ "Испорченная друидическая вязь": "t4_concept_isporchennaia_druidicheskaia_viaz",
+ "Изумруднопёрая форель": "t4_concept_izumrudnopioraia_forel",
+ "Клинок личного палача": "t4_concept_klinok_lichnogo_palacha",
+ "Клык Алого змея": "t4_concept_klyk_alogo_zmeia",
+ "Королевская серебрянка": "t4_concept_korolevskaia_serebrianka",
+ "Кровавый сосуд жреца": "t4_concept_krovavyi_sosud_zhretsa",
+ "Кубок Последнего пира": "t4_concept_kubok_poslednego_pira",
+ "Лесной янтарь": "t4_concept_lesnoi_iantar"
 };
