@@ -90,6 +90,9 @@ function init(r){
  if(!r.titleFloorAtk)r.titleFloorAtk=0;
  if(!r.titleHealAtk)r.titleHealAtk=0;
  if(!r.titleTurnTick)r.titleTurnTick=0;
+ // Existing active Shadow Warrior souls become equivalent Echo charges on load.
+ if(r.titleEchoCharges==null)r.titleEchoCharges=has(r,'war_shadow')?Math.min(3,Math.max(0,Number(r.titleDarkSoulTurns)||0)):0;
+ delete r.titleDarkSoulTurns;
  if(has(r,'war_paladin')&&r.titlePaladinFlat==null)r.titlePaladinFlat=Math.max(1,Math.round((r.hp||1)*.10));
 }
 function pathConflict(r,t){
@@ -195,11 +198,6 @@ function turn(r,h){
  r.titleTurnTick=(r.titleTurnTick||0)+1;
  if(has(r,'adv_legendary_hunter')&&r.titleTurnTick%5===0)autoShot(r,h,Math.max(10,Math.ceil(h.stats().atk*.6)));
  var alive=h.targets().filter(function(t){return t.foe&&t.foe.hp>0&&h.reachable(t);});
- if(alive.length&&r.titleDarkSoulTurns>0){
-  r.titleDarkSoulTurns--;
-  var t=alive[0],damage=Math.max(1,Math.round(h.stats().atk*(.10+.10*level(r,'war_shadow')))-t.foe.def);
-  t.foe.hp-=damage;h.log('Тёмная душа атакует: '+damage+'.');if(t.foe.hp<=0)h.kill(t);
- }
  if(alive.length&&r.titleTotemTurns>0){
   r.titleTotemTurns--;
   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*.5)-v.foe.def);
@@ -213,13 +211,20 @@ function turn(r,h){
 function onKill(r,e,drop,h){
  if(has(r,'war_silver'))r.hp=Math.min(h.stats().hp,r.hp+level(r,'war_silver'));
  if(has(r,'war_royal'))r.titleFloorAtk=(r.titleFloorAtk||0)+level(r,'war_royal');
- if(has(r,'war_shadow'))r.titleDarkSoulTurns=Math.max(r.titleDarkSoulTurns||0,1+level(r,'war_shadow'));
+ if(has(r,'war_shadow')){r.titleEchoCharges=Math.min(3,(r.titleEchoCharges||0)+level(r,'war_shadow'));h.log('Теневой воин: Эхо ×'+r.titleEchoCharges+' (следующие обычные удары станут двойными).');}
  if(has(r,'mag_conjuror'))r.titleTotemTurns=Math.max(r.titleTotemTurns||0,3*level(r,'mag_conjuror'));
  if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&!/голем|элементал|механи|автомат|скелет|мертвец|нежить|призрак|костяк|лич/i.test(e.name)&&Math.random()<.05)drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
  if(titleSetEquipped(r,'hunter')===3)r.ep+=2;
  if(has(r,'war_dragon')&&Math.random()<(0.1+.1*level(r,'war_dragon')))h.cross(e,Math.ceil(h.stats().atk*.65));
  if(has(r,'war_duke')&&Math.random()<.1)h.cross(e,Math.ceil(h.stats().atk*.7));
  if(has(r,'war_light_arbiter')&&Math.random()<.1)h.flash(Math.max(8,h.stats().pow*2));
+}
+/* One Echo charge empowers one normal hero attack. It never creates an actor or a
+   separate turn. Game combat performs the follow-up after its single counterattack. */
+function consumeEcho(r){
+ if(!r||!has(r,'war_shadow')||(r.titleEchoCharges||0)<=0)return false;
+ r.titleEchoCharges--;
+ return true;
 }
 function beforeAttack(r){return has(r,'war_novice')&&Math.random()<.05+.05*level(r,'war_novice');}
 function attack(r,e,dmg,h){
@@ -370,5 +375,5 @@ function useTool(r,h,selected){
  return no('Этот инструмент действует автоматически.');
 }
 
-window.CryptTitlesRuntime={data:data,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={data:data,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
