@@ -13,7 +13,7 @@ const ctx={window:win,document:doc,Date,Math,
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
 const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','game.js'];
-for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
+for(const file of sources){if(file==='gumballs_titles_reference.js')win.CryptLegacyTitles=win.CryptTitles;vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});}
 const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 /* Existing v0.7.2 tests skip directly to distant floors. Claim the newly required book
    before those test shortcuts; hunter_book.cjs tests the actual locked descent. */
