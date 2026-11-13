@@ -14,7 +14,19 @@ const ctx={window:win,document:doc,Date,Math,
 vm.createContext(ctx);
 const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','hunter_bestiary.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
-const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
+const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
+/* Legacy smoke cases fast-forward the forest without exploring it. Satisfy the new
+   mandatory book precondition at run start; hunter_book.cjs verifies the gate itself. */
+function A(name,id){
+ rawAction(name,id);
+ if(name==='begin'){
+  const run=api.state().run,meta=api.state().meta;
+  if(run&&run.actIndex===0&&run.locationIndex===0&&!win.CryptHunterBook.owned(meta)){
+   const corpse=run.tiles.find(t=>t.kind==='hunter-corpse');
+   if(corpse){corpse.revealed=true;rawAction('pickup',corpse.id);rawAction('close');}
+  }
+ }
+}
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS '+name);}
 test('Six selectable classes and 18 authentic offline sprite frames',()=>{
