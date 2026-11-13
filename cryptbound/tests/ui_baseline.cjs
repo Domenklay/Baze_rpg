@@ -29,7 +29,7 @@ for(const file of mustExist){
 }
 assert.equal(fs.readdirSync(path.join(root,'ui/locations')).filter(x=>x.endsWith('.svg')).length,60,
  'All 30 locations need floor and cover art');
-assert.equal(fs.readdirSync(path.join(root,'ui')).filter(x=>/^atlas-\\d{2}\\.png$/.test(x)).length,12,
+assert.equal(fs.readdirSync(path.join(root,'ui')).filter(x=>x.startsWith('atlas-')&&x.endsWith('.png')).length,12,
  '12 original area atlases must be packaged');
 const painted=fs.readFileSync(path.join(root,'painted.css'),'utf8');
 assert.ok(painted.includes('--ui-frame'),'v0.7.2 illustrated panel nine-slice style missing');
