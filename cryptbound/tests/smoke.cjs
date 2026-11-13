@@ -94,8 +94,8 @@ test('Adventure remains, soul use and one-time treasure',()=>{
  assert.equal(r.items.length,n+1);
  assert.ok(r.journalNotes.some(x=>x.includes('Павший механик')));
  const soul=r.soulBag.find(x=>x.storyId==='storm-smith');assert.ok(soul);
- A('close');A('bag-details');
- assert.match(el('overlay').innerHTML,/СОБРАННЫЕ ДУШИ/);
+ A('close');A('ui-panel','bag');
+ assert.match(el('overlay').innerHTML,/Собранные души/);
  A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
  assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
  A('pickup',corpse.id);assert.equal(state.seq,before+3);
