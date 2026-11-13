@@ -1896,8 +1896,8 @@ function forestWellDialog(id){
  dialog('<div class="forest-event-dialog"><div class="sheet-kicker">НАХОДКА 02/50 · КОЛОДЕЦ</div><h2>Лесной колодец желаний</h2>'+
   '<div class="forest-event-picture">'+FE.image('F01_018')+'</div>'+
   '<p>Из глубины тянет холодом. На каменном бортике выбиты два знака: обычные монеты и редкий дар леса.</p>'+
-  '<button class="btn wide space-top" data-action="forest-well-offer" data-id="'+id+'" '+(r.gold<cost?'disabled':'')+'>Бросить '+cost+' золота · случайный параметр +1</button>'+
-  '<button class="btn gold wide space-top" data-action="forest-well-coin" data-id="'+id+'" '+(!hasCoin?'disabled':'')+'>Лесная монетка · параметр +2 и свиток</button>'+
+  (r.gold>=cost?'<button class="btn wide space-top" data-action="forest-well-offer" data-id="'+id+'">Бросить '+cost+' золота · случайный параметр +1</button>':'')+
+  (hasCoin?'<button class="btn gold wide space-top" data-action="forest-well-coin" data-id="'+id+'">Лесная монетка · параметр +2 и свиток</button>':'')+
   (!hasCoin?'<p class="fine muted">Лесную монетку можно получить за помощь белке Рыжухе.</p>':'')+
   '<button class="btn dark wide space-top" data-action="close">Оставить колодец</button></div>');
 }
