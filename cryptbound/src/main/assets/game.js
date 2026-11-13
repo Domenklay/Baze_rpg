@@ -107,6 +107,7 @@ function stats(){
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
+ a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01));
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge'),0,50)};
 }
 function newItem(slot,floor,variant){
@@ -869,6 +870,10 @@ function questBoard(){
 function safePortal(){
  if(!r||!r.portalReady||!isBossFloor()||!r.bossClears[r.floor]){toast('Безопасный портал открывается только после победы над боссом.');return;}
  var oldName=currentRegion().name,oldAct=r.actIndex,oldLocation=r.locationIndex;
+ if(oldAct===0&&oldLocation===0){
+  var finishedTrophies=FE.safeReturn(r,s.meta,HB);
+  if(finishedTrophies)log('Охотничий бестиарий: сохранено трофеев '+finishedTrophies+'.');
+ }
  submitRegionReport(oldAct,oldLocation,r.floor,r.questItems);
  var locKey='act'+(oldAct+1)+'-location'+(oldLocation+1);
  var rainbow=awardAchievement(locKey+'-first-boss',1);
@@ -1265,6 +1270,7 @@ function consumeTurn(){
   if(r.sunBurnTurns>0&&e.hp>0){e.hp-=Math.max(3,Math.ceil(e.maxHp*.06));if(e.hp<=0){kill(t);return;}}
   if(e.burn>0){e.burn--;e.hp-=Math.max(2,Math.floor(stats().pow*.48)+bonus('burnDamage')+setBonus('spellDamage')*.1);if(e.hp<=0){kill(t);return;}}
   if(e.poison>0){e.poison--;e.hp-=Math.max(2,Math.floor(stats().atk*.24));if(e.hp<=0){kill(t);return;}}
+   if(e.bleed>0){e.bleed--;e.hp-=Math.max(3,Math.ceil(stats().atk*.32));if(e.hp<=0){kill(t);return;}}
   if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
   var ready=false;
   if(e.ranged){
@@ -1319,6 +1325,13 @@ function kill(t){
  if(FD)FD.capture();
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
+ if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
+  t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
+   shadow.kind='empty';shadow.cleared=true;shadow.foe=null;shadow.forestAlphaAnchor=null;shadow.revealed=true;
+  }});
+ }
+ var forestMessage=FE.onKill(r,e,forestApi(null));
+ if(forestMessage)log(forestMessage);
  if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');localAchievement('elite',1,'Опасная добыча');fairyRemark('elite');}
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
@@ -1410,7 +1423,7 @@ function useSkill(){
   var creature={name:'Костяной страж',def:2,specialCooldown:4,
    maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
    hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
-   atk:5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3};
+   atk:Math.round((5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3)*(1+hunterStat('hunterAttackPct')*.01))};
   var previous=r.summon,oldTile=r.summonTile;
   r.summon=creature;r.summonTile=null;
   if(!placeSummon()){r.summon=previous;r.summonTile=oldTile;toast('Свободных клеток для призыва нет.');return;}
