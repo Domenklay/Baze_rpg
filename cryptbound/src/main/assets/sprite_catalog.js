@@ -32,13 +32,17 @@ function monster(e,pose){
  return '<img class="crypt-monster-sprite pose-'+pose+'" src="'+src+'"'+(pose!=='idle'&&e.spriteFxUntil?' style="animation-delay:'+Math.min(0,e.spriteFxUntil-Date.now()-1000)+'ms"':'')+' alt="" draggable="false"/>';
 }
 function gearIcon(it){
- var icons=window.CryptEquipmentIcons||{},id=it&&it.catalogId,legacy;
- if(it&&typeof id==='string'&&it.slot==='bracer'){
-  legacy=/^t[12]_(.+)_cloak$/.exec(id);
-  if(legacy&&icons['adapted_'+legacy[1]+'_bracer'])id='adapted_'+legacy[1]+'_bracer';
- }else if(it&&typeof id==='string'&&it.slot==='cloak'){
-  legacy=/^(t[12])_(.+)_legs$/.exec(id);
-  if(legacy&&icons[legacy[1]+'_'+legacy[2]+'_cloak'])id=legacy[1]+'_'+legacy[2]+'_cloak';
+ var icons=window.CryptEquipmentIcons||{},id=it&&it.catalogId;
+ if(it&&typeof id==='string'){
+  var all=(window.ClickerData&&window.ClickerData.gear)||[];
+  var original=all.find(function(item){return item.id===id;});
+  if(it.slot==='bracer'&&original&&original.slot==='shoulders'){
+   var bracer='adapted_'+original.set+'_bracer';
+   if(icons[bracer])id=bracer;
+  }else if(it.slot==='cloak'&&original&&original.slot==='legs'){
+   var cape=all.find(function(item){return item.set===original.set&&item.slot==='shoulders';});
+   if(cape&&icons[cape.id])id=cape.id;
+  }
  }
  var src=id&&icons[id];
  return src?'<img class="painted-gear" src="'+src+'" alt="" draggable="false"/>':null;
