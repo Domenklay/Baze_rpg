@@ -1,4 +1,4 @@
-/* Original art from RPG Clicker Infinity, embedded offline. */
+/* Original RPG Clicker icons, embedded for offline game. */
 window.CryptConceptMaterials={
  "Малахит": "t3_concept_malakhit",
  "Медный мох": "t3_concept_mednyi_mokh",
@@ -56,5 +56,18 @@ window.CryptConceptMaterials={
  "Королевская серебрянка": "t4_concept_korolevskaia_serebrianka",
  "Кровавый сосуд жреца": "t4_concept_krovavyi_sosud_zhretsa",
  "Кубок Последнего пира": "t4_concept_kubok_poslednego_pira",
- "Лесной янтарь": "t4_concept_lesnoi_iantar"
+ "Лесной янтарь": "t4_concept_lesnoi_iantar",
+ "Лунный халцедон": "t4_concept_lunnyi_khaltsedon",
+ "Опал Вечной Кроны": "t4_concept_opal_vechnoi_krony",
+ "Ошейник порабощённого зверя": "t4_concept_osheinik_poraboshchionnogo_zveria",
+ "Печать командора Кроны": "t4_concept_pechat_komandora_krony",
+ "Перстень Серебряного пира": "t4_concept_persten_serebrianogo_pira",
+ "Посох сухих ветвей": "t4_concept_posokh_sukhikh_vetvei",
+ "Придворная руническая пыль": "t4_concept_pridvornaia_runicheskaia_pyl",
+ "Призма Верховного мага": "t4_concept_prizma_verkhovnogo_maga",
+ "Разорванный ошейник вожака": "t4_concept_razorvannyi_osheinik_vozhaka",
+ "Рог Первого загонщика": "t4_concept_rog_pervogo_zagonshchika",
+ "Семя праматери гнилой рощи": "t4_concept_semia_pramateri_gniloi_roshchi",
+ "Сердцелист": "t4_concept_serdtselist",
+ "Слеза багряной заводи": "t4_concept_sleza_bagrianoi_zavodi"
 };
