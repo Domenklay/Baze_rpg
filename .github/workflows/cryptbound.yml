@@ -76,8 +76,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.8-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.8-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.9-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.9-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -90,7 +90,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.8 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.8 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.8 — 36 предметов экипировки" --notes "36 новых прозрачных PNG-иконок 128×128: наручи, сапоги и кольца для каждого из 12 комплектов T1/T2. Плащи теперь используют существующие нарисованные плащи вместо поножей, а наручи больше не используют графику плащей. Совместимость со старыми сохранениями, без потери характеристик: иконки старых предметов исправляются при отображении. 132 графических файла экипировки, встроенные проверки всех 36 PNG, отображения всех комплектов и старых сохранений. Сохраняются все механики лесных событий v0.7.7."
+          if ! gh release view cryptbound-v0.7.9 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.9 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.9 — бой, рюкзак и 257 новых иконок" --notes "Полный импорт 257 точных спрайтов ресурсов из RPG Clicker Infinity, офлайн. Исправлен таймер врагов, инициатива при нападении и ответ перед смертельным ударом, отображение дебаффов и выбор целей классовых навыков. Ловушки срабатывают при открытии и обезвреживаются; добыча с противников показана мешочком. Расходники, души и находки перенесены в рюкзак, недоступные выборы событий скрыты, верхняя панель очищена от дублирующихся кнопок. Улучшено заполнение этажей мелкими находками, закрытая лестница помечена замком. Сохранения совместимы."
           fi
-          gh release upload cryptbound-v0.7.8 dist/Cryptbound-v0.7.8-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.9 dist/Cryptbound-v0.7.9-offline-Android.apk dist/SHA256SUMS.txt --clobber
