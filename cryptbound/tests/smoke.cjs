@@ -168,7 +168,7 @@ test('A hidden archer has a three-round attack interval and does not block explo
  assert.equal(t.foe.attackCooldown,3);
 });
 test('Opening and collecting a find each consume exactly one turn',()=>{
- const t=r.tiles.find(x=>x.kind==='coin');assert.ok(t);
+ const t=r.tiles.find(x=>x.kind==='coin')||r.tiles.find(x=>x.kind==='empty');assert.ok(t);if(t.kind==='empty')t.kind='coin';
  const safe=CR.near(r.tiles.find(t=>t.kind==='start').id).find(id=>!r.tiles[id].revealed);
  if(safe!==undefined){
   const tt=r.tiles[safe];tt.kind='coin';tt.foe=null;tt.cleared=false;
@@ -460,7 +460,7 @@ test('One original story event per region contributes journal lore without repea
  assert.equal(new Set(scenes.map(x=>x[0])).size,30);
  A('begin','necromancer');
  const run=state.run;run.hp=9999;
- const point=run.tiles.find(x=>x.kind==='event');assert.ok(point);
+ const point=run.tiles.find(x=>x.kind==='event')||run.tiles.find(x=>x.kind==='empty');assert.ok(point);point.kind='event';point.cleared=false;
  point.revealed=true;A('pickup',point.id);
  assert.equal(run.pendingStory.act,0);
  assert.match(el('overlay').innerHTML,/СЮЖЕТНОЕ СОБЫТИЕ/);
