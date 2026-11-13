@@ -918,6 +918,7 @@ test('Summon retaliation hits the summon, while targeted magic causes no melee c
  Object.assign(foeTile.foe,{hp:5000,maxHp:5000,atk:11,def:0,stun:0,burn:0,poison:0,bleed:0,
   cooldown:100,skill:{name:'Удар',every:100,kind:'none'},ranged:false,boss:false,guard:0});
  run.hp=1000;run.mp=1000;run.shield=0;run.ghost=null;run.guardCharges=0;run.bleedTurns=0;run.poisonTurns=0;
+ standNextTo(run,foeTile);
  run.summon={name:'Костяной страж',hp:120,maxHp:120,atk:5,def:2,specialCooldown:4};
  const random=Math.random;
  try{
