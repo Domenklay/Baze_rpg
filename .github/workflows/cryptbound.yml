@@ -68,6 +68,7 @@ jobs:
           node cryptbound/tests/hunter_book_visual.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
+          node cryptbound/tests/equipment_icons.cjs
 
       - name: Compile playable Android app
         run: gradle :cryptbound:assembleDebug --no-daemon
@@ -75,8 +76,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.7-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.7-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.8-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.8-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -89,7 +90,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.7 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.7 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.7 — 50 лесных событий" --notes "50 игровых событий Лесной окраины с художественной графикой из 192 прозрачных PNG: цепочка Рыжуха → 3 волка → Лесная монетка → колодец, капканы с выбором цели, карты/топор/верёвка/письмо, раскрываемые тайники, встречи с охотниками и друидами, четыре охоты на альфа-зверей 2×2 с общей полосой здоровья, сюжет больного древа. Уникальные награды не дублируются, повторяемые события сохраняют выбранную частоту; трофеи бестиария закрепляются на безопасном портале. Сохранены вертикальный рисованный интерфейс, выбор целей свитков и вся графика v0.7.6. Автоматические проверки 50 событий, 192 спрайтов и сохранений."
+          if ! gh release view cryptbound-v0.7.8 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.8 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.8 — 36 предметов экипировки" --notes "36 новых прозрачных PNG-иконок 128×128: наручи, сапоги и кольца для каждого из 12 комплектов T1/T2. Плащи теперь используют существующие нарисованные плащи вместо поножей, а наручи больше не используют графику плащей. Совместимость со старыми сохранениями, без потери характеристик: иконки старых предметов исправляются при отображении. 132 графических файла экипировки, встроенные проверки всех 36 PNG, отображения всех комплектов и старых сохранений. Сохраняются все механики лесных событий v0.7.7."
           fi
-          gh release upload cryptbound-v0.7.7 dist/Cryptbound-v0.7.7-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.8 dist/Cryptbound-v0.7.8-offline-Android.apk dist/SHA256SUMS.txt --clobber
