@@ -229,7 +229,7 @@ function onScrap(r,it,h){
  if(has(r,'adv_royal_blacksmith'))r.ep+=curSup(r,'smith_piece')*5;
  if(has(r,'adv_royal_rune'))r.mp=Math.min(h.stats().mp,r.mp+curSup(r,'rune_piece')*3);
 }
-function useTool(r,h){
+function useTool(r,h,selected){
  var tool=toolOf(r);if(!tool)return 'Сначала изучите звание III ранга авантюриста.';
  if(tool.kind==='lantern'){
   if(curSup(r,'wick')<=0)return 'Нужен фитиль фонаря.';
@@ -246,7 +246,7 @@ function useTool(r,h){
  if(tool.kind==='rune'){
   var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=(has(r,'adv_holy_rune')?2:1);});}).filter(Boolean);
   if(!candidates.length)return has(r,'adv_holy_rune')?'Нужно два одинаковых свитка ниже 5-го ранга.':'Нужен хотя бы один свиток ниже 5-го ранга.';
-  var sp=candidates[0],next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
+  var sp=selected?candidates.find(function(x){return x.id===selected;}):null;if(!sp)return 'Выберите свиток для тигля.';var next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
   if(!next.length)return 'Подходящий свиток для объединения не найден.';
   if(!has(r,'adv_holy_rune')){
    if(!has(r,'adv_royal_rune'))return 'Объединение свитков открывается Святым мастером рун.';
