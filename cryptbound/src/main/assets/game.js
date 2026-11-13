@@ -86,7 +86,7 @@ function stats(){
  var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
  var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
- var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
+ var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0)+(r.titleBlessAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -770,10 +770,10 @@ function rollSpell(limit){
  var r100=Math.random()*100;
  var rank=r100<44?1:r100<70?2:r100<86?3:r100<96?4:r100<99.85?5:6;
  if(rank>limit)rank=limit;
- var options=SPELLS.filter(function(sp){return sp.rank===rank&&
+ var options=SPELLS.filter(function(sp){return !sp.titleOnly&&sp.rank===rank&&
   !(sp.id==='earthgate'&&r.earthGateFound)&&
   !(sp.rank===6&&(r.sixStarFound||r.floor<40));});
- if(!options.length)options=SPELLS.filter(function(sp){return sp.rank<=Math.min(limit,4);});
+ if(!options.length)options=SPELLS.filter(function(sp){return !sp.titleOnly&&sp.rank<=Math.min(limit,4);});
  return pick(options);
 }
 function grantScroll(id,count,source){
@@ -816,6 +816,11 @@ function castInSideRoom(sp,chosenTarget){
   if(g.hp>0&&['stun','freezeall'].includes(sp.kind))g.stun=Math.max(g.stun||0,2);
   if(g.hp>0&&sp.kind==='weakness')g.atk=Math.max(1,g.atk-Math.ceil(st.pow*.3));
  }
+ if(sp.kind==='blessing'){
+  var bonusAtk=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)));
+  r.titleBlessAtk=Math.max(r.titleBlessAtk||0,bonusAtk);
+  r.titleBlessTurns=Math.max(r.titleBlessTurns||0,5+TR.rank5(r,'mag_legendary','mp'));
+ }
  if(['heal','healshield','lastlight'].includes(sp.kind))r.hp=Math.min(st.hp,r.hp+power);
  if(['shield','healshield','lastlight'].includes(sp.kind))r.shield+=sp.kind==='shield'?power:Math.ceil(power*.7);
  if(sp.kind==='lastlight')r.resurrection=(r.resurrection||0)+1;
@@ -849,7 +854,7 @@ function spellTabs(){
    x.icon+' '+x.name+'</button>';
  }).join('')+'</div>';
 }
-function shownSpells(){return SPELLS.filter(function(sp){return (r.spellSchool||'all')==='all'||sp.school===r.spellSchool;})
+function shownSpells(){return SPELLS.filter(function(sp){return (!sp.titleOnly||(r.scrolls[sp.id]||0)>0)&&((r.spellSchool||'all')==='all'||sp.school===r.spellSchool);})
  .sort(function(a,b){return a.rank-b.rank;});}
 
 function renderSpells(){
@@ -1370,6 +1375,7 @@ function consumeTurn(){
  r.turn++;
  TR.onTurn(r,titleHelpers());
  if(r.blessed>0)r.blessed--;
+ if(r.titleBlessTurns>0){r.titleBlessTurns--;if(!r.titleBlessTurns)r.titleBlessAtk=0;}
  if(r.setShieldTurns>0){r.setShieldTurns--;if(!r.setShieldTurns)r.setShieldRemaining=0;}
  if(r.sunBurnTurns>0)r.sunBurnTurns--;
  if(r.rageTurns>0)r.rageTurns--;
@@ -1747,6 +1753,7 @@ function wait(){log('Вы затаились, собираясь с силами
    floor; boss HP is protected from instant kills and one-shot quest loss. */
 
 function spellPower(sp,st){
+ r.titleAuroraTriggered=false;r.titlePopeTriggered=false;
  var amount=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
  if(sp.school==='dark'&&Math.random()*100<bonus('darkCrit'))amount*=2;
  if(sp.school==='fire'&&Math.random()*100<bonus('fireProc'))amount=Math.ceil(amount*1.65);
@@ -1770,10 +1777,16 @@ function advancedCast(sp,chosenTarget){
    if(!cells.length)break;var t=pick(cells);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;count++;}
   return count;
  }
- if(key==='earthgate'){
+ if(key==='blessing'){
+  var base=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)));
+  r.titleBlessAtk=Math.max(r.titleBlessAtk||0,base);
+  r.titleBlessTurns=Math.max(r.titleBlessTurns||0,5+TR.rank5(r,'mag_legendary','mp'));
+  if(sp.id==='electrostatic')r.shield+=Math.ceil(st.pow*.8);
+  log(sp.name+': атака +'+base+' на '+r.titleBlessTurns+' ходов.');
+ }else if(key==='earthgate'){
   var enhanced=lvl('mag_planar')>0;
   var mastery=TR.rank5(r,'mag_planar','pow')+TR.rank5(r,'mag_planar','hp')+TR.rank5(r,'mag_planar','mp');
-   var distance=enhanced?Math.min(50,30+2*mastery+Math.floor(st.pow/12)):Math.max(10,10+Math.floor(st.pow/8));
+   var distance=Math.min(50,Math.max(10,10+Math.floor(st.pow/8)+(enhanced?8+2*mastery:0)));
   var old=r.floor;r.floor=Math.max(1,r.floor-distance);
   r.key=false;r.portalReady=false;r.shield=0;r.turn++;
   startFloor();log('Врата Земли возвращают на '+(old-r.floor)+' этажей назад. Побеждённые боссы не возрождаются.');
