@@ -819,4 +819,35 @@ test('Combat feedback separates healing from retaliation and does not damage uni
  live.debug.action('chamber-exit');
 });
 
+test('Enemy retaliation, flat armor and red/green damage badges update live',()=>{
+ const live=win.Crypt,run=live.state().run;
+ assert.ok(run,'A test expedition is active');
+ run.tiles.forEach(t=>{if(t.foe)t.foe.hp=0;});
+ run.summon=null;run.ghost=null;run.guardCharges=0;run.shield=0;run.setShieldRemaining=0;
+ run.burnTurns=0;run.bleedTurns=0;run.poisonTurns=0;run.regenTurns=0;run.armorBreakPower=0;
+ run.blessed=0;run.talents={};run.chamberActive=null;run.tab='maze';
+ const spot=run.tiles.find(t=>t.kind==='empty'&&!t.foe);assert.ok(spot);
+ const defense=live.debug.stats().def;assert.ok(defense>0);
+ spot.kind='enemy';spot.revealed=true;spot.cleared=false;
+ const foe=spot.foe={id:'test_reactive',name:'Испытательный страж',visual:'skeleton',
+  hp:999999,maxHp:999999,atk:defense+11,baseAtk:defense+11,def:0,
+  cooldown:999,skill:{name:'Удар',every:999,kind:'none'},guard:0,
+  ranged:false,stun:0,burn:0,poison:0,loot:[],ep:0,gold:0};
+ run.hp=10000;live.debug.draw();
+ assert.match(el('content').innerHTML,/damage-reduced/,'Armor should color the displayed enemy attack red');
+ const random=Math.random;
+ try{
+  Math.random=()=>.99;
+  live.debug.action('wait');
+  assert.equal(run.hp,10000,'An untouched melee enemy cannot attack on a wait');
+  live.debug.action('strike',spot.id);
+  assert.equal(run.hp,9989,'A provoked enemy deals attack minus flat defense');
+  foe.atk=1;const before=run.hp;
+  live.debug.action('strike',spot.id);
+  assert.equal(run.hp,before-1,'Even excess armor cannot prevent the minimum one damage');
+  foe.atk=foe.baseAtk+defense+15;live.debug.draw();
+  assert.match(el('content').innerHTML,/damage-boosted/,'Buffed attack exceeding the base damage turns green');
+ }finally{Math.random=random;}
+});
+
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
