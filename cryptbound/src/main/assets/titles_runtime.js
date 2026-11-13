@@ -7,11 +7,10 @@ var data=(window.CryptGumballsTitleReference||[]).map(function(t){
 var byId={};data.forEach(function(t){byId[t.id]=t;});
 window.CryptTitles=data;
 var spellRewards={
- mag_apprentice:['ward',3],mag_black:['flame',3],mag_white:['heal',3],
- mag_wizard:['meteor',2],mag_conjuror:['shadows',3],mag_priest:['holy',3],
- mag_bishop:['ward',3],mag_fire:['flame',5],mag_dark:['shadows',4],
- mag_earth:['earthquake',2],mag_air:['chain',5],mag_light:['holy',4],mag_water:['frost',3],
- war_dancer:['flame',1],war_great_sword:['stormchain',1],war_faith:['ward',1]
+ mag_apprentice:['bless',3],mag_black:['fireball',3],mag_white:['heal',3],
+ mag_wizard:['firestorm',2],mag_conjuror:['deathripple',3],mag_priest:['holybolt',3],
+ mag_bishop:['iceshield',3],mag_fire:['fireball',5],mag_dark:['deathripple',4],
+ mag_earth:['gravity',2],mag_air:['lightningbolt',5],mag_light:['holybolt',4],mag_water:['icicle',3]
 };
 function level(r,id){return r&&r.talents?Math.max(0,Number(r.talents[id])||0):0;}
 function has(r,id){return level(r,id)>0;}
@@ -146,8 +145,17 @@ function masteryUpgrade(r,t,key,h){
  r.mp=Math.min(now.mp,r.mp+Math.max(0,now.mp-old.mp));
  if(t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
- if(t.id==='mag_destruction'&&key==='hp')h.grant('flame',5,'title');
- if(t.id==='mag_time'){h.grant(key==='pow'?'chain':key==='mp'?'lightning':'curse',key==='pow'?2:key==='mp'?5:3,'title');}
+ if(t.id==='mag_destruction'&&key==='hp')h.grant('fireball',5,'title');
+ if(t.id==='mag_dark_priest'&&key==='hp')h.grant('implosion',rank5(r,t.id,key),'title');
+ if(t.id==='mag_pope'&&key==='hp')h.grant('holybolt',4*rank5(r,t.id,key),'title');
+ if(t.id==='mag_archbishop'&&key==='hp')h.grant('iceshield',4*rank5(r,t.id,key),'title');
+ if(t.id==='mag_legendary'&&key==='hp')h.grant('electrostatic',[4,8,16][rank5(r,t.id,key)-1],'title');
+ if(t.id==='mag_light_bishop'&&key==='atk')h.grant('recovering',3*rank5(r,t.id,key),'title');
+ if(t.id==='mag_light_bishop'&&key==='hp')h.grant('divinefavor',3*rank5(r,t.id,key),'title');
+ if(t.id==='mag_time'){
+  var l=rank5(r,t.id,key),type=key==='pow'?'chain':key==='mp'?'lightningbolt':'disrupting';
+  h.grant(type,key==='pow'?2*l:key==='mp'?5*l:3*l,'title');
+ }
  if(t.id==='war_commander'&&key==='atk')h.addItem('amulet',6);
  h.log('Усилено звание «'+t.name+'»: '+key+' '+rank5(r,t.id,key)+'/3.');
  return true;
@@ -234,17 +242,31 @@ function spellMultiplier(r,sp){
  var n=has(r,'mag_fire')&&sp.school==='fire'?level(r,'mag_fire'):has(r,'mag_dark')&&sp.school==='dark'?level(r,'mag_dark'):has(r,'mag_earth')&&sp.school==='earth'?level(r,'mag_earth'):has(r,'mag_air')&&sp.school==='air'?level(r,'mag_air'):has(r,'mag_light')&&sp.school==='light'?level(r,'mag_light'):has(r,'mag_water')&&sp.school==='water'?level(r,'mag_water'):0;
  var result=1+n*.1+(n? .1:0);
  if(has(r,'mag_elements')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall','earthquake'].indexOf(sp.kind)>=0)result+=.30+.10*(rank5(r,'mag_elements','pow')+rank5(r,'mag_elements','mp')+rank5(r,'mag_elements','hp'));
- if(has(r,'mag_legendary')&&['heal','shield','healshield','lastlight','timestop','reveal'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_legendary','pow');
- if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)result+=.30;
+ if(has(r,'mag_legendary')&&['blessing','heal','shield','healshield','lastlight','timestop','reveal'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_legendary','pow');
+ if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_light_bishop','pow');
  if(has(r,'mag_dark_priest')&&sp.school==='dark'&&Math.random()<.5)result*=2;
- if(has(r,'mag_pope')&&sp.school==='light'&&['holy','attack','aoe'].indexOf(sp.kind)>=0)result*=2;
+ if(has(r,'mag_dark_priest')&&sp.id==='deathripple')result*=1+.25*rank5(r,'mag_dark_priest','pow');
+ if(has(r,'mag_dark_priest')&&sp.id==='implosion')result*=1+.25*rank5(r,'mag_dark_priest','mp');
+ if(has(r,'mag_pope')&&sp.school==='light'&&['holy','attack','aoe'].indexOf(sp.kind)>=0&&Math.random()<.5){
+   result*=2;
+   r.titlePopeTriggered=true;
+ }
+ if(has(r,'mag_pope')&&sp.id==='holybolt')result*=1+.25*rank5(r,'mag_pope','mp');
+ if(has(r,'mag_archbishop')&&sp.id==='iceshield'&&Math.random()<(.15+[0,.09,.12,.15][rank5(r,'mag_archbishop','pow')])){
+   result*=1.8*(1+.25*rank5(r,'mag_archbishop','mp'));
+   r.titleAuroraTriggered=true;
+ }
  return result;
 }
 function spellCast(r,sp,h){
  if(has(r,'mag_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)r.titleHealAtk=Math.max(r.titleHealAtk||0,5*level(r,'mag_bishop'));
  if(has(r,'mag_time')&&sp.school==='air'&&!h.targets().some(function(t){return t.foe&&t.foe.boss&&t.foe.hp>0;})&&Math.random()<.5)r.timeStopTurns=(r.timeStopTurns||0)+1;
- if(has(r,'mag_archbishop')&&(sp.kind==='shield'||sp.kind==='healshield')&&Math.random()<.15)r.shield+=Math.ceil(h.stats().pow*3);
- if(has(r,'mag_destruction')&&sp.id==='flame'&&Math.random()<(.12+[0,.06,.09,.12][rank5(r,'mag_destruction','pow')]))h.flash(Math.ceil(h.stats().pow*(2+.25*rank5(r,'mag_destruction','mp'))));
+ /* Ice Shield conversion to Aurora Barrier is calculated in spellMultiplier so
+  the same cast cannot trigger the upgrade twice. */
+ if(has(r,'mag_destruction')&&sp.id==='fireball'&&Math.random()<(.12+[0,.06,.09,.12][rank5(r,'mag_destruction','pow')])){
+   h.flash(Math.ceil(h.stats().pow*(2+.25*rank5(r,'mag_destruction','mp'))));
+   h.log('Армагеддон: магия огня по всем доступным врагам.');
+ }
  if(has(r,'mag_wizard')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].indexOf(sp.kind)>=0&&Math.random()<.1+.1*level(r,'mag_wizard'))h.flash(Math.ceil(h.stats().pow*.6));
  /* Light Bishop/Pope repeated hit is applied to the spell's original target in spellMultiplier. */
 }
