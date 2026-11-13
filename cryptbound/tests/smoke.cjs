@@ -542,7 +542,7 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  const hp=run.hp;
  A('wait');A('wait');
  assert.equal(run.hp,hp,'Time stop prevents guard damage in both turns');
- assert.equal(tile.room.guards[0].cooldown,1);
+ assert.equal(tile.room.guards[0].cooldown,0,'Special countdown advances while time is frozen');
  run.guardCharges=3;
   for(const g of tile.room.guards){g.provoked=true;g.cooldown=1;}
   A('wait');
