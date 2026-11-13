@@ -115,12 +115,8 @@ function newItem(slot,floor,variant){
  var src=CR.gear(slot,sourceFloor,rand(0,1));
  var star=variant==null?rarityRoll():Math.max(1,Math.min(6,Math.floor(Number(variant)||1)));
  src.rarity=star;
- // High-act items use existing placeholder art but gain their own balanced stats.
- var tier=1+(r.actIndex||0)*.38+(r.locationIndex||0)*.08;
- var rarityFactor=1+(star-1)*.13;
- ['atk','def','hp','mp','pow'].forEach(function(stat){
-  if(src[stat]>0)src[stat]=Math.max(1,Math.ceil(src[stat]*tier*rarityFactor));
- });
+ // Fixed catalog values: act, floor and item rarity do not multiply stats.
+ // Manual sharpening and completed set effects remain separate upgrades.
  if(star===6){
   var unique=['storm','freespell','rebirth','bulwark','devour'];
   src.uniqueEffect=pick(unique);src.setId=null;src.setName=null;
@@ -176,7 +172,7 @@ function mkEnemy(boss,ranged,forcedElite){
   kind:signature.id
  };
  return {id:src.id,name:src.name,visual:visual,
-  hp:scaled.hp,maxHp:scaled.hp,atk:scaled.atk,def:scaled.def,
+  hp:scaled.hp,maxHp:scaled.hp,atk:scaled.atk,baseAtk:scaled.atk,def:scaled.def,provoked:false,
   ep:boss?10+2*(r.actIndex||0):elite?5+Math.floor((r.actIndex||0)/3):2,
   gold:BAL.loot(r.actIndex||0,r.locationIndex||0,r.floor,elite,!!boss),
   boss:!!boss,elite:elite,phase:1,phaseTurn:0,telegraph:null,bossAdds:0,
@@ -185,7 +181,7 @@ function mkEnemy(boss,ranged,forcedElite){
   abilityName:signature.name,abilityDescription:signature.description,
   specialUses:0,summons:0,guardTurns:0,evadeCharges:0,enraged:false,stunImmunityTurns:0,
   burn:0,stun:0,poison:0,skill:skill,cooldown:scaled.cooldown,guard:0,
-  ranged:!!ranged,attackInterval:ranged?3:1,attackCooldown:ranged?3:1,loot:src.loot||[]};
+  ranged:!!ranged,attackInterval:ranged?2:0,attackCooldown:ranged?2:0,loot:src.loot||[]};
 }
 /* Each 10-floor block contains exactly one elite: 5–9, 15–19, 25–29, etc.
    Location-specific schedule is saved, making reloads/revisits deterministic. */
@@ -214,21 +210,29 @@ function distributeTiles(){
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
  if(r.actIndex===0&&r.locationIndex===0&&!boss){
-  insert('chest',Math.random()<.68?rand(1,2):0);
+  insert('chest',Math.random()<.14?1:0);
   if(Math.random()<.35)insert('trap',1);
   if(Math.random()<.13)insert('altar',1);
   if(Math.random()<.14)insert('shop',1);
   if(Math.random()<.86)insert('forest-event',1);
   if(r.floor>=4&&Math.random()<.22)insert('forest-event',1);
   if(Math.random()<.22)insert('secret',1);
-  if(Math.random()<.61)insert('coin',rand(1,2));
-  if(Math.random()<.42)insert('potion',1);
+  if(Math.random()<.38)insert('coin',1);
+ if(Math.random()<.28)insert('potion',1);
   if(Math.random()<.23)insert('corpse',1);
   if(Math.random()<.16)insert('chamber',1);
  }else{
-  insert('chest',boss?1:2);insert('trap',boss?0:1);insert('altar',boss?0:1);insert('shop',boss?0:1);
-  insert('event',boss?0:1);insert('puzzle',boss?0:1);insert('secret',boss?0:1);insert('coin',boss?1:2);insert('potion',1);
-  insert('corpse',!boss&&r.floor%2===0?1:0);insert('chamber',!boss&&r.floor%3===0?1:0);
+  insert('chest',Math.random()<(boss ? .35 : .12)?1:0);
+ if(!boss&&Math.random()<.40)insert('trap',1);
+ if(!boss&&Math.random()<.18)insert('altar',1);
+ if(!boss&&Math.random()<.16)insert('shop',1);
+ if(!boss&&Math.random()<.65)insert('event',1);
+ if(!boss&&Math.random()<.55)insert('puzzle',1);
+ if(!boss&&Math.random()<.40)insert('secret',1);
+ if(Math.random()<.45)insert('coin',1);
+ if(Math.random()<.30)insert('potion',1);
+ if(!boss&&r.floor%2===0&&Math.random()<.4)insert('corpse',1);
+ if(!boss&&r.floor%3===0&&Math.random()<.5)insert('chamber',1);
  }
  var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
@@ -336,9 +340,7 @@ function begin(hero){
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
- ['weapon','armor','amulet'].forEach(function(slot){
-  var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
- });
+ // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
  fillPreparedPotions(r);
  startFloor();save();draw();close();
@@ -429,8 +431,15 @@ function load(){
   if(!v.run.poisonTurns)v.run.poisonTurns=0;
   v.run.chamberActive=null; // A modal room is reopened explicitly after loading.
   for(var enemyTile of v.run.tiles){if(enemyTile.foe)enemyTile.foe.spriteFxUntil=0;if(enemyTile.room&&enemyTile.room.guards)enemyTile.room.guards.forEach(function(g){g.spriteFxUntil=0;});if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=enemy.ranged?{name:'Дальний выстрел',every:3,description:'Стреляет каждые три хода.',kind:'shot'}:EX.monster(enemy.visual||CR.visualId(enemy.name));
-  if(enemy.ranged&&enemy.attackCooldown==null)enemy.attackCooldown=3;
-  if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
+  if(enemy.baseAtk==null)enemy.baseAtk=enemy.enraged?Math.max(1,Math.round(enemy.atk/1.2)):enemy.atk;
+   enemy.provoked=false;
+   if(enemy.ranged){enemy.attackInterval=2;enemy.attackCooldown=Math.min(2,Math.max(1,Number(enemy.attackCooldown)||2));}
+   if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
+  for(var roomTile of v.run.tiles)if(roomTile.room&&Array.isArray(roomTile.room.guards))for(var guard of roomTile.room.guards){
+   if(guard.baseAtk==null)guard.baseAtk=guard.atk;
+   guard.provoked=false;guard.ranged=guard.ranged||guard.role==='marksman';
+   if(guard.ranged)guard.attackCooldown=Math.min(2,Math.max(1,Number(guard.attackCooldown)||2));
+  }
   if(v.run.summon){v.run.summon.spriteFxUntil=0;if(v.run.summon.specialCooldown==null)v.run.summon.specialCooldown=4;if(!v.run.summon.def)v.run.summon.def=2;}
   if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
   if(!v.run.key&&!v.run.tiles.some(function(t){return t.hasKey||(t.drops&&t.drops.key);})){
@@ -1093,7 +1102,7 @@ function bossCallsBackup(e){
  var cell=pick(cells);cell.kind='enemy';cell.revealed=true;cell.cleared=false;
  cell.foe=mkEnemy(false,false,false);
  cell.foe.hp=Math.max(5,Math.round(cell.foe.hp*.6));cell.foe.maxHp=cell.foe.hp;
- cell.foe.atk=Math.max(2,Math.round(cell.foe.atk*.6));
+ cell.foe.atk=Math.max(2,Math.round(cell.foe.atk*.6));cell.foe.baseAtk=cell.foe.atk;
  e.bossAdds++;log('Босс призывает подкрепление: '+cell.foe.name+'.');
 }
 
@@ -1364,7 +1373,7 @@ function kill(t){
   if(q&&r.questItems.indexOf(q)<0){r.questItems.push(q);log('Получен квестовый предмет: '+q+'.');}
   drop.diamonds=Math.max(1,Math.ceil(depthMultiplier()*(1+(r.actIndex||0))));
   log('Босс повержен! Безопасный портал открыт на этом этаже.');fairyRemark('boss');
-  drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
+  if(Math.random()<.45)drop.gear={slot:pick(Object.keys(SLOT)),rarity:Math.max(2,rarityRoll())};
   if(r.floor>=40&&Math.random()<.025)drop.scroll=rollSpell(6).id;
   drop.potion=1;drop.relic=EX.relicForFloor(r.floor).id;
   if((r.locationUsedPotion||0)===0)localAchievement('boss-no-potions',2,'Без зелий');
@@ -1372,8 +1381,10 @@ function kill(t){
  }
  else {
   if(e.elite&&Math.random()<.55)drop.diamonds=1;
-  if(Math.random()<.23+(bonus('lootChance')+setBonus('lootChance')+5*(s.meta.diamondUpgrades?.luck||0))*.01){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
-  else if(Math.random()<.33){drop.scroll=rollSpell(e.boss&&r.floor>=40?6:e.elite?5:4).id;}
+  var gearChance=Math.min(e.elite ? .28 : .12,(e.elite ? .14 : .055)+
+    (bonus('lootChance')+setBonus('lootChance')+5*(s.meta.diamondUpgrades?.luck||0))*.003);
+   if(Math.random()<gearChance){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
+   else if(Math.random()<(e.elite ? .30 : .20)){drop.scroll=rollSpell(e.elite?5:4).id;}
  }
  t.drops=drop;
  if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
@@ -1825,12 +1836,17 @@ function claimTile(t){
  if(kind==='chest'){
   var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+(r.actIndex||0)*.16)*(1+(bonus('chestGold')+hunterStat('chestGold'))*.01)));
   lines.push('<strong>◈ '+money+' монет</strong>');labels.push('◈ +'+money);
-  if(Math.random()<.8){
-   var i=addItem(pick(Object.keys(SLOT)),null);
-   if(i){lines.push('<div class="loot-gear">'+gearArt(i)+
-    '<span><strong>'+esc(i.name)+'</strong><small>'+RARITY[i.rarity]+' · '+SLOT[i.slot]+'</small></span></div>');
-    labels.push(i.name+' ×1');}
-  }else{r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');}
+  var treasureRoll=Math.random();
+   if(treasureRoll<.28){
+    var i=addItem(pick(Object.keys(SLOT)),null);
+    if(i){lines.push('<div class="loot-gear">'+gearArt(i)+
+     '<span><strong>'+esc(i.name)+'</strong><small>'+RARITY[i.rarity]+' · '+SLOT[i.slot]+'</small></span></div>');
+     labels.push(i.name+' ×1');}
+   }else if(treasureRoll<.58){r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');
+   }else if(treasureRoll<.76){
+    var chestSpell=rollSpell(4);grantScroll(chestSpell.id,1,'chest');
+    lines.push('<strong>✣ Свиток «'+esc(chestSpell.name)+'»</strong>');labels.push('✣ '+chestSpell.name+' ×1');
+   }
   if(lvl('vault')>0&&Math.random()<Math.min(.5,.1*lvl('vault'))){
    var extra=rollSpell(4);grantScroll(extra.id,1,'chest');
    lines.push('<strong>✣ Дополнительный свиток «'+esc(extra.name)+'»</strong>');
@@ -2083,7 +2099,7 @@ function chamberReward(id){
  var room=t.room;
  var coins=addGold(Math.round((20+r.floor*2)*depthMultiplier()*(1+(r.actIndex||0)*.16)));
  room.rewardTaken=true;
- if(Math.random()<.6)addItem(pick(Object.keys(SLOT)),1);
+ if(Math.random()<.18)addItem(pick(Object.keys(SLOT)),1);
  log('Центральная награда: '+coins+' монет.');
  var secret=roomSecretAvailable(room);
  if(!secret&&!room.secret)t.cleared=true;
