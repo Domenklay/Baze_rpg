@@ -147,5 +147,18 @@ window.CryptConceptMaterials={
  "Гробничный угорь": "t7_concept_grobnichnyi_ugor",
  "Капля призрачной короны": "t7_concept_kaplia_prizrachnoi_korony",
  "Ключ Прокуратора душ": "t7_concept_kliuch_prokuratora_dush",
- "Коса Первого жнеца": "t7_concept_kosa_pervogo_zhnetsa"
+ "Коса Первого жнеца": "t7_concept_kosa_pervogo_zhnetsa",
+ "Лоцманский знак капитана": "t7_concept_lotsmanskii_znak_kapitana",
+ "Надгробная застёжка стража": "t7_concept_nadgrobnaia_zastiozhka_strazha",
+ "Обломок запретной печати": "t7_concept_oblomok_zapretnoi_pechati",
+ "Обрывок договора Вардена": "t7_concept_obryvok_dogovora_vardena",
+ "Памятный сланец": "t7_concept_pamiatnyi_slanets",
+ "Печать сборщика памяти": "t7_concept_pechat_sborshchika_pamiati",
+ "Пергамент призрачного архивариуса": "t7_concept_pergament_prizrachnogo_arkhivariusa",
+ "Перо верховного некроманта": "t7_concept_pero_verkhovnogo_nekromanta",
+ "Перстень Канцлера Нерота": "t7_concept_persten_kantslera_nerota",
+ "Перстень Старшего взыскателя": "t7_concept_persten_starshego_vzyskatelia",
+ "Плач Сонма скорбящих": "t7_concept_plach_sonma_skorbiashchikh",
+ "Плач-трава": "t7_concept_plach_trava",
+ "Режущий осколок косы жнеца": "t7_concept_rezhushchii_oskolok_kosy_zhnetsa"
 };
