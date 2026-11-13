@@ -16,7 +16,7 @@ for(const part of ['expedition-top','expedition-effects','battle-dock','inventor
  assert.ok(js.includes(part),'The v0.7.2 client was overwritten: missing '+part);
 }
 assert.ok(js.includes('hb-v072-access'),'Book shortcut is not integrated into the v0.7.2 HUD');
-assert.ok(js.includes('hb-inventory-access'),'Book is not integrated into the painted inventory');
+assert.ok(js.includes("add('hunter-book'")&&js.includes('backpackExtraSlots'),'Book must be present inside the backpack grid');
 assert.ok(bookCss.includes('hb-v072-access'),'Book shortcut misses painted UI styling');
 const mustExist=['ui/skin/panel.png','ui/skin/button-red.png','ui/skin/button-neutral.png','ui/skin/paper.png',
  'ui/village.png','ui/atlas-00.png','ui/atlas-01.png','ui/abilities/necromancer.png',
