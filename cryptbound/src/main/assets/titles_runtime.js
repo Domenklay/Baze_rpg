@@ -73,6 +73,7 @@ function curSup(r,key){return (r.titleSupplies&&r.titleSupplies[key])||0;}
 function reward(r,t,levelNum,h){
  var got=spellRewards[t.id];if(got)h.grant(got[0],got[1],'title');
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
+ if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',1);
  if(t.id==='adv_magic_bandit')supply(r,'noble',1);
  if(t.id==='adv_treasure_hunter')supply(r,'hunter_piece',1);
  if(t.id==='adv_royal_rune')supply(r,'rune_piece',1);
@@ -121,6 +122,8 @@ function toolOf(r){
  if(has(r,'adv_rune_master'))return {name:has(r,'adv_holy_rune')?'Арканный тигель':has(r,'adv_great_enchanter')?'Тигель зачарователя':'Магический тигель',icon:'crucible',kind:'rune'};
  if(has(r,'adv_demon_hunter'))return {name:has(r,'adv_farplane')?'Загробный арбалет':has(r,'adv_elf_king')?'Королевский арбалет':has(r,'adv_legendary_hunter')?'Легендарный арбалет':'Арбалет охотника',icon:'crossbow',kind:'bow'};
  if(has(r,'adv_night_walker'))return {name:has(r,'adv_farplane')?'Загробный фонарь':has(r,'adv_god_thieves')?'Воровской фонарь':has(r,'adv_elf_king')?'Эльфийский фонарь':'Фонарь странника',icon:'lantern',kind:'lantern'};
+ if(has(r,'adv_explorer')||has(r,'adv_explorationist'))return {name:has(r,'adv_explorer')?'Компас исследователя':'Компас первопроходца',icon:'compass',kind:'compass'};
+
  return null;
 }
 function undead(e){return /нежит|скел|мертв|лич|зомб|труп|костян|призрак/i.test((e&&e.name)||'');}
@@ -233,6 +236,12 @@ function onScrap(r,it,h){
 }
 function useTool(r,h,selected){
  var tool=toolOf(r);if(!tool)return 'Сначала изучите звание III ранга авантюриста.';
+ if(tool.kind==='compass'){
+  if(curSup(r,'compass')<=0)return 'Компас уже использован.';
+  supply(r,'compass',-1);
+  if(has(r,'adv_explorationist')){var money=25+10*level(r,'adv_explorationist');r.gold=(r.gold||0)+money;h.addMaterial('древесина',1+level(r,'adv_explorationist'));return 'Компас помог найти '+money+' монет и древесину.';}
+  var amount=2+level(r,'adv_explorer');h.addMaterial('древесина',amount);h.addMaterial('камень',amount);return 'Компас указал на древесину и камень: ×'+amount+'.';
+ }
  if(tool.kind==='lantern'){
   if(curSup(r,'wick')<=0)return 'Нужен фитиль фонаря.';
   var t=r.tiles.find(function(t){return !t.revealed&&(t.kind==='secret'||t.kind==='chamber'||t.hasKey);});
