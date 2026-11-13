@@ -36,7 +36,8 @@ for(const sprite of ['hunter_spread.svg','hunter_row.svg','hunter_stage.svg','hu
  assert.ok(fs.statSync(file).size>450,'Painted UI sprite empty: '+sprite);
 }
 assert.ok(bookCss.includes('hunter_spread.svg')&&bookCss.includes('hunter_stage.svg'),'Bestiary book textures not enabled');
-assert.ok(bookCss.includes('minmax(0,44%) minmax(0,56%)'),'Portrait screen must keep the two facing book pages');
+assert.ok(bookCss.includes('minmax(0,50%) minmax(0,50%)'),'Portrait screen must keep the two facing book pages');
+assert.ok(bookCss.includes('overflow-y:auto')&&bookCss.includes('hb-stage-copy')===false,'Avoid clipped stage text and unbounded journal rows');
 assert.ok(js.includes('spell-target-banner')&&js.includes('cast-target')&&js.includes('cancel-target'),'Target selection mode is not present');
 assert.ok(js.includes('gear_boots_hunter.svg')&&js.includes('gear_ring_hunter.svg'),'Boot and ring graphics not wired to inventory');
 const painted=fs.readFileSync(path.join(root,'painted.css'),'utf8');
