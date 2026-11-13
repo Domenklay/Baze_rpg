@@ -108,7 +108,7 @@ function stats(){
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
  a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01));
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge'),0,50)};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
@@ -1426,6 +1426,7 @@ function consumeTurn(){
   if(counter>0&&e.hp>0){e.hp-=counter;log('Ответный урон: '+counter+'.');if(e.hp<=0)kill(t);}
  });
  if(r.chamberActive!=null)chamberEnemyPhase(frozen);
+ if(r.scoutDodgeTurns>0)r.scoutDodgeTurns--;
  if(r.hp<=0){
   if(r.resurrection>0){r.resurrection--;r.hp=Math.max(1,Math.ceil(stats().hp*.45));r.poisonTurns=0;log('Печать возрождения спасает героя.');}
   else{die();return false;}
@@ -1561,7 +1562,7 @@ function setHeroPose(pose){if(!r)return;r.fx=pose;r.fxUntil=Date.now()+1000;r.po
 var SKILLS={
  necromancer:{name:'Призвать скелета',icon:'☠',cost:8,turns:5},
  executioner:{name:'Казнящий удар',icon:'⚔',cost:4,turns:4},
- scout:{name:'Разведка',icon:'◉',cost:6,turns:5},
+ scout:{name:'Двойной выстрел',icon:'➶',cost:6,turns:5},
  sorceress:{name:'Грозовое эхо',icon:'ϟ',cost:9,turns:5},
  guardian:{name:'Нерушимый удар',icon:'♜',cost:6,turns:4},
  assassin:{name:'Ядовитый клинок',icon:'☽',cost:5,turns:4}
@@ -1571,10 +1572,10 @@ function useSkill(chosenTarget){
  var skill=SKILLS[r.class];
  if(r.turn-r.skillUsed<skill.turns){toast('Умение восстанавливается.');return;}
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
- var cave=activeRoom();if(cave&&r.class==='scout'){toast('Разведка применяется в основном лабиринте.');return;}
+ var cave=activeRoom();
  var caveGuards=cave?livingRoomGuards():null;
  var available=cave?caveGuards:enemies();
- var single=['executioner','guardian','assassin'].includes(r.class);
+ var single=['executioner','guardian','assassin','scout'].includes(r.class);
  if(single&&available.length>1&&chosenTarget==null){
   r.pendingSkill=r.class;close();draw();save();toast('Выберите врага для «'+skill.name+'».');return;
  }
@@ -1587,7 +1588,7 @@ function useSkill(chosenTarget){
  }
  r.pendingSkill=null;
  var t=cave?(selected?{foe:selected,roomGuard:true}:caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):selected||target(),st=stats(),damage=0;
- if(t&&['executioner','guardian','assassin'].includes(r.class)){
+ if(t&&['executioner','guardian','assassin','scout'].includes(r.class)){
   if(!counterBeforeHero(t.foe,t.roomGuard?null:t,cave&&cave.room)||!r)return;
   if(t.foe.hp<=0){finishAction();return;}
  }
@@ -1623,13 +1624,17 @@ function useSkill(chosenTarget){
    provoke(t.foe);t.foe.hp-=damage;t.foe.poison=3;
   log('Ядовитый клинок: '+damage+' урона, яд на три хода.');
   if(t.foe.hp<=0)skillKill(t);
- }else{
-  var count=0;
-  for(var i=0;i<3;i++){var candidates=r.tiles.filter(function(tile){return CR.exploreStatus(tile,r.tiles).ok;});
-   if(!candidates.length)break;var cell=pick(candidates);
-   cell.revealed=true;if(cell.kind==='trap')triggerTrap(cell);if(cell.kind==='empty')cell.cleared=true;count++;}
-  addGold(4+r.floor*2);
-  log('Лучник разведывает '+count+' доступных клеток.');
+ }else if(r.class==='scout'){
+  if(!t){toast('Нужен обнаруженный противник для двойного выстрела.');return;}
+  r.scoutDodgeTurns=1;
+  var arrows=0;
+  for(var shot=0;shot<2&&t.foe.hp>0;shot++){
+   var arrowDamage=Math.max(1,Math.floor(st.atk*.95)+rand(0,3)-(t.foe.def||0)-(t.foe.guard||0));
+   provoke(t.foe,'hero');
+   t.foe.hp-=arrowDamage;damage+=arrowDamage;arrows++;
+   if(t.foe.hp<=0)skillKill(t);
+  }
+  log('Двойной выстрел: '+arrows+' стрелы, '+damage+' урона. Уклонение +50 на ход.');
  }
  r.mp-=skill.cost;r.skillUsed=r.turn;setHeroPose('skill');
  finishAction();
