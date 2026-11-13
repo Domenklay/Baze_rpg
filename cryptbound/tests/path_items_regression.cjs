@@ -44,19 +44,30 @@ assert.equal(foe.hp,120);assert.equal(run.turn,blocked,'Hidden intervening slab 
 passage.revealed=true;passage.kind='enemy';passage.foe={hp:10,ranged:true};passage.cleared=false;
 A('strike',enemy.id);assert.equal(run.turn,blocked,'Another monster is not a walkable corridor');
 passage.kind='empty';passage.foe=null;passage.cleared=true;
-// A finishing kill reveals ordinary floor but never disarms the hidden trap.
-foe.hp=1;run.hp=5000;A('strike',enemy.id);
+// Full-floor victory automatically and safely disarms every trap.
+foe.hp=1;run.hp=5000;
+const clearHp=run.hp,clearTurn=run.turn;
+A('strike',enemy.id);
 assert.equal(run.floorCleared,true);
-assert.equal(trap.revealed,false,'Full clear leaves the trap under its slab');
-assert.equal(trap.trapSpent,false,'Full clear never disarms the trap');
-// The standard two-stage interaction still applies.
+assert.equal(trap.revealed,true,'Full clear uncovers hidden traps');
+assert.equal(trap.trapSpent,true,'Full clear auto-disarms them');
+assert.equal(trap.trapActive,false,'Auto-disarmed traps are inactive');
+assert.equal(run.trappedTile,null,'Auto-clear does not hold the hero');
+assert.equal(run.hp,clearHp,'Full clear does no trap damage');
+assert.equal(run.turn,clearTurn+1,'Clear needs no extra turns');
+const disarmedTurn=run.turn,disarmedHp=run.hp;
+A('pickup',trap.id);
+assert.equal(run.turn,disarmedTurn,'Disarmed trap costs no further interaction');
+assert.equal(run.hp,disarmedHp,'Disarmed trap is harmless');
+// Before completion of a floor, manually found traps are still dangerous.
+run.floorCleared=false;trap.revealed=false;trap.cleared=false;trap.trapSpent=false;trap.trapActive=false;
 run.hp=5000;const trapHp=run.hp;
 A('reveal',trap.id);
 assert.equal(trap.trapActive,true);assert.equal(run.trappedTile,trap.id);
-assert.ok(run.hp<trapHp,'Manual opening must damage the hero');
+assert.ok(run.hp<trapHp,'Manual opening before full clear must damage the hero');
 A('pickup',trap.id);
 assert.equal(trap.trapSpent,true);assert.equal(run.trappedTile,null);
-// A magic-revealed trap is also live, not silently defused by its first tap.
+// A trap exposed by magic without activation is still live until victory.
 trap.revealed=true;trap.cleared=false;trap.trapSpent=false;trap.trapActive=false;
 A('pickup',trap.id);assert.equal(trap.trapSpent,false);assert.equal(trap.trapActive,true);
 A('pickup',trap.id);assert.equal(trap.trapSpent,true);assert.equal(run.trappedTile,null);
@@ -89,4 +100,4 @@ A('active-item-info','prepared:1');assert.equal(run.preparedPotions[1],'ghost');
 A('active-item-use','prepared:1');assert.equal(run.preparedPotions[1],null);
 FE.ensure(run).items.water=1;
 A('forest-pack');assert.match(el('overlay').innerHTML,/data-action="active-item-info" data-id="forest:water"/);
-console.log('PASS reachable combat corridors, dangerous traps on full clear, and inspection of all backpack consumables');
+console.log('PASS reachable combat corridors, automatic safe trap disarm after full clear, and inspection of all backpack consumables');
