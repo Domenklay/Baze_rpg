@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
 const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 /* Existing v0.7.2 tests skip directly to distant floors. Claim the newly required book
@@ -75,26 +75,35 @@ test('New expeditions start without equipment placeholders',()=>{
  assert.equal(Object.values(r.equip).filter(Boolean).length,0);
 });
 r.hp=5000;r.mp=5000;
-test('Only one specialization per title fork; chosen path remains upgradeable',()=>{
- const oldEp=r.ep,oldTitles=Object.assign({},r.talents);r.ep=3000;
- A('talent','fortune');A('talent','seeker');assert.ok(r.talents.seeker>0);
- let before=r.ep;A('talent','explorer');assert.equal(r.ep,before);
- assert.equal(r.talents.explorer||0,0);
- A('talent','vault');assert.ok(r.talents.vault>0);
- before=r.ep;A('talent','stealth');assert.equal(r.ep,before);
- assert.equal(r.talents.stealth||0,0);
- A('talent','secretkeeper');assert.ok(r.talents.secretkeeper>0);
- before=r.ep;A('talent','scavenger');assert.equal(r.ep,before);
- assert.equal(r.talents.scavenger||0,0);
- const rank=r.talents.vault;A('talent','vault');
- assert.equal(r.talents.vault,rank+1);
- r.talents=oldTitles;r.ep=oldEp;api.debug.draw();
+test('65 original title nodes, exclusive branches and rank upgrades',()=>{
+ const titles=win.CryptTitles,system=win.CryptTitlesRuntime;
+ assert.equal(titles.length,65);
+ assert.equal(titles.filter(t=>t.tree===0).length,22);
+ assert.equal(titles.filter(t=>t.tree===1).length,22);
+ assert.equal(titles.filter(t=>t.tree===2).length,21);
+ const oldEp=r.ep,oldTitles=Object.assign({},r.talents),oldSupplies=Object.assign({},r.titleSupplies);
+ r.ep=3000;
+ A('talent','adv_seeker');A('talent','adv_explorer');assert.ok(r.talents.adv_explorer>0);
+ let before=r.ep;A('talent','adv_explorationist');assert.equal(r.ep,before);
+ assert.equal(r.talents.adv_explorationist||0,0);
+ A('talent','adv_night_walker');assert.ok(r.talents.adv_night_walker>0);
+ before=r.ep;A('talent','adv_demon_hunter');assert.equal(r.ep,before);
+ assert.equal(r.talents.adv_demon_hunter||0,0);
+ A('talent','adv_magic_bandit');assert.ok(r.talents.adv_magic_bandit>0);
+ before=r.ep;A('talent','adv_elven_ranger');assert.equal(r.ep,before);
+ const rank=r.talents.adv_night_walker;A('talent','adv_night_walker');
+ assert.equal(r.talents.adv_night_walker,rank+1);
+ A('talent','adv_god_thieves');assert.equal(r.talents.adv_god_thieves,1);
+ r.ep=1000;A('title-mastery','adv_god_thieves:atk');
+ assert.equal(r.titleMastery.adv_god_thieves.atk,1);
+ assert.equal(system.toolOf(r).icon,'lantern');
+ r.talents=oldTitles;r.titleSupplies=oldSupplies;r.titleMastery={};r.ep=oldEp;api.debug.draw();
 });
 
 test('Adventure remains, soul use and one-time treasure',()=>{
  const old=Object.assign({},r.talents);
  const originalTiles=JSON.parse(JSON.stringify(r.tiles));
- r.talents.fortune=1;r.talents.explorer=1;r.talents.cartographer=1;
+ r.talents.adv_seeker=1;r.talents.adv_explorer=1;r.talents.adv_night_walker=1;r.talents.adv_magic_bandit=1;r.talents.adv_farplane=1;
  const corpse=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(corpse);
  corpse.kind='corpse';corpse.corpseId='storm-smith';corpse.revealed=true;corpse.cleared=false;
  const n=r.items.length,before=state.seq;
@@ -114,7 +123,7 @@ test('Adventure remains, soul use and one-time treasure',()=>{
 test('Side chamber guard, central loot and talent-gated secret',()=>{
  const old=Object.assign({},r.talents);
  const originalTiles=JSON.parse(JSON.stringify(r.tiles));
- r.talents.fortune=1;r.talents.seeker=1;r.talents.stealth=1;r.talents.scavenger=1;
+ r.talents.adv_seeker=1;r.talents.adv_explorer=1;r.talents.adv_night_walker=1;r.talents.adv_magic_bandit=1;r.talents.adv_god_thieves=1;
  const room=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(room);
  room.kind='chamber';room.revealed=true;room.cleared=false;
  A('pickup',room.id);assert.ok(room.room);
@@ -292,7 +301,7 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
  const firstStock=state.meta.materials['Экспедиционный образец']||0;
  const firstDiamond=state.meta.diamonds||0,firstRainbow=state.meta.rainbowDiamonds||0;
  run.materials['Экспедиционный образец']=20;run.diamonds=3;run.gold=88;
- run.talents.fortune=1;run.scrolls.bolt=7;
+ run.talents.adv_seeker=1;run.scrolls.bolt=7;
  const equippedIds=Object.values(run.equip).filter(Boolean);
  A('safe-portal');assert.equal(state.run,run);
  for(let stage=0;stage<3;stage++){
@@ -318,7 +327,7 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
    assert.equal(carry.locationIndex,stage+1);
    assert.ok(carry.gold>=88); // Full-cleared floors pay extra gold.
    assert.equal(carry.scrolls.bolt,7);
-   assert.equal(carry.talents.fortune,1);
+   assert.equal(carry.talents.adv_seeker,1);
    for(const id of equippedIds)assert.ok(carry.items.some(i=>i.id===id));
    assert.equal(state.meta.materials['Экспедиционный образец'],firstStock+20);
    assert.ok(state.meta.diamonds>=firstDiamond+3);
@@ -615,7 +624,7 @@ test('Every region has a unique one-time lore puzzle with adventurer clue',()=>{
  const run=state.run,point=run.tiles.find(t=>t.kind==='empty'&&!t.revealed);
  assert.ok(point);
  run.hp=9999;run.mp=9999;
- run.talents.seeker=1;
+ run.talents.adv_seeker=1;
  point.kind='puzzle';point.revealed=true;point.cleared=false;
  const oldRainbow=state.meta.rainbowDiamonds,turn=run.turn;
  A('pickup',point.id);
