@@ -18,6 +18,19 @@ for(const part of ['expedition-top','expedition-effects','battle-dock','inventor
 assert.ok(js.includes('hb-v072-access'),'Book shortcut is not integrated into the v0.7.2 HUD');
 assert.ok(js.includes('hb-inventory-access'),'Book is not integrated into the painted inventory');
 assert.ok(bookCss.includes('hb-v072-access'),'Book shortcut misses painted UI styling');
+const mustExist=['ui/skin/panel.png','ui/skin/button-red.png','ui/skin/button-neutral.png','ui/skin/paper.png',
+ 'ui/village.png','ui/atlas-00.png','ui/atlas-01.png','ui/abilities/necromancer.png',
+ 'ui/locations/0-cover.svg','ui/locations/0-floor.svg',
+ 'ui/summon-guard.png','imported/equipment/catalog.js','imported/enemies/portraits/wolf.png'];
+for(const file of mustExist){
+ const p=path.join(root,file);
+ assert.ok(fs.existsSync(p),'v0.7.2 drawn art is absent: '+file);
+ assert.ok(fs.statSync(p).size>80,'Empty v0.7.2 asset: '+file);
+}
+assert.equal(fs.readdirSync(path.join(root,'ui/locations')).filter(x=>x.endsWith('.svg')).length,60,
+ 'All 30 locations need floor and cover art');
+assert.equal(fs.readdirSync(path.join(root,'ui')).filter(x=>x.startsWith('atlas-')&&x.endsWith('.png')).length,12,
+ '12 original area atlases must be packaged');
 const painted=fs.readFileSync(path.join(root,'painted.css'),'utf8');
 assert.ok(painted.includes('--ui-frame'),'v0.7.2 illustrated panel nine-slice style missing');
 console.log('PASS v0.7.2 painted UI preserved, b​​estiary integrated, all referenced assets present.');

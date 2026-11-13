@@ -1,0 +1,175 @@
+/* UI regression: NODE_PATH pointing at Playwright, UI_URL=http://127.0.0.1:8123 node cryptbound/tests/ui.cjs
+   Serve cryptbound/src/main/assets. Uses Chromium provided by the development environment. */
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+ try {
+ const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('favicon.ico'))errors.push(r.status()+' '+r.url());});
+ const url=process.env.UI_URL||'http://127.0.0.1:8123';
+ await page.goto(url);await page.locator('.village-scene').waitFor();
+ assert.equal(await page.locator('#navbar').isVisible(),true);
+ assert.equal(await page.locator('.act-entry').count(),10);
+ await page.locator('.act-entry').first().locator('summary').click();assert.equal(await page.locator('.act-entry[open] li').count(),3);
+ if(process.env.UI_SCREENSHOTS){fs.mkdirSync(process.env.UI_SCREENSHOTS,{recursive:true});await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/village.png'});}
+ await page.locator('#navbar [data-action="choose"]').click();
+ assert.equal(await page.locator('[data-action="begin"]').count(),6);
+ await page.locator('[data-action="begin"][data-id="executioner"]').click();
+ assert.equal(await page.locator('#navbar').isVisible(),false);
+ assert.equal(await page.locator('.maze .tile').count(),25);
+ assert.equal(await page.locator('.quick-spell').count(),3);
+ assert.equal(await page.locator('.ability-empty:disabled').count(),2);
+ assert.equal(await page.locator('.class-ability').count(),1);
+ assert.equal(await page.locator('.dungeon-potion-slot').count(),3);
+ for(const [width,height] of [[320,568],[360,640],[390,720],[390,844],[430,932],[480,736]]){
+  await page.setViewportSize({width,height});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const geometry=await page.evaluate(()=>{const b=document.querySelector('.maze').getBoundingClientRect(),t=document.querySelector('.maze .tile').getBoundingClientRect(),dock=document.querySelector('.battle-dock').getBoundingClientRect();return {board:b.width-b.height,tile:t.width-t.height,bottom:dock.bottom,width:document.body.scrollWidth,scroll:document.querySelector('#content').scrollHeight,client:document.querySelector('#content').clientHeight,top:document.querySelector('.expedition-top').getBoundingClientRect().top};});
+  assert.ok(Math.abs(geometry.board)<1,'Square board at '+width);
+  assert.ok(Math.abs(geometry.tile)<1,'Square tiles at '+width);
+  assert.ok(geometry.bottom<=height+1,'Battle controls fit at '+width+'×'+height);
+  assert.ok(geometry.width<=width,'No horizontal overflow');
+  assert.ok(geometry.scroll<=geometry.client+1,'Battle screen does not scroll vertically');
+  assert.ok(geometry.top>=0,'Header stays inside the viewport');
+ }
+ await page.setViewportSize({width:390,height:844});
+ const turns=await page.evaluate(()=>Crypt.state().run.turn);
+ await page.locator('[data-action="ui-panel"][data-id="bag"]').click();
+ assert.equal(await page.locator('.paper-doll .gear-slot').count(),9);
+ assert.equal(await page.locator('.inventory-stats dt').count(),8);
+ assert.ok(await page.locator('.inventory-grid').evaluate(el=>el.scrollHeight>el.clientHeight),'Backpack scrolls');
+ await page.locator('.gear-slot[data-id="weapon"]').click();await page.locator('.gear-two-columns').waitFor();
+ await page.locator('.dialog .panel-close[data-action="ui-panel"][data-id="bag"]').click();
+ assert.equal(await page.evaluate(()=>Crypt.state().run.turn),turns,'Inventory and comparison are free');
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/inventory.png'});
+ await page.locator('.panel-close').click();
+ await page.locator('[data-action="ui-panel"][data-id="spells"]').click();
+ await page.locator('[data-action="spell-school"][data-id="fire"]').click();
+ await page.locator('[data-action="spell-rank"][data-id="2"]').click();
+ assert.equal(await page.locator('.book-spell').count(),1);
+ assert.ok((await page.locator('.book-spell small').innerText()).startsWith('2★'));
+ await page.locator('.book-spell').click();assert.equal(await page.locator('[data-action="pin-spell"]').count(),0);
+ await page.locator('.panel-close').click();
+ await page.locator('[data-action="spell-page"][data-id="special"]').click();
+ assert.equal(await page.locator('.book-spell').count(),1);assert.ok((await page.locator('.book-spell small').innerText()).startsWith('6★'));
+ await page.locator('[data-action="spell-school"][data-id="all"]').click();
+ assert.equal(await page.locator('.book-spell').count(),6);
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/spellbook.png'});
+ await page.locator('.panel-close').click();
+ await page.evaluate(()=>{const r=Crypt.state().run;r.hp-=20;r.scrolls.heal=1;Crypt.debug.draw();});
+ const castBefore=await page.evaluate(()=>({turn:Crypt.state().run.turn,hp:Crypt.state().run.hp,mp:Crypt.state().run.mp}));
+ await page.locator('[data-action="ui-panel"][data-id="spells"]').click();
+ await page.locator('[data-action="spell-page"][data-id="rank"]').click();
+ await page.locator('[data-action="spell-rank"][data-id="0"]').click();
+ await page.locator('[data-action="spell-school"][data-id="light"]').click();
+ await page.locator('[data-action="spell-detail"][data-id="heal"]').click();
+ assert.equal(await page.locator('.spell-detail-page').count(),1);
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/spell-detail.png'});
+ await page.locator('[data-action="cast-modal"][data-id="heal"]').click();
+ assert.equal(await page.locator('.dialog').count(),0,'Casting returns to the board');
+ const castAfter=await page.evaluate(()=>({turn:Crypt.state().run.turn,hp:Crypt.state().run.hp,mp:Crypt.state().run.mp,scrolls:Crypt.state().run.scrolls.heal}));
+ assert.equal(castAfter.turn,castBefore.turn+1);assert.equal(castAfter.scrolls,0);assert.ok(castAfter.hp>castBefore.hp);assert.ok(castAfter.mp<castBefore.mp);
+ await page.evaluate(()=>{Crypt.state().run.ep=100;Crypt.debug.draw();});
+ await page.locator('[data-action="ui-panel"][data-id="talents"]').first().click();
+ await page.locator('[data-action="tree"][data-id="0"]').click();
+ assert.equal(await page.locator('.talent-dot').count(),15);
+ assert.equal(await page.locator('.talent-lines path').count(),14);
+ await page.locator('[data-action="title-detail"][data-id="blade"]').click();
+ await page.locator('[data-action="talent"][data-id="blade"]').click();
+ assert.equal(await page.evaluate(()=>Crypt.state().run.talents.blade),1);
+ await page.locator('[data-action="title-detail"][data-id="iron"]').click();
+ await page.locator('[data-action="talent"][data-id="iron"]').click();
+ await page.locator('[data-action="title-detail"][data-id="duelist"]').click();
+ assert.equal(await page.locator('.talent-inspector [data-action="talent"]').isDisabled(),true,'Sibling path remains locked');
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/talents.png'});
+ await page.locator('.panel-close').click();
+ await page.evaluate(()=>{Crypt.state().run.poisonTurns=3;Crypt.debug.draw();});
+ await page.locator('[data-action="effect-info"][data-id="poisonTurns"]').click();
+ assert.ok((await page.locator('.dialog').innerText()).includes('Отравление'));await page.locator('[data-action="close"]').click();
+ const before=await page.evaluate(()=>Crypt.state().run.turn);
+ await page.locator('.tile-frontier').first().click();
+ assert.equal(await page.evaluate(()=>Crypt.state().run.turn),before+1);
+ await page.evaluate(()=>{Crypt.debug.action('begin','necromancer');Crypt.debug.action('skill');});
+ await page.locator('[data-action="inspect-summon"]').first().click();
+ assert.equal(await page.locator('.unit-dossier .summon-art').count(),1);
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/summon.png'});
+ await page.locator('.panel-close').click();
+ await page.evaluate(()=>{const r=Crypt.state().run;const tile=r.tiles.find(t=>t.foe);tile.revealed=true;Crypt.debug.action('inspect-enemy',tile.id);});
+ assert.equal(await page.locator('.unit-dossier').count(),1);
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/monster.png'});
+ await page.locator('.panel-close').click();
+ await page.evaluate(()=>Crypt.debug.action('gear-sets'));
+ assert.equal(await page.locator('.progression-sheet').count(),1);assert.equal(await page.locator('.gear-layout').count(),0,'Secondary inventory no longer duplicates the whole hero');
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/progression.png'});
+ await page.locator('.panel-close').click();await page.locator('.panel-close').click();
+ await page.evaluate(()=>Crypt.debug.action('close'));
+ // Side rooms keep the battle HUD and isolate every attack from the main map.
+ await page.evaluate(()=>{
+  Crypt.debug.action('begin','executioner');const r=Crypt.state().run;
+  const t=r.tiles.find(t=>t.kind==='empty');t.kind='chamber';t.revealed=true;t.cleared=false;
+  Crypt.debug.action('pickup',t.id);t.room.secret=true;
+  for(const g of t.room.guards){g.hp=100;g.maxHp=100;g.atk=1;g.cooldown=99;}
+  t.room.guardHp=300;r.scrolls.bolt=1;Crypt.debug.draw();
+ });
+ assert.equal(await page.locator('.chamber-maze .tile').count(),9);
+ assert.equal(await page.locator('.dialog').count(),0,'A cave is not a modal');
+ assert.equal(await page.locator('.dock-tools').count(),1);
+ assert.equal(await page.locator('.cave-secret').isDisabled(),true);
+ assert.ok((await page.locator('.cave-secret').getAttribute('class')).includes('secret-unknown'));
+ for(const [width,height] of [[320,568],[360,640],[480,736]]){
+  await page.setViewportSize({width,height});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const layout=await page.evaluate(()=>({bottom:document.querySelector('.battle-dock').getBoundingClientRect().bottom,scroll:document.querySelector('#content').scrollHeight,client:document.querySelector('#content').clientHeight}));
+  assert.ok(layout.bottom<=height+1&&layout.scroll<=layout.client+1,'Cave HUD fits '+width+'×'+height);
+ }
+ await page.setViewportSize({width:390,height:844});await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const caveId=await page.evaluate(()=>Crypt.state().run.chamberActive);
+ const mainEnemies=await page.evaluate(()=>Crypt.state().run.tiles.filter(t=>t.foe).map(t=>[t.id,t.foe.hp]));
+ await page.locator('.cave-enemy').first().dispatchEvent('contextmenu');
+ assert.equal(await page.locator('.unit-dossier').count(),1);
+ await page.locator('.panel-close').click();assert.equal(await page.locator('.chamber-maze .tile').count(),9);
+ await page.locator('[data-action="ui-panel"][data-id="bag"]').click();await page.locator('.panel-close').click();
+ assert.equal(await page.evaluate(()=>Crypt.state().run.chamberActive),caveId,'Closing inventory stays in the cave');
+ const caveHp=await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp);
+ await page.locator('[data-action="ui-panel"][data-id="spells"]').click();
+ await page.locator('[data-action="spell-school"][data-id="dark"]').click();
+ await page.locator('[data-action="spell-detail"][data-id="bolt"]').click();
+ await page.locator('.dialog [data-action="cast-modal"][data-id="bolt"]').click();
+ assert.equal(await page.evaluate(()=>Crypt.state().run.chamberActive),caveId);
+ assert.ok(await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp)<caveHp);
+ const skillHp=await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp);
+ await page.locator('.class-ability').click();
+ assert.ok(await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp)<skillHp,'Class ability targets cave guards');
+ assert.deepEqual(await page.evaluate(()=>Crypt.state().run.tiles.filter(t=>t.foe).map(t=>[t.id,t.foe.hp])),mainEnemies,'Main enemies are not hit from the cave');
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/cave.png'});
+ await page.evaluate(()=>{const r=Crypt.state().run;const room=r.tiles[r.chamberActive].room;room.guards.forEach(g=>{g.hp=1;g.guard=0;g.evadeCharges=0;});room.guardHp=room.guards.length;Crypt.debug.draw();});
+ while(await page.locator('.cave-enemy').count())await page.locator('.cave-enemy').first().click();
+ assert.equal(await page.locator('.cave-loot').isDisabled(),false);
+ await page.locator('.cave-loot').click();
+ assert.equal(await page.locator('.chamber-maze .tile').count(),9,'Collecting the center does not close the cave');
+ assert.equal(await page.locator('.cave-secret').isDisabled(),true,'No search talent: the outer item stays inactive');
+ await page.evaluate(()=>{Crypt.state().run.talents.scavenger=1;Crypt.debug.draw();});
+ assert.equal(await page.locator('.cave-secret').isDisabled(),false);
+ assert.ok((await page.locator('.cave-secret').getAttribute('class')).includes('secret-known'));
+ const secrets=await page.evaluate(()=>Crypt.state().run.secrets);
+ await page.locator('.cave-secret').click();assert.equal(await page.evaluate(()=>Crypt.state().run.secrets),secrets+1);
+ await page.locator('.cave-exit').click();assert.equal(await page.locator('.maze .tile').count(),25);
+ await page.evaluate(()=>Crypt.debug.action('close'));
+ // Inspect each location and load both original texture layers. No broken resources.
+ for(let act=0;act<10;act++)for(let loc=0;loc<3;loc++){
+  await page.evaluate(([a,l])=>{const r=Crypt.state().run;r.actIndex=a;r.locationIndex=l;Crypt.debug.draw();},[act,loc]);
+  assert.equal(await page.locator('.dungeon-root').getAttribute('data-location'),String(act*3+loc));
+  for(const suffix of ['floor','cover'])assert.equal((await page.request.get(url+'/ui/locations/'+(act*3+loc)+'-'+suffix+'.svg')).status(),200);
+ }
+ await page.evaluate(()=>{const r=Crypt.state().run;r.actIndex=0;r.locationIndex=0;r.poisonTurns=0;Crypt.debug.draw();Crypt.save();});
+ if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/maze.png'});
+ const saved=await page.evaluate(()=>({turn:Crypt.state().run.turn,school:Crypt.state().run.spellSchool}));
+ await page.reload();assert.deepEqual(await page.evaluate(()=>({turn:Crypt.state().run.turn,school:Crypt.state().run.spellSchool})),saved);
+ assert.deepEqual(errors,[]);
+ console.log('PASS mobile UI: 6 viewport sizes, 30 locations, inventory, spell filters/quick slot, talent forks, buffs, turn cost, inline 3×3 caves and isolated room combat, save/reload; no browser or asset errors');
+ } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
