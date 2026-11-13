@@ -1441,7 +1441,7 @@ function consumeTurn(){
 function kill(t){
  if(FD)FD.capture();
  var e=t.foe;if(!e||e.hp>0)return;
- e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
+ e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep*12;
  if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
   t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
    shadow.kind='empty';shadow.cleared=true;shadow.foe=null;shadow.forestAlphaAnchor=null;shadow.revealed=true;
@@ -1664,7 +1664,7 @@ function spellPower(sp,st){
  if(sp.school==='dark'&&Math.random()*100<bonus('darkCrit'))amount*=2;
  if(sp.school==='fire'&&Math.random()*100<bonus('fireProc'))amount=Math.ceil(amount*1.65);
  if(sp.school==='light'&&Math.random()*100<bonus('lightEcho'))amount=Math.ceil(amount*1.55);
- return amount;
+ return Math.max(1,Math.ceil(amount*TR.spellMultiplier(r,sp)));
 }
 
 function advancedCast(sp,chosenTarget){
@@ -1684,8 +1684,9 @@ function advancedCast(sp,chosenTarget){
   return count;
  }
  if(key==='earthgate'){
-  var enhanced=lvl('sage')>0;
-  var distance=enhanced?Math.min(50,30+lvl('sage')*6+Math.floor(st.pow/12)):Math.max(10,10+Math.floor(st.pow/8));
+  var enhanced=lvl('mag_planar')>0;
+  var mastery=TR.rank5(r,'mag_planar','pow')+TR.rank5(r,'mag_planar','hp')+TR.rank5(r,'mag_planar','mp');
+   var distance=Math.max(10,10+Math.floor(st.pow/8)+(enhanced?2*mastery:0));
   var old=r.floor;r.floor=Math.max(1,r.floor-distance);
   r.key=false;r.portalReady=false;r.shield=0;r.turn++;
   startFloor();log('Врата Земли возвращают на '+(old-r.floor)+' этажей назад. Побеждённые боссы не возрождаются.');
@@ -1766,6 +1767,7 @@ function cast(id,chosenTarget){
  r.pendingSpell=null;
  setHeroPose('skill');
  r.scrolls[id]--;r.mp-=manaCost(sp);
+  TR.spellCast(r,sp,titleHelpers());
  if(sp.rank!==6&&sp.id!=='earthgate'){
   if(!Array.isArray(r.spellHistory))r.spellHistory=[];
   r.spellHistory.push(id);r.spellHistory=r.spellHistory.slice(-40);
@@ -2072,7 +2074,7 @@ function triggerTrap(t){
  var t=tile(id);if(!t||t.revealed)return;
  var access=CR.exploreStatus(t,r.tiles);
  if(!access.ok){toast(access.reason);return;}
- t.revealed=true;
+ t.revealed=true;r.ep+=8;
  var k=t.kind;
  if(k==='trap'){triggerTrap(t);log('Герой угодил в капкан. Нажмите на него, чтобы обезвредить.');}
  else if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
@@ -2112,9 +2114,9 @@ function descend(){
  if(!r.key){toast('Нужен ключ. Найдите ключника среди врагов.');return;}
  if(r.actIndex===0&&r.locationIndex===0&&r.floor===1&&!HB.owned(s.meta)){toast('Сначала найдите книгу у погибшего охотника.');return;}
  var heal=Math.floor(stats().hp*.16);
- r.floor++;r.ep+=2;r.hp=Math.min(stats().hp,r.hp+heal);
+ r.floor++;r.ep+=40;r.hp=Math.min(stats().hp,r.hp+heal);
  r.shield=0;r.turn++;startFloor();
- log('Новый этаж: +'+heal+' здоровья и +2 ✧.');
+ log('Новый этаж: +'+heal+' здоровья и +40 ✧.');
  save();draw();toast('Спуск на этаж '+r.floor+'.');
 }
 /* Souls belong to the current run. Corpse stories are one-off per run. */
@@ -2167,7 +2169,7 @@ function discoverCorpse(t){
 
 /* Optional 3×3 encounter map, stored in the source tile to survive saves. */
 function roomSecretAvailable(room){
- return !!(lvl('scavenger')||lvl('phantom'))&&(room.secret||lvl('phantom')>0);
+ return !!room.secret||TR.has(r,'adv_god_thieves');
 }
 function newSideRoom(){
  var reg=currentRegion(),count=r.floor>=35?4:3,slots=[1,3,5,2],guards=[];
@@ -2320,7 +2322,7 @@ function chamberSecret(id){
  if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||!roomSecretAvailable(t.room))return;
  t.room.secretTaken=true;t.cleared=true;r.secrets++;r.ep+=4;
  localAchievement('secret-room',2,'Тайна за стеной');
- if(lvl('phantom'))addItem('amulet',2);
+ if(TR.has(r,'adv_god_thieves'))addItem('amulet',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
  log('В боковой стене найдена тайная ниша.');fairyRemark('secret');
  finishAction();if(r)showChamber(t);
@@ -2512,6 +2514,7 @@ function upgrade(id){
 }
 function scrap(id){
  var i=item(id);if(!i||equipped(id))return;
+ TR.onScrap(r,i,titleHelpers());
  var coins=8+3*i.rarity+2*i.plus;r.gold+=coins;r.items=r.items.filter(function(x){return x.id!==i.id;});
  r.bagSelected=r.items.length?r.items[0].id:null;
  log('Разобрано: '+i.name+'. +'+coins+' монет.');draw();save();
