@@ -63,6 +63,8 @@ function unlocked(r,t){
 }
 function cost(r,t){
  var n=level(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
+ var main=(r.class==='necromancer'||r.class==='sorceress')?1:(r.class==='guardian'||r.class==='executioner')?0:2;
+ if(t.tree!==main)raw*=2;
  var noble=(r.titleSupplies&&r.titleSupplies.noble)||0;
  return Math.max(1,Math.ceil(raw*(1-Math.min(.27,noble*.09))));
 }
