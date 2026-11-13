@@ -13,7 +13,16 @@ function runAt(w,h){
  const argv=['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--allow-file-access-from-files',
   '--hide-scrollbars','--force-device-scale-factor=1','--virtual-time-budget=2500','--window-size='+w+','+h,
   '--dump-dom','file://'+fixturePath];
- const output=cp.execFileSync(chrome,argv,{encoding:'utf8',timeout:35000,maxBuffer:12*1024*1024,stdio:['ignore','pipe','ignore']});
+ let output;
+ for(let attempt=1;attempt<=2;attempt++){
+  try{
+   output=cp.execFileSync(chrome,argv,{encoding:'utf8',timeout:65000,maxBuffer:12*1024*1024,stdio:['ignore','pipe','ignore']});
+   break;
+  }catch(error){
+   if(error.code!=='ETIMEDOUT'||attempt===2)throw error;
+   console.warn('Chrome layout probe timed out at '+w+'x'+h+'; retrying in a fresh browser process');
+  }
+ }
  const match=output.match(/HUNTER_METRICS_([A-Za-z0-9+/=]+)/);
  assert.ok(match,'Chrome did not render a measurable journal for '+w+'x'+h);
  const z=JSON.parse(Buffer.from(match[1],'base64').toString('utf8')),eps=3;
