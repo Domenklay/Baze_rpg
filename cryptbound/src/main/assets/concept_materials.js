@@ -1,4 +1,4 @@
-/* Original RPG Clicker icons, embedded for offline game. */
+/* Original Clicker images embedded for offline runtime. */
 window.CryptConceptMaterials={
  "Малахит": "t3_concept_malakhit",
  "Медный мох": "t3_concept_mednyi_mokh",
@@ -69,5 +69,18 @@ window.CryptConceptMaterials={
  "Рог Первого загонщика": "t4_concept_rog_pervogo_zagonshchika",
  "Семя праматери гнилой рощи": "t4_concept_semia_pramateri_gniloi_roshchi",
  "Сердцелист": "t4_concept_serdtselist",
- "Слеза багряной заводи": "t4_concept_sleza_bagrianoi_zavodi"
+ "Слеза багряной заводи": "t4_concept_sleza_bagrianoi_zavodi",
+ "Сломанная ветвь Стража Древа": "t4_concept_slomannaia_vetv_strazha_dreva",
+ "Стрела Тисового капитана": "t4_concept_strela_tisovogo_kapitana",
+ "Тетива Первого охотника": "t4_concept_tetiva_pervogo_okhotnika",
+ "Тонкий клинок дворцового убийцы": "t4_concept_tonkii_klinok_dvortsovogo_ubiitsy",
+ "Тонкий загонный шнур": "t4_concept_tonkii_zagonnyi_shnur",
+ "Живолист": "t4_concept_zhivolist",
+ "Знак Пира Вечной Охоты": "t4_concept_znak_pira_vechnoi_okhoty",
+ "Чёрный адский опал": "t5_concept_chiornyi_adskii_opal",
+ "Факел Иерофанта топлива": "t5_concept_fakel_ierofanta_topliva",
+ "Флакон адского реактива": "t5_concept_flakon_adskogo_reaktiva",
+ "Ядро пожирателя стен": "t5_concept_iadro_pozhiratelia_sten",
+ "Кандалы Главного палача": "t5_concept_kandaly_glavnogo_palacha",
+ "Карта Верховного стратега": "t5_concept_karta_verkhovnogo_stratega"
 };
