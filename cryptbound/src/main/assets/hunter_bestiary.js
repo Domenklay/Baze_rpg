@@ -91,17 +91,25 @@ function render(meta,tab,selected){
     '<span class="hb-stage-copy"><strong>'+t+' убийств</strong><span>+'+x.increments[i]+' '+e(x.label)+'</span></span></div>';}).join('')+'</div>';
   body='<div class="hb-beasts-layout"><div class="hb-beast-list">'+list+'</div><div class="hb-detail">'+detail+'</div></div>';
  }else if(tab==='trophies'){
-  body='<div class="hb-trophy-intro">Трофеи особых охот открывают постоянные способности книги. Обычные элитники трофеев не выдают.</div>'+
-   '<div class="hb-trophy-list">'+trophies.map(function(t){var yes=!!b.trophies[t.id];
+  var found=trophies.filter(function(t){return !!b.trophies[t.id];}).length;
+  body='<div class="hb-secondary-pages"><aside class="hb-secondary-page"><h3>Трофеи охотника</h3>'+
+   '<p>Особая охота начинается только после того, как вы встретили редкого зверя и одолели его.</p>'+
+   '<p>Обычные элитные противники не дают уникальных трофеев. Побеждённые вожаки будут занесены сюда.</p>'+
+   '<p><b>Найдено трофеев: '+found+' / '+trophies.length+'</b></p></aside>'+
+   '<section class="hb-secondary-page"><div class="hb-trophy-list">'+trophies.map(function(t){var yes=!!b.trophies[t.id];
     return '<div class="hb-trophy"><span class="hb-trophy-icon '+(yes?'yes':'')+'">'+t.symbol+'</span><span><b>'+e(t.name)+'</b>'+
     '<strong>'+e(t.ability)+'</strong><small>'+e(t.desc)+'</small></span><span class="hb-trophy-state">'+(yes?'✓':'♧')+'</span></div>';
-   }).join('')+'</div>';
+   }).join('')+'</div></section></div>';
  }else{
   var bb=bonuses(meta),rows=beasts.map(function(x){return {name:statNames[x.effect],value:bb[x.effect]||0,suffix:x.effect==='trapReduce'||x.effect==='chestGold'||x.effect==='poisonResist'||x.effect==='poisonChance'||x.effect==='dodge'?'%':''};});
-  body='<div class="hb-bonus-title">Активные бонусы книги</div><div class="hb-bonus-list">'+
+  body='<div class="hb-secondary-pages"><aside class="hb-secondary-page"><h3>Знания леса</h3>'+
+   '<p>Изучение каждого вида постепенно усиливает героя. Награды за все пороги 5, 10, 20 и 40 убийств суммируются.</p>'+
+   '<p>Книга остаётся с вами между экспедициями. Бонусы действуют в Пограничных землях.</p>'+
+   '<p><b>Открыто существ: '+count+' / 10</b></p></aside>'+
+   '<section class="hb-secondary-page"><div class="hb-bonus-title">Активные бонусы книги</div><div class="hb-bonus-list">'+
    rows.map(function(x){return '<div><span>'+e(x.name)+'</span><strong>+'+x.value+x.suffix+'</strong></div>';}).join('')+
    (b.trophies.wolf?'<div><span>Воодушевление — атака героя и призванных</span><strong>+10%</strong></div>':'')+
-   '</div><p class="hb-description">Бонусы всех достигнутых порогов складываются. Прогресс книги сохраняется между экспедициями. Активна на территории Пограничных земель.</p>';
+   '</div></section></div>';
  }
  return '<div class="hb-window">'+header+tabs+'<div class="hb-inner">'+body+'</div>'+
   '<footer class="hb-footer"><span>Открыто существ: '+count+'/10</span><span>Охота не прощает беспечности</span></footer></div>';
