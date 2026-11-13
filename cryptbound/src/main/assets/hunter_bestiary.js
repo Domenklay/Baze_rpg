@@ -38,7 +38,7 @@ function gain(meta,run,enemy,tid){
  if(!run.hunterCounted)run.hunterCounted={};
  var key=run.locationIndex+':'+run.floor+':'+tid+':'+enemy.id;
  if(run.hunterCounted[key])return null;run.hunterCounted[key]=1;
- var b=ensure(meta),before=score(meta,enemy.id),after=before+1;b.counts[enemy.id]=after;
+ var b=ensure(meta),before=score(meta,enemy.id),after=Math.min(40,before+1);if(before>=40)return null;b.counts[enemy.id]=after;
  var reward=thresholds.reduce(function(a,n,i){return a+(before<n&&after>=n?beast.increments[i]:0);},0);
  if(reward){b.unread=true;return beast.name+': изучение '+after+'/40, новый бонус +'+reward+' '+beast.label+'.';}
  return null;
