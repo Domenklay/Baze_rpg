@@ -82,7 +82,7 @@ test('65 original title nodes, exclusive branches and rank upgrades',()=>{
  assert.equal(titles.filter(t=>t.tree===1).length,22);
  assert.equal(titles.filter(t=>t.tree===2).length,21);
  const oldEp=r.ep,oldTitles=Object.assign({},r.talents),oldSupplies=Object.assign({},r.titleSupplies);
- r.ep=3000;
+ r.ep=10000;
  A('talent','adv_seeker');A('talent','adv_explorer');assert.ok(r.talents.adv_explorer>0);
  let before=r.ep;A('talent','adv_explorationist');assert.equal(r.ep,before);
  assert.equal(r.talents.adv_explorationist||0,0);
