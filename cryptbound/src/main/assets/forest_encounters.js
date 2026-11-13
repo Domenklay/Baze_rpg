@@ -263,7 +263,7 @@ function inventory(run){
   var info=itemDefs[k]||[k,'F02_001'];
   return '<div class="forest-pocket-row">'+image(info[1],'forest-pocket-icon')+'<span><b>'+e(info[0])+'</b><small>×'+f.items[k]+'</small></span>'+
     (['bleed_trap','stun_trap','honey','mushroom','water'].indexOf(k)>=0?
-    '<button class="btn small" data-action="forest-use" data-id="'+e(k)+'">Использовать</button>':'')+'</div>';
+    '<button class="btn small" data-action="active-item-info" data-id="forest:'+e(k)+'">Описание / использовать</button>':'')+'</div>';
  }).join('')||'<p class="fine muted">Лесные находки ещё не собраны.</p>';
 }
 function use(run,id,api){
