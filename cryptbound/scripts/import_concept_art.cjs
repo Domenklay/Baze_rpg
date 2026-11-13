@@ -18,7 +18,7 @@ function slug(value){
 async function get(url){
  for(let trial=0;trial<3;trial++){
   try{
-   const response=await fetch(url,{headers:{'User-Agent':'Baze-rpg-offline-art-import','Accept':'application/octet-stream'},signal:AbortSignal.timeout(30000)});
+   const response=await fetch(url,{headers:{'User-Agent':'Baze-rpg-offline-art-import','Accept':url.includes('api.github.com')?'application/vnd.github+json':'*/*'},signal:AbortSignal.timeout(30000)});
    if(!response.ok)throw Error(response.status+' '+url);
    return Buffer.from(await response.arrayBuffer());
   }catch(e){if(trial===2)throw e;await new Promise(resolve=>setTimeout(resolve,750*(trial+1)));}
