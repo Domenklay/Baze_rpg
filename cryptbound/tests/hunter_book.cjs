@@ -101,6 +101,11 @@ assert.ok(living.length>=2);
 for(const tile of living){tile.revealed=true;Object.assign(tile.foe,{hp:700,maxHp:700,atk:1,def:0,cooldown:99,stun:0});}
 r.scrolls.bolt=3;r.mp=1000;r.hp=100000;
 const chosen=living[living.length-1],other=living[0],initial=chosen.foe.hp,otherInitial=other.foe.hp,turnBeforeAim=r.turn;
+/* Casting at a revealed distant monster still requires an excavated route. */
+const neighbor=window.ClickerRules.near(chosen.id).find(id=>r.tiles[id]!==other&&!r.tiles[id].foe);
+assert.notEqual(neighbor,undefined);
+const entry=r.tiles[neighbor];entry.kind='empty';entry.revealed=true;entry.cleared=true;entry.drops=null;
+r.heroTile=neighbor;
 A('cast','bolt');
 assert.equal(r.pendingSpell,'bolt');
 assert.match(el('content').innerHTML,/spell-target-banner/);
