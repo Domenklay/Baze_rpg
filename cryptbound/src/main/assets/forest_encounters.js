@@ -126,9 +126,10 @@ function render(run,t){
   '<h2>'+e(def.title)+'</h2><div class="forest-event-picture">'+image(def.art)+'</div><p>'+e(def.text)+'</p>'+
   (def.id===1&&t.forestPhase==='reward'?'<p class="golden">Три волка побеждены. Рыжуха уже может спуститься с пня.</p>':'')+
   opts.map(function(opt,i){
-   var can=!opt[2]||has(run,opt[2]),locked=opt[2]&&!can;
-   var title=locked?'Не выполнено условие: '+requirementText(opt[2]):'';
-   return '<button class="btn wide space-top'+(i?' alt':'')+'" data-action="forest-choice" data-id="'+t.id+':'+i+'" '+(locked?'disabled':'')+' title="'+e(title)+'">'+e(opt[0])+(locked?' · '+e(requirementText(opt[2])):'')+'</button>';
+   // Hidden choices preserve their original index for validation in choose().
+   if(opt[2]&&!has(run,opt[2]))return '';
+   if(opt[1]!=='leave'&&needsCheck(run,opt[1].split(';')))return '';
+   return '<button class="btn wide space-top'+(i?' alt':'')+'" data-action="forest-choice" data-id="'+t.id+':'+i+'">'+e(opt[0])+'</button>';
   }).join('')+'<button class="btn dark wide space-top" data-action="close">Закрыть</button></div>';
 }
 function requirementText(s){
