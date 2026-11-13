@@ -24,7 +24,7 @@ var ATTR={atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',
  entryShield:'Щит на 10 ходов при входе в этаж или комнату',healFloor:'Лечение за этаж',scrollFloor:'Свиток за этаж',
  ghostFloor:'Спутник с перепризывом на каждом этаже',guardFloor:'Защитных зарядов за этаж',
  burnChance:'Шанс горения при ударе',lootChance:'Шанс дополнительной добычи',killHeal:'Лечение за убийство',bossDamage:'Урон по боссу %'};
-var sourceSlot={bracer:'shoulders',ring:'belt',cloak:'legs',amulet:'relic'};
+var sourceSlot={cloak:'shoulders',amulet:'relic'};
 function region(floor){return DB.regions[(Math.floor((floor-1)/4))%DB.regions.length];}
 function regionIndex(floor){return (Math.floor((floor-1)/4))%DB.regions.length;}
 function group(floor){var index=regionIndex(floor);return DB.sets.slice(index*2,index*2+2);}
