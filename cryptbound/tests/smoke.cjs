@@ -887,8 +887,8 @@ test('Unlimited backpack displays found items in slots but not equipped gear or 
  assert.match(html,/\d+ предметов · без ограничения/);
  assert.doesNotMatch(html,/data-action="item-select" data-id="90000"/,'Worn equipment must not occupy a backpack cell');
  assert.match(html,/data-action="item-select" data-id="90001"/);
- assert.match(html,/data-action="forest-use" data-id="honey"/);
- assert.match(html,/data-action="consume-soul" data-id="99001"/);
+ assert.match(html,/data-action="active-item-info" data-id="forest:honey"/);
+ assert.match(html,/data-action="active-item-info" data-id="soul:99001"/);
  assert.match(html,/data-action="quest-item-info"/);
  assert.match(html,/data-action="note-info"/);
  assert.doesNotMatch(html,/data-action="spell-detail"/,'Scrolls belong exclusively in the spellbook');
