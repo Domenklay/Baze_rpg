@@ -476,9 +476,10 @@ test('Alchemy requires real T1/T2 ingredients and fills exactly two prepared slo
 });
 test('Spell catalog has 6 schools × 6 ranks, with 6-star rarity isolated',()=>{
  const sys=win.CryptSystems;
- assert.equal(sys.spells.length,36);
+ assert.equal(sys.spells.filter(x=>!x.titleOnly).length,36);
+ assert.equal(sys.spells.filter(x=>x.titleOnly).length,13);
  for(const school of sys.schools)assert.deepEqual(
-  Array.from(sys.spells.filter(x=>x.school===school.id),x=>x.rank).sort(),[1,2,3,4,5,6]);
+  Array.from(sys.spells.filter(x=>!x.titleOnly&&x.school===school.id),x=>x.rank).sort(),[1,2,3,4,5,6]);
 });
 
 
