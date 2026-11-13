@@ -110,7 +110,17 @@ function stats(){
  a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01));
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge'),0,50)};
 }
-function newItem(slot,floor,variant){
+function flatDefense(){
+  return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
+ }
+ function incomingDamage(rawAttack){return Math.max(1,Math.ceil(rawAttack)-flatDefense());}
+ function provoke(enemy){if(enemy&&enemy.hp>0)enemy.provoked=true;}
+ function damageBadge(enemy){
+  var value=incomingDamage(enemy.atk),base=enemy.baseAtk==null?enemy.atk:enemy.baseAtk;
+  var tone=value>base?'boosted':value<base?'reduced':'normal';
+  return '<span class="unit-corner unit-atk damage-'+tone+'" title="Урон после защиты: '+value+' · исходный: '+base+'">⚔'+value+'</span>';
+ }
+ function newItem(slot,floor,variant){
  var sourceFloor=(((r.actIndex||0)*3+(r.locationIndex||0))%6)*4+1;
  var src=CR.gear(slot,sourceFloor,rand(0,1));
  var star=variant==null?rarityRoll():Math.max(1,Math.min(6,Math.floor(Number(variant)||1)));
@@ -508,7 +518,7 @@ function activeTileView(t){
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
-  '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
+  damageBadge(t.foe):'';
  return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&(r.pendingSpell||r.pendingForestUse)?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
@@ -1236,6 +1246,7 @@ function consumeTurn(){
  var alive=r.chamberActive!=null?[]:enemies();
  if(r.summon&&r.summon.hp>0&&alive.length){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
+   provoke(victim.foe);
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
   if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
   if(FD)FD.actor(r.summon,r.summon.specialCooldown===4?'skill':'attack',r.summon.specialCooldown===4?'Гробовой раскол':'Костяной удар');
@@ -1245,7 +1256,8 @@ function consumeTurn(){
  if(r.summon&&r.summon.hp>0&&activeRoom()){
   var roomTarget=livingRoomGuards()[0];
   if(roomTarget){
-   var strikePower=Math.max(1,r.summon.atk-(roomTarget.def||0));
+    provoke(roomTarget);
+    var strikePower=Math.max(1,r.summon.atk-(roomTarget.def||0));
    r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);var summonSpecial=r.summon.specialCooldown===0;
    if(summonSpecial){strikePower+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;}
    if(FD)FD.actor(r.summon,summonSpecial?'skill':'attack',summonSpecial?'Гробовой раскол':'Костяной удар');
@@ -1259,10 +1271,10 @@ function consumeTurn(){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
   if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
    if(activeRoom()){
-    var roomGuard=livingRoomGuards()[0];if(roomGuard){if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
+     var roomGuard=livingRoomGuards()[0];if(roomGuard){provoke(roomGuard);if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
      var room=activeRoom().room;room.guardHp=room.guards.reduce(function(n,g){return n+g.hp;},0);
      log('Призрачный страж бьёт стража комнаты: '+r.ghost.atk+'.');}
-   }else if(targetGhost){if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
+   }else if(targetGhost){provoke(targetGhost.foe);if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
  if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
@@ -1277,7 +1289,8 @@ function consumeTurn(){
  alive=r.chamberActive!=null?[]:enemies();
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).slice(0,4).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
-  if(e.elite&&!e.enraged&&e.hp<=e.maxHp*.50){
+   var provoked=!!e.provoked;e.provoked=false;
+   if(e.elite&&!e.enraged&&e.hp<=e.maxHp*.50){
    e.enraged=true;e.atk=Math.ceil(e.atk*1.20);
    e.cooldown=Math.min(e.cooldown||3,2);e.guard=Math.max(e.guard||0,1+Math.floor((r.actIndex||0)/3));
    log('Элитный противник '+e.name+' впадает в ярость при 50% HP!');
@@ -1296,23 +1309,25 @@ function consumeTurn(){
   if(e.poison>0){e.poison--;e.hp-=Math.max(2,Math.floor(stats().atk*.24));if(e.hp<=0){kill(t);return;}}
    if(e.bleed>0){e.bleed--;e.hp-=Math.max(3,Math.ceil(stats().atk*.32));if(e.hp<=0){kill(t);return;}}
   if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
-  var ready=false;
-  if(e.ranged){
-   e.attackCooldown=Math.max(0,(e.attackCooldown||3)-1);
-   e.cooldown=e.attackCooldown||3;
-   if(e.attackCooldown>0)return;
-   e.attackCooldown=3;e.cooldown=3;ready=true;
-  }else{
+   // One retaliatory attack after a hit; ranged units also shoot every two turns.
+   var attacks=provoked;
+   if(e.ranged){
+    var shotClock=e.attackCooldown==null?2:e.attackCooldown;
+    shotClock=Math.max(0,shotClock-1);
+    if(shotClock===0){attacks=true;e.attackCooldown=2;}
+    else e.attackCooldown=shotClock;
+   }
+   if(!attacks)return;
    var interval=Math.max(1,(special&&special.every)||3);
-   ready=(e.cooldown||interval)<=1;
-   e.cooldown=ready?interval:(e.cooldown||interval)-1;
-  }
-  var effectiveDefense=Math.max(0,stats().def-(r.armorBreakPower||0));
-  var amount=Math.max(1,e.atk+rand(-2,2)-effectiveDefense-bonus('damageFlat')-Math.floor(r.blessed));
-  if(e.boss){
-   amount=bossAttack(t,e,amount,ready);if(amount==null)return;
-  }else if(ready){amount=monsterSpecial(e,amount,false);}
-  if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
+   var remainingSpecial=e.cooldown==null?interval:e.cooldown;
+   var ready=remainingSpecial<=1;
+   e.cooldown=ready?interval:remainingSpecial-1;
+   var amount=Math.max(1,e.atk);
+   if(e.boss){
+    amount=bossAttack(t,e,amount,ready);if(amount==null)return;
+   }else if(ready){amount=monsterSpecial(e,amount,false);}
+   amount=incomingDamage(amount); // Flat defense is applied after buffs and special multipliers.
+   if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
    if(Math.random()*100<r.ghost.dodge){log('Призрак увернулся от удара '+e.name+'.');return;}
@@ -1404,7 +1419,8 @@ function kill(t){
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  setHeroPose('attack');
- if(t.foe.evadeCharges>0){
+  provoke(t.foe);
+  if(t.foe.evadeCharges>0){
   t.foe.evadeCharges--;if(Math.random()<.45){
    log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
   }
