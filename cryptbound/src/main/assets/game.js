@@ -1448,8 +1448,8 @@ function consumeTurn(){
 }
 function kill(t){
  if(FD)FD.capture();
- var e=t.foe;if(!e||e.hp>0)return;
- e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep*12;
+ var e=t.foe;if(!e||e.hp>0||e.deathProcessed)return;
+ e.deathProcessed=true;e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep*12;
  if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
   t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
    shadow.kind='empty';shadow.cleared=true;shadow.foe=null;shadow.forestAlphaAnchor=null;shadow.revealed=true;
