@@ -67,8 +67,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.6.4-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.6.4-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -81,7 +81,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.6.4 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.6.4 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.6.4 — спрайты T1/T2, ресурсы и трофеи" --notes "Дополнены 300 обычных и 150 элитных монстров 30 локаций: 8 боевых ролей, индивидуальные активные приёмы, защита, лечение союзников, призывы и эффекты яда, горения и молчания. Отдельная возрастающая шкала HP/атаки для каждого T1–T10: следующий акт начинается опаснее третьей локации предыдущего. Элитники впадают в ярость при половине HP, боссы сопротивляются постоянному оглушению. У каждого акта свои ловушки и модификаторы наград/экономики. Для проходимости введена автоматическая подготовка героя и рост предметов по акту; финальный баланс требует реальных прохождений. Добавлены 60 оригинальных покадровых спрайтов 20 монстров T1/T2, 248 автономных иконок материалов, каталог-справочник монстров и изображения добычи в инвентаре и на складе."
+          if ! gh release view cryptbound-v0.7.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.0 — новый интерфейс" --notes "Компактный интерфейс похода, всплывающий инвентарь, книга магии, дерево титулов, новый экран деревни и рисованные текстуры. Старый модуль Baze RPG удалён. Офлайн debug-сборка."
           fi
-          gh release upload cryptbound-v0.6.4 dist/Cryptbound-v0.6.4-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.0 dist/Cryptbound-v0.7.0-offline-Android.apk dist/SHA256SUMS.txt --clobber

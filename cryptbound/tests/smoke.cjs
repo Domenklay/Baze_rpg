@@ -17,6 +17,7 @@ for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'
 const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS '+name);}
+A('choose');
 test('Six selectable classes and 18 authentic offline sprite frames',()=>{
  assert.equal((el('overlay').innerHTML.match(/class-option/g)||[]).length,6);
  for(const key of ['strength_m','strength_f','rogue_m','rogue_f','mage_m','mage_f']){
@@ -77,8 +78,8 @@ test('Adventure remains, soul use and one-time treasure',()=>{
  assert.equal(r.items.length,n+1);
  assert.ok(r.journalNotes.some(x=>x.includes('Павший механик')));
  const soul=r.soulBag.find(x=>x.storyId==='storm-smith');assert.ok(soul);
- A('close');r.tab='bag';api.debug.draw();
- assert.match(el('content').innerHTML,/СОБРАННЫЕ ДУШИ/);
+ A('close');A('bag-details');
+ assert.match(el('overlay').innerHTML,/СОБРАННЫЕ ДУШИ/);
  A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
  assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
  A('pickup',corpse.id);assert.equal(state.seq,before+3);
@@ -202,13 +203,13 @@ test('3/4-piece sets use real slots and situational effects instead of Clicker b
  assert.deepEqual(Array.from(CR.thresholds('stone_oath')),[2,4]);
  assert.ok(CR.bonuses(r.equip,r.items).entryShield>0);
  assert.ok(api.debug.stats().def>previous);
- r.tab='hero';api.debug.draw();
- assert.match(el('content').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
- assert.match(el('content').innerHTML,/4 предмета/);
+ A('gear-sets');
+ assert.match(el('overlay').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
+ assert.match(el('overlay').innerHTML,/4 предмета/);
 });
 test('Compact modal compares fixed equipment with set bonuses',()=>{
  A('inspect-slot','helm');
- assert.equal(r.tab,'hero');
+ assert.equal(r.tab,'maze');
  assert.match(el('overlay').innerHTML,/gear-two-columns/);
  assert.match(el('overlay').innerHTML,/compact-set-help/);
  assert.match(el('overlay').innerHTML,/2 предмета/);
@@ -224,7 +225,7 @@ test('Village permanently consumes material quantities for upgrades',()=>{
  assert.match(el('overlay').innerHTML,/СКЛАД/);A('close');
 });
 test('Original animation frame appears when attacking and spellcasting',()=>{
- r.tab='hero';r.mp=1000;
+ r.tab='maze';r.mp=1000;
  const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);
  if(target){target.revealed=true;target.foe.hp=100;A('strike',target.id);}
  assert.match(el('portrait').innerHTML,/mage_m_attack.png/);
@@ -511,7 +512,7 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
 });
 
 
-test('Exactly three compact consumable controls remain visible above the maze',()=>{
+test('Exactly three compact consumables sit above the backpack, beside the hero',()=>{
  if(!state.run)A('begin','necromancer');
  const run=state.run;
  A('close');run.tab='maze';
@@ -522,7 +523,8 @@ test('Exactly three compact consumable controls remain visible above the maze',(
  assert.equal((html.match(/class="dungeon-potion-slot/g)||[]).length,3);
  assert.equal((html.match(/data-action="potion"/g)||[]).length,1,'Only one dedicated HP elixir button');
  assert.equal((html.match(/data-action="use-prepared"/g)||[]).length,2);
- assert.ok(html.indexOf('dungeon-potion-bar')<html.indexOf('dungeon-board'),'Potions must be above the maze');
+ assert.ok(html.indexOf('dungeon-potion-bar')>html.indexOf('dungeon-board'),'Potions belong to the bottom battle dock');
+ assert.ok(html.indexOf('dungeon-potion-bar')<html.indexOf('data-id="bag"'),'Potions must precede the backpack button');
  const before=run.potions;
  run.hp=Math.max(1,api.debug.stats().hp-70);api.debug.draw();
  A('potion');
