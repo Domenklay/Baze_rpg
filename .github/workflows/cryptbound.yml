@@ -68,6 +68,7 @@ jobs:
           node cryptbound/tests/titles_v2.cjs
           node cryptbound/tests/path_items_regression.cjs
           node cryptbound/tests/shadow_echo.cjs
+          node cryptbound/tests/titles_panther.cjs
           node cryptbound/tests/hunter_book.cjs
           node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
@@ -81,8 +82,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.1-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.1-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -95,7 +96,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.0 — 65 званий и предметы авантюриста" --notes "Введены 65 званий по трём деревьям и пяти рангам с улучшениями финального звания, боевыми и магическими эффектами. Предметы авантюриста находятся в четвёртой ячейке быстрых действий, а не надеваются. В рюкзак выдаются комплекты IV ранга без автоматического надевания. Сохранения со старой системой званий переводятся с возвратом потраченных ОИ. Есть отдельные тесты механики званий."
+          if ! gh release view cryptbound-v0.8.1 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.1 — тест званий и боя" --notes "Тестовый офлайн APK Android. 65 званий трех деревьев, Эхо Теневого воина, Чёрная пантера с собственным HP и ответом врага, магические и воинские эффекты, четвёртый слот инструментов авантюриста. После зачистки ловушки обезвреживаются автоматически. Проверены сохранения и основные игровые сценарии; сообщайте о несовпадениях с оригинальной механикой."
           fi
-          gh release upload cryptbound-v0.8.0 dist/Cryptbound-v0.8.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.1 dist/Cryptbound-v0.8.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
