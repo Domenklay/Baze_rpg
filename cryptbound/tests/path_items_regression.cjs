@@ -45,7 +45,8 @@ passage.revealed=true;passage.kind='enemy';passage.foe={hp:10,ranged:true};passa
 A('strike',enemy.id);assert.equal(run.turn,blocked,'Another monster is not a walkable corridor');
 passage.kind='empty';passage.foe=null;passage.cleared=true;
 // Full-floor victory automatically and safely disarms every trap.
-foe.hp=1;run.hp=5000;
+foe.hp=1;foe.stun=1;
+run.hp=window.Crypt.debug.stats().hp;
 const clearHp=run.hp,clearTurn=run.turn;
 A('strike',enemy.id);
 assert.equal(run.floorCleared,true);
