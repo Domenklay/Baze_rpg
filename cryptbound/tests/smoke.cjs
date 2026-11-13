@@ -62,6 +62,10 @@ test('Six imported T1–T2 regions, 156 unique monsters, 12 sets and 24 weapons'
 });
 A('begin','necromancer');
 const state=api.state();let r=state.run;
+test('New expeditions start without equipment placeholders',()=>{
+ assert.equal(r.items.length,0);
+ assert.equal(Object.values(r.equip).filter(Boolean).length,0);
+});
 r.hp=5000;r.mp=5000;
 test('Only one specialization per title fork; chosen path remains upgradeable',()=>{
  const oldEp=r.ep,oldTitles=Object.assign({},r.talents);r.ep=3000;
@@ -170,16 +174,16 @@ test('Six hero archetypes have distinct starting skills',()=>{
  }
 });
 A('begin','necromancer');r=state.run;r.hp=5000;r.mp=5000;
-test('A hidden archer has a three-round attack interval and does not block exploration',()=>{
+test('A hidden archer shoots every two turns and does not block exploration',()=>{
  r.tiles.forEach(t=>{if(t.foe){t.foe.hp=0;}});
  r.summon=null;r.summonTile=null;r.shield=0;r.poisonTurns=0;
  const t=r.tiles.find(t=>t.kind!=='start');assert.ok(t);t.kind='enemy';t.revealed=true;
  t.foe={id:'ranger_test',name:'Разбойник-лучник',visual:'cultist',hp:70,maxHp:70,
-  atk:12,def:0,ranged:true,attackCooldown:3,cooldown:3,skill:{name:'Дальний выстрел',every:3,kind:'shot'},burn:0,stun:0,poison:0,loot:[]};
+  atk:12,baseAtk:12,def:0,ranged:true,attackCooldown:2,cooldown:3,skill:{name:'Дальний выстрел',every:3,kind:'shot'},burn:0,stun:0,poison:0,loot:[]};
  const oldHp=r.hp;
- A('wait');A('wait');assert.equal(r.hp,oldHp);
- A('wait');assert.ok(r.hp<oldHp);
- assert.equal(t.foe.attackCooldown,3);
+ A('wait');assert.equal(r.hp,oldHp);
+  A('wait');assert.ok(r.hp<oldHp);
+  assert.equal(t.foe.attackCooldown,2);
 });
 test('Opening and collecting a find each consume exactly one turn',()=>{
  const t=r.tiles.find(x=>x.kind==='coin')||r.tiles.find(x=>x.kind==='empty');assert.ok(t);if(t.kind==='empty')t.kind='coin';
@@ -387,11 +391,11 @@ test('Regional boss has warned phases and cannot produce a safe portal before de
  assert.equal(run.portalReady,false);
  run.tiles.forEach(x=>{if(x.foe&&!x.foe.boss)x.foe.hp=0;});
  boss.revealed=true;boss.foe.hp=Math.floor(boss.foe.maxHp*.66);
- A('wait');assert.equal(boss.foe.phase,2);
- assert.ok(boss.foe.telegraph);
- A('wait');assert.equal(boss.foe.telegraph,null);
- boss.foe.hp=Math.max(1,Math.floor(boss.foe.maxHp*.20));
- for(let attempt=0;attempt<4&&boss.foe.phase<3;attempt++)A('wait');
+  boss.foe.provoked=true;A('wait');assert.equal(boss.foe.phase,2);
+  assert.ok(boss.foe.telegraph);
+  boss.foe.provoked=true;A('wait');assert.equal(boss.foe.telegraph,null);
+  boss.foe.hp=Math.max(1,Math.floor(boss.foe.maxHp*.20));
+  for(let attempt=0;attempt<4&&boss.foe.phase<3;attempt++){boss.foe.provoked=true;A('wait');}
  if(boss.foe.phase!==3)console.log('BOSS_PHASE_DIAGNOSTIC',JSON.stringify({phase:boss.foe.phase,hp:boss.foe.hp,maxHp:boss.foe.maxHp,stun:boss.foe.stun,turn:run.turn,heroHp:run.hp,lastLogs:run.log.slice(0,10)}));
  assert.equal(boss.foe.phase,3);
  boss.foe.hp=1;A('strike',boss.id);
