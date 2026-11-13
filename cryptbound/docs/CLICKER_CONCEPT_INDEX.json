@@ -1,0 +1,1548 @@
+{
+  "source": "Domenklay/Rpg_clicker_infinity",
+  "description": "Exact-name authored original resource sprites available for import",
+  "items": [
+    {
+      "name": "Арбалетная пружина дворфов",
+      "stem": "t3_concept_arbaletnaia_pruzhina_dvorfov",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_arbaletnaia_pruzhina_dvorfov.png",
+      "tier": 3
+    },
+    {
+      "name": "Чаша архижреца Ковки",
+      "stem": "t3_concept_chasha_arkhizhretsa_kovki",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_chasha_arkhizhretsa_kovki.png",
+      "tier": 3
+    },
+    {
+      "name": "Чеканная пластина королевской гвардии",
+      "stem": "t3_concept_chekannaia_plastina_korolevskoi_gvardii",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_chekannaia_plastina_korolevskoi_gvardii.png",
+      "tier": 3
+    },
+    {
+      "name": "Детонатор Дренна",
+      "stem": "t3_concept_detonator_drenna",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_detonator_drenna.png",
+      "tier": 3
+    },
+    {
+      "name": "Едкий шахтный реагент",
+      "stem": "t3_concept_edkii_shakhtnyi_reagent",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_edkii_shakhtnyi_reagent.png",
+      "tier": 3
+    },
+    {
+      "name": "Фрагмент сердечника живого бура Хорвена",
+      "stem": "t3_concept_fragment_serdechnika_zhivogo_bura_khorvena",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_fragment_serdechnika_zhivogo_bura_khorvena.png",
+      "tier": 3
+    },
+    {
+      "name": "Герб Первого Короля",
+      "stem": "t3_concept_gerb_pervogo_korolia",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_gerb_pervogo_korolia.png",
+      "tier": 3
+    },
+    {
+      "name": "Горновой угорь",
+      "stem": "t3_concept_gornovoi_ugor",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_gornovoi_ugor.png",
+      "tier": 3
+    },
+    {
+      "name": "Изношенная медная оковка кирки",
+      "stem": "t3_concept_iznoshennaia_mednaia_okovka_kirki",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_iznoshennaia_mednaia_okovka_kirki.png",
+      "tier": 3
+    },
+    {
+      "name": "Клеймо инквизитора Орда",
+      "stem": "t3_concept_kleimo_inkvizitora_orda",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_kleimo_inkvizitora_orda.png",
+      "tier": 3
+    },
+    {
+      "name": "Клёпаная медная пластина",
+      "stem": "t3_concept_kliopanaia_mednaia_plastina",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_kliopanaia_mednaia_plastina.png",
+      "tier": 3
+    },
+    {
+      "name": "Ключ главного надсмотрщика",
+      "stem": "t3_concept_kliuch_glavnogo_nadsmotrshchika",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_kliuch_glavnogo_nadsmotrshchika.png",
+      "tier": 3
+    },
+    {
+      "name": "Клык сторожевого вожака",
+      "stem": "t3_concept_klyk_storozhevogo_vozhaka",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_klyk_storozhevogo_vozhaka.png",
+      "tier": 3
+    },
+    {
+      "name": "Коса Фармуна",
+      "stem": "t3_concept_kosa_farmuna",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_kosa_farmuna.png",
+      "tier": 3
+    },
+    {
+      "name": "Крепкая шкура сторожевого зверя",
+      "stem": "t3_concept_krepkaia_shkura_storozhevogo_zveria",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_krepkaia_shkura_storozhevogo_zveria.png",
+      "tier": 3
+    },
+    {
+      "name": "Малахит",
+      "stem": "t3_concept_malakhit",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_malakhit.png",
+      "tier": 3
+    },
+    {
+      "name": "Медночешуйчатый окунь",
+      "stem": "t3_concept_mednocheshuichatyi_okun",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_mednocheshuichatyi_okun.png",
+      "tier": 3
+    },
+    {
+      "name": "Медный мох",
+      "stem": "t3_concept_mednyi_mokh",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_mednyi_mokh.png",
+      "tier": 3
+    },
+    {
+      "name": "Осколок короны Дурмана",
+      "stem": "t3_concept_oskolok_korony_durmana",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_oskolok_korony_durmana.png",
+      "tier": 3
+    },
+    {
+      "name": "Осколок молота Бродгара",
+      "stem": "t3_concept_oskolok_molota_brodgara",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_oskolok_molota_brodgara.png",
+      "tier": 3
+    },
+    {
+      "name": "Палаческое рунное клеймо",
+      "stem": "t3_concept_palacheskoe_runnoe_kleimo",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_palacheskoe_runnoe_kleimo.png",
+      "tier": 3
+    },
+    {
+      "name": "Печать расколотого клана",
+      "stem": "t3_concept_pechat_raskolotogo_klana",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_pechat_raskolotogo_klana.png",
+      "tier": 3
+    },
+    {
+      "name": "Первый големий сердечник",
+      "stem": "t3_concept_pervyi_golemii_serdechnik",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_pervyi_golemii_serdechnik.png",
+      "tier": 3
+    },
+    {
+      "name": "Плетёный подрывной фитиль",
+      "stem": "t3_concept_pletionyi_podryvnoi_fitil",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_pletionyi_podryvnoi_fitil.png",
+      "tier": 3
+    },
+    {
+      "name": "Подгорный горицвет",
+      "stem": "t3_concept_podgornyi_goritsvet",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_podgornyi_goritsvet.png",
+      "tier": 3
+    },
+    {
+      "name": "Подгорный железнокорень",
+      "stem": "t3_concept_podgornyi_zheleznokoren",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_podgornyi_zheleznokoren.png",
+      "tier": 3
+    },
+    {
+      "name": "Прицел Рагна",
+      "stem": "t3_concept_pritsel_ragna",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_pritsel_ragna.png",
+      "tier": 3
+    },
+    {
+      "name": "Сера",
+      "stem": "t3_concept_sera",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_sera.png",
+      "tier": 3
+    },
+    {
+      "name": "Слепая подгорная форель",
+      "stem": "t3_concept_slepaia_podgornaia_forel",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_slepaia_podgornaia_forel.png",
+      "tier": 3
+    },
+    {
+      "name": "Цепь бригадира",
+      "stem": "t3_concept_tsep_brigadira",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_tsep_brigadira.png",
+      "tier": 3
+    },
+    {
+      "name": "Жало матки паразитов",
+      "stem": "t3_concept_zhalo_matki_parazitov",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_zhalo_matki_parazitov.png",
+      "tier": 3
+    },
+    {
+      "name": "Жаростойкий глубинный лишайник",
+      "stem": "t3_concept_zharostoikii_glubinnyi_lishainik",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_zharostoikii_glubinnyi_lishainik.png",
+      "tier": 3
+    },
+    {
+      "name": "Жаровое ядро голема",
+      "stem": "t3_concept_zharovoe_iadro_golema",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_zharovoe_iadro_golema.png",
+      "tier": 3
+    },
+    {
+      "name": "Знак командора караула",
+      "stem": "t3_concept_znak_komandora_karaula",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_znak_komandora_karaula.png",
+      "tier": 3
+    },
+    {
+      "name": "Знак маршала ворот",
+      "stem": "t3_concept_znak_marshala_vorot",
+      "source": "Assets/Sprites/Resources/Concepts/T3/t3_concept_znak_marshala_vorot.png",
+      "tier": 3
+    },
+    {
+      "name": "Алолунный карась",
+      "stem": "t4_concept_alolunnyi_karas",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_alolunnyi_karas.png",
+      "tier": 4
+    },
+    {
+      "name": "Алолунный лотос",
+      "stem": "t4_concept_alolunnyi_lotos",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_alolunnyi_lotos.png",
+      "tier": 4
+    },
+    {
+      "name": "Чаша Алого обряда",
+      "stem": "t4_concept_chasha_alogo_obriada",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_chasha_alogo_obriada.png",
+      "tier": 4
+    },
+    {
+      "name": "Гравированная гвардейская бронзопластина",
+      "stem": "t4_concept_gravirovannaia_gvardeiskaia_bronzoplastina",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_gravirovannaia_gvardeiskaia_bronzoplastina.png",
+      "tier": 4
+    },
+    {
+      "name": "Испорченная друидическая вязь",
+      "stem": "t4_concept_isporchennaia_druidicheskaia_viaz",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_isporchennaia_druidicheskaia_viaz.png",
+      "tier": 4
+    },
+    {
+      "name": "Изумруднопёрая форель",
+      "stem": "t4_concept_izumrudnopioraia_forel",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_izumrudnopioraia_forel.png",
+      "tier": 4
+    },
+    {
+      "name": "Клинок личного палача",
+      "stem": "t4_concept_klinok_lichnogo_palacha",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_klinok_lichnogo_palacha.png",
+      "tier": 4
+    },
+    {
+      "name": "Клык Алого змея",
+      "stem": "t4_concept_klyk_alogo_zmeia",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_klyk_alogo_zmeia.png",
+      "tier": 4
+    },
+    {
+      "name": "Королевская серебрянка",
+      "stem": "t4_concept_korolevskaia_serebrianka",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_korolevskaia_serebrianka.png",
+      "tier": 4
+    },
+    {
+      "name": "Кровавый сосуд жреца",
+      "stem": "t4_concept_krovavyi_sosud_zhretsa",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_krovavyi_sosud_zhretsa.png",
+      "tier": 4
+    },
+    {
+      "name": "Кубок Последнего пира",
+      "stem": "t4_concept_kubok_poslednego_pira",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_kubok_poslednego_pira.png",
+      "tier": 4
+    },
+    {
+      "name": "Лесной янтарь",
+      "stem": "t4_concept_lesnoi_iantar",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_lesnoi_iantar.png",
+      "tier": 4
+    },
+    {
+      "name": "Лунный халцедон",
+      "stem": "t4_concept_lunnyi_khaltsedon",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_lunnyi_khaltsedon.png",
+      "tier": 4
+    },
+    {
+      "name": "Опал Вечной Кроны",
+      "stem": "t4_concept_opal_vechnoi_krony",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_opal_vechnoi_krony.png",
+      "tier": 4
+    },
+    {
+      "name": "Ошейник порабощённого зверя",
+      "stem": "t4_concept_osheinik_poraboshchionnogo_zveria",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_osheinik_poraboshchionnogo_zveria.png",
+      "tier": 4
+    },
+    {
+      "name": "Печать командора Кроны",
+      "stem": "t4_concept_pechat_komandora_krony",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_pechat_komandora_krony.png",
+      "tier": 4
+    },
+    {
+      "name": "Перстень Серебряного пира",
+      "stem": "t4_concept_persten_serebrianogo_pira",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_persten_serebrianogo_pira.png",
+      "tier": 4
+    },
+    {
+      "name": "Посох сухих ветвей",
+      "stem": "t4_concept_posokh_sukhikh_vetvei",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_posokh_sukhikh_vetvei.png",
+      "tier": 4
+    },
+    {
+      "name": "Придворная руническая пыль",
+      "stem": "t4_concept_pridvornaia_runicheskaia_pyl",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_pridvornaia_runicheskaia_pyl.png",
+      "tier": 4
+    },
+    {
+      "name": "Призма Верховного мага",
+      "stem": "t4_concept_prizma_verkhovnogo_maga",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_prizma_verkhovnogo_maga.png",
+      "tier": 4
+    },
+    {
+      "name": "Разорванный ошейник вожака",
+      "stem": "t4_concept_razorvannyi_osheinik_vozhaka",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_razorvannyi_osheinik_vozhaka.png",
+      "tier": 4
+    },
+    {
+      "name": "Рог Первого загонщика",
+      "stem": "t4_concept_rog_pervogo_zagonshchika",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_rog_pervogo_zagonshchika.png",
+      "tier": 4
+    },
+    {
+      "name": "Семя праматери гнилой рощи",
+      "stem": "t4_concept_semia_pramateri_gniloi_roshchi",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_semia_pramateri_gniloi_roshchi.png",
+      "tier": 4
+    },
+    {
+      "name": "Сердцелист",
+      "stem": "t4_concept_serdtselist",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_serdtselist.png",
+      "tier": 4
+    },
+    {
+      "name": "Слеза багряной заводи",
+      "stem": "t4_concept_sleza_bagrianoi_zavodi",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_sleza_bagrianoi_zavodi.png",
+      "tier": 4
+    },
+    {
+      "name": "Сломанная ветвь Стража Древа",
+      "stem": "t4_concept_slomannaia_vetv_strazha_dreva",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_slomannaia_vetv_strazha_dreva.png",
+      "tier": 4
+    },
+    {
+      "name": "Стрела Тисового капитана",
+      "stem": "t4_concept_strela_tisovogo_kapitana",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_strela_tisovogo_kapitana.png",
+      "tier": 4
+    },
+    {
+      "name": "Тетива Первого охотника",
+      "stem": "t4_concept_tetiva_pervogo_okhotnika",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_tetiva_pervogo_okhotnika.png",
+      "tier": 4
+    },
+    {
+      "name": "Тонкий клинок дворцового убийцы",
+      "stem": "t4_concept_tonkii_klinok_dvortsovogo_ubiitsy",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_tonkii_klinok_dvortsovogo_ubiitsy.png",
+      "tier": 4
+    },
+    {
+      "name": "Тонкий загонный шнур",
+      "stem": "t4_concept_tonkii_zagonnyi_shnur",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_tonkii_zagonnyi_shnur.png",
+      "tier": 4
+    },
+    {
+      "name": "Живолист",
+      "stem": "t4_concept_zhivolist",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_zhivolist.png",
+      "tier": 4
+    },
+    {
+      "name": "Знак Пира Вечной Охоты",
+      "stem": "t4_concept_znak_pira_vechnoi_okhoty",
+      "source": "Assets/Sprites/Resources/Concepts/T4/t4_concept_znak_pira_vechnoi_okhoty.png",
+      "tier": 4
+    },
+    {
+      "name": "Чёрный адский опал",
+      "stem": "t5_concept_chiornyi_adskii_opal",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_chiornyi_adskii_opal.png",
+      "tier": 5
+    },
+    {
+      "name": "Факел Иерофанта топлива",
+      "stem": "t5_concept_fakel_ierofanta_topliva",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_fakel_ierofanta_topliva.png",
+      "tier": 5
+    },
+    {
+      "name": "Флакон адского реактива",
+      "stem": "t5_concept_flakon_adskogo_reaktiva",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_flakon_adskogo_reaktiva.png",
+      "tier": 5
+    },
+    {
+      "name": "Ядро пожирателя стен",
+      "stem": "t5_concept_iadro_pozhiratelia_sten",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_iadro_pozhiratelia_sten.png",
+      "tier": 5
+    },
+    {
+      "name": "Кандалы Главного палача",
+      "stem": "t5_concept_kandaly_glavnogo_palacha",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_kandaly_glavnogo_palacha.png",
+      "tier": 5
+    },
+    {
+      "name": "Карта Верховного стратега",
+      "stem": "t5_concept_karta_verkhovnogo_stratega",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_karta_verkhovnogo_stratega.png",
+      "tier": 5
+    },
+    {
+      "name": "Хлыст Пастуха Стаи",
+      "stem": "t5_concept_khlyst_pastukha_stai",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_khlyst_pastukha_stai.png",
+      "tier": 5
+    },
+    {
+      "name": "Клеймо Архигорновика",
+      "stem": "t5_concept_kleimo_arkhigornovika",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_kleimo_arkhigornovika.png",
+      "tier": 5
+    },
+    {
+      "name": "Колба верховного ядовара",
+      "stem": "t5_concept_kolba_verkhovnogo_iadovara",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_kolba_verkhovnogo_iadovara.png",
+      "tier": 5
+    },
+    {
+      "name": "Маточное ядро котла",
+      "stem": "t5_concept_matochnoe_iadro_kotla",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_matochnoe_iadro_kotla.png",
+      "tier": 5
+    },
+    {
+      "name": "Огнестойкий клык гончей",
+      "stem": "t5_concept_ognestoikii_klyk_gonchei",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_ognestoikii_klyk_gonchei.png",
+      "tier": 5
+    },
+    {
+      "name": "Осколок печати Малграса",
+      "stem": "t5_concept_oskolok_pechati_malgrasa",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_oskolok_pechati_malgrasa.png",
+      "tier": 5
+    },
+    {
+      "name": "Печать легата марша",
+      "stem": "t5_concept_pechat_legata_marsha",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_pechat_legata_marsha.png",
+      "tier": 5
+    },
+    {
+      "name": "Пепел жертвенной печати",
+      "stem": "t5_concept_pepel_zhertvennoi_pechati",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_pepel_zhertvennoi_pechati.png",
+      "tier": 5
+    },
+    {
+      "name": "Посох Архимага Малграса",
+      "stem": "t5_concept_posokh_arkhimaga_malgrasa",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_posokh_arkhimaga_malgrasa.png",
+      "tier": 5
+    },
+    {
+      "name": "Префектская сигилла",
+      "stem": "t5_concept_prefektskaia_sigilla",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_prefektskaia_sigilla.png",
+      "tier": 5
+    },
+    {
+      "name": "Сердце шлаковой норы",
+      "stem": "t5_concept_serdtse_shlakovoi_nory",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_serdtse_shlakovoi_nory.png",
+      "tier": 5
+    },
+    {
+      "name": "Сердце Везриного котла",
+      "stem": "t5_concept_serdtse_vezrinogo_kotla",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_serdtse_vezrinogo_kotla.png",
+      "tier": 5
+    },
+    {
+      "name": "Шеврон Железного легиона",
+      "stem": "t5_concept_shevron_zheleznogo_legiona",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_shevron_zheleznogo_legiona.png",
+      "tier": 5
+    },
+    {
+      "name": "Шлаковый панцирь охотника",
+      "stem": "t5_concept_shlakovyi_pantsir_okhotnika",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_shlakovyi_pantsir_okhotnika.png",
+      "tier": 5
+    },
+    {
+      "name": "Шлем чёрного маршала",
+      "stem": "t5_concept_shlem_chiornogo_marshala",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_shlem_chiornogo_marshala.png",
+      "tier": 5
+    },
+    {
+      "name": "Штабной военный жетон",
+      "stem": "t5_concept_shtabnoi_voennyi_zheton",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_shtabnoi_voennyi_zheton.png",
+      "tier": 5
+    },
+    {
+      "name": "Тройной клык вожака",
+      "stem": "t5_concept_troinoi_klyk_vozhaka",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_troinoi_klyk_vozhaka.png",
+      "tier": 5
+    },
+    {
+      "name": "Цепноплавый сом",
+      "stem": "t5_concept_tsepnoplavyi_som",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_tsepnoplavyi_som.png",
+      "tier": 5
+    },
+    {
+      "name": "Зазубренная палаческая цепь",
+      "stem": "t5_concept_zazubrennaia_palacheskaia_tsep",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_zazubrennaia_palacheskaia_tsep.png",
+      "tier": 5
+    },
+    {
+      "name": "Железная огнелоза",
+      "stem": "t5_concept_zheleznaia_ogneloza",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_zheleznaia_ogneloza.png",
+      "tier": 5
+    },
+    {
+      "name": "Железная петля погонщика",
+      "stem": "t5_concept_zheleznaia_petlia_pogonshchika",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_zheleznaia_petlia_pogonshchika.png",
+      "tier": 5
+    },
+    {
+      "name": "Знак пограничного легиона",
+      "stem": "t5_concept_znak_pogranichnogo_legiona",
+      "source": "Assets/Sprites/Resources/Concepts/T5/t5_concept_znak_pogranichnogo_legiona.png",
+      "tier": 5
+    },
+    {
+      "name": "Бездонная мурена",
+      "stem": "t6_concept_bezdonnaia_murena",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_bezdonnaia_murena.png",
+      "tier": 6
+    },
+    {
+      "name": "Бездонный корнествол",
+      "stem": "t6_concept_bezdonnyi_kornestvol",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_bezdonnyi_kornestvol.png",
+      "tier": 6
+    },
+    {
+      "name": "Бездонный синий кварц",
+      "stem": "t6_concept_bezdonnyi_sinii_kvarts",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_bezdonnyi_sinii_kvarts.png",
+      "tier": 6
+    },
+    {
+      "name": "Черноводная ламинария",
+      "stem": "t6_concept_chernovodnaia_laminariia",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_chernovodnaia_laminariia.png",
+      "tier": 6
+    },
+    {
+      "name": "Чёрная вестникова чешуя",
+      "stem": "t6_concept_chiornaia_vestnikova_cheshuia",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_chiornaia_vestnikova_cheshuia.png",
+      "tier": 6
+    },
+    {
+      "name": "Древний якорный ключ",
+      "stem": "t6_concept_drevnii_iakornyi_kliuch",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_drevnii_iakornyi_kliuch.png",
+      "tier": 6
+    },
+    {
+      "name": "Глубинная органосоль",
+      "stem": "t6_concept_glubinnaia_organosol",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_glubinnaia_organosol.png",
+      "tier": 6
+    },
+    {
+      "name": "Костяная клешня химеры",
+      "stem": "t6_concept_kostianaia_kleshnia_khimery",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_kostianaia_kleshnia_khimery.png",
+      "tier": 6
+    },
+    {
+      "name": "Костяной шип прибрежного охотника",
+      "stem": "t6_concept_kostianoi_ship_pribrezhnogo_okhotnika",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_kostianoi_ship_pribrezhnogo_okhotnika.png",
+      "tier": 6
+    },
+    {
+      "name": "Кварц безмолвия",
+      "stem": "t6_concept_kvarts_bezmolviia",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_kvarts_bezmolviia.png",
+      "tier": 6
+    },
+    {
+      "name": "Линза Великого архонта",
+      "stem": "t6_concept_linza_velikogo_arkhonta",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_linza_velikogo_arkhonta.png",
+      "tier": 6
+    },
+    {
+      "name": "Мимическая кожа",
+      "stem": "t6_concept_mimicheskaia_kozha",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_mimicheskaia_kozha.png",
+      "tier": 6
+    },
+    {
+      "name": "Нервокорень",
+      "stem": "t6_concept_nervokoren",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_nervokoren.png",
+      "tier": 6
+    },
+    {
+      "name": "Нота чёрной хороводчицы",
+      "stem": "t6_concept_nota_chiornoi_khorovodchitsy",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_nota_chiornoi_khorovodchitsy.png",
+      "tier": 6
+    },
+    {
+      "name": "Обломок древней якорной связки",
+      "stem": "t6_concept_oblomok_drevnei_iakornoi_sviazki",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_oblomok_drevnei_iakornoi_sviazki.png",
+      "tier": 6
+    },
+    {
+      "name": "Осколок сердечной оболочки",
+      "stem": "t6_concept_oskolok_serdechnoi_obolochki",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_oskolok_serdechnoi_obolochki.png",
+      "tier": 6
+    },
+    {
+      "name": "Остаток голодающей сердцевины",
+      "stem": "t6_concept_ostatok_golodaiushchei_serdtseviny",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_ostatok_golodaiushchei_serdtseviny.png",
+      "tier": 6
+    },
+    {
+      "name": "Панцирь приливного гиганта",
+      "stem": "t6_concept_pantsir_prilivnogo_giganta",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_pantsir_prilivnogo_giganta.png",
+      "tier": 6
+    },
+    {
+      "name": "Первое зерно сердцевины",
+      "stem": "t6_concept_pervoe_zerno_serdtseviny",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_pervoe_zerno_serdtseviny.png",
+      "tier": 6
+    },
+    {
+      "name": "Плавниковый нерв сирены",
+      "stem": "t6_concept_plavnikovyi_nerv_sireny",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_plavnikovyi_nerv_sireny.png",
+      "tier": 6
+    },
+    {
+      "name": "Плотное сторожевое сухожилие",
+      "stem": "t6_concept_plotnoe_storozhevoe_sukhozhilie",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_plotnoe_storozhevoe_sukhozhilie.png",
+      "tier": 6
+    },
+    {
+      "name": "Приливная панцирная пластина",
+      "stem": "t6_concept_prilivnaia_pantsirnaia_plastina",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_prilivnaia_pantsirnaia_plastina.png",
+      "tier": 6
+    },
+    {
+      "name": "Рыба без внутренней тени",
+      "stem": "t6_concept_ryba_bez_vnutrennei_teni",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_ryba_bez_vnutrennei_teni.png",
+      "tier": 6
+    },
+    {
+      "name": "Сердце чёрного спрута",
+      "stem": "t6_concept_serdtse_chiornogo_spruta",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_serdtse_chiornogo_spruta.png",
+      "tier": 6
+    },
+    {
+      "name": "Шепчущий рог Пророка",
+      "stem": "t6_concept_shepchushchii_rog_proroka",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_shepchushchii_rog_proroka.png",
+      "tier": 6
+    },
+    {
+      "name": "Складка бесформенного панциря",
+      "stem": "t6_concept_skladka_besformennogo_pantsiria",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_skladka_besformennogo_pantsiria.png",
+      "tier": 6
+    },
+    {
+      "name": "Сшитая хрящевая пластина",
+      "stem": "t6_concept_sshitaia_khriashchevaia_plastina",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_sshitaia_khriashchevaia_plastina.png",
+      "tier": 6
+    },
+    {
+      "name": "Тихоцвет",
+      "stem": "t6_concept_tikhotsvet",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_tikhotsvet.png",
+      "tier": 6
+    },
+    {
+      "name": "Тёмная моллюсковая мембрана",
+      "stem": "t6_concept_tiomnaia_molliuskovaia_membrana",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_tiomnaia_molliuskovaia_membrana.png",
+      "tier": 6
+    },
+    {
+      "name": "Ткань несказанных мыслей",
+      "stem": "t6_concept_tkan_neskazannykh_myslei",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_tkan_neskazannykh_myslei.png",
+      "tier": 6
+    },
+    {
+      "name": "Тысяча запертых голосов",
+      "stem": "t6_concept_tysiacha_zapertykh_golosov",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_tysiacha_zapertykh_golosov.png",
+      "tier": 6
+    },
+    {
+      "name": "Узел старшего сухожилия",
+      "stem": "t6_concept_uzel_starshego_sukhozhiliia",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_uzel_starshego_sukhozhiliia.png",
+      "tier": 6
+    },
+    {
+      "name": "Жало королевы личинок",
+      "stem": "t6_concept_zhalo_korolevy_lichinok",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_zhalo_korolevy_lichinok.png",
+      "tier": 6
+    },
+    {
+      "name": "Желчноплавый угорь",
+      "stem": "t6_concept_zhelchnoplavyi_ugor",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_zhelchnoplavyi_ugor.png",
+      "tier": 6
+    },
+    {
+      "name": "Зуб матёрого муренолова",
+      "stem": "t6_concept_zub_matiorogo_murenolova",
+      "source": "Assets/Sprites/Resources/Concepts/T6/t6_concept_zub_matiorogo_murenolova.png",
+      "tier": 6
+    },
+    {
+      "name": "Древесина плакучей ивы душ",
+      "stem": "t7_concept_drevesina_plakuchei_ivy_dush",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_drevesina_plakuchei_ivy_dush.png",
+      "tier": 7
+    },
+    {
+      "name": "Фосфорит",
+      "stem": "t7_concept_fosforit",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_fosforit.png",
+      "tier": 7
+    },
+    {
+      "name": "Фрагмент скипетра Нерота",
+      "stem": "t7_concept_fragment_skipetra_nerota",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_fragment_skipetra_nerota.png",
+      "tier": 7
+    },
+    {
+      "name": "Глаз вожака сумеречной своры",
+      "stem": "t7_concept_glaz_vozhaka_sumerechnoi_svory",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_glaz_vozhaka_sumerechnoi_svory.png",
+      "tier": 7
+    },
+    {
+      "name": "Гробничный угорь",
+      "stem": "t7_concept_grobnichnyi_ugor",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_grobnichnyi_ugor.png",
+      "tier": 7
+    },
+    {
+      "name": "Капля призрачной короны",
+      "stem": "t7_concept_kaplia_prizrachnoi_korony",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_kaplia_prizrachnoi_korony.png",
+      "tier": 7
+    },
+    {
+      "name": "Ключ Прокуратора душ",
+      "stem": "t7_concept_kliuch_prokuratora_dush",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_kliuch_prokuratora_dush.png",
+      "tier": 7
+    },
+    {
+      "name": "Коса Первого жнеца",
+      "stem": "t7_concept_kosa_pervogo_zhnetsa",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_kosa_pervogo_zhnetsa.png",
+      "tier": 7
+    },
+    {
+      "name": "Лоцманский знак капитана",
+      "stem": "t7_concept_lotsmanskii_znak_kapitana",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_lotsmanskii_znak_kapitana.png",
+      "tier": 7
+    },
+    {
+      "name": "Надгробная застёжка стража",
+      "stem": "t7_concept_nadgrobnaia_zastiozhka_strazha",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_nadgrobnaia_zastiozhka_strazha.png",
+      "tier": 7
+    },
+    {
+      "name": "Обломок запретной печати",
+      "stem": "t7_concept_oblomok_zapretnoi_pechati",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_oblomok_zapretnoi_pechati.png",
+      "tier": 7
+    },
+    {
+      "name": "Обрывок договора Вардена",
+      "stem": "t7_concept_obryvok_dogovora_vardena",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_obryvok_dogovora_vardena.png",
+      "tier": 7
+    },
+    {
+      "name": "Памятный сланец",
+      "stem": "t7_concept_pamiatnyi_slanets",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_pamiatnyi_slanets.png",
+      "tier": 7
+    },
+    {
+      "name": "Печать сборщика памяти",
+      "stem": "t7_concept_pechat_sborshchika_pamiati",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_pechat_sborshchika_pamiati.png",
+      "tier": 7
+    },
+    {
+      "name": "Пергамент призрачного архивариуса",
+      "stem": "t7_concept_pergament_prizrachnogo_arkhivariusa",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_pergament_prizrachnogo_arkhivariusa.png",
+      "tier": 7
+    },
+    {
+      "name": "Перо верховного некроманта",
+      "stem": "t7_concept_pero_verkhovnogo_nekromanta",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_pero_verkhovnogo_nekromanta.png",
+      "tier": 7
+    },
+    {
+      "name": "Перстень Канцлера Нерота",
+      "stem": "t7_concept_persten_kantslera_nerota",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_persten_kantslera_nerota.png",
+      "tier": 7
+    },
+    {
+      "name": "Перстень Старшего взыскателя",
+      "stem": "t7_concept_persten_starshego_vzyskatelia",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_persten_starshego_vzyskatelia.png",
+      "tier": 7
+    },
+    {
+      "name": "Плач Сонма скорбящих",
+      "stem": "t7_concept_plach_sonma_skorbiashchikh",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_plach_sonma_skorbiashchikh.png",
+      "tier": 7
+    },
+    {
+      "name": "Плач-трава",
+      "stem": "t7_concept_plach_trava",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_plach_trava.png",
+      "tier": 7
+    },
+    {
+      "name": "Режущий осколок косы жнеца",
+      "stem": "t7_concept_rezhushchii_oskolok_kosy_zhnetsa",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_rezhushchii_oskolok_kosy_zhnetsa.png",
+      "tier": 7
+    },
+    {
+      "name": "Серая рыба переправы",
+      "stem": "t7_concept_seraia_ryba_perepravy",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_seraia_ryba_perepravy.png",
+      "tier": 7
+    },
+    {
+      "name": "Слеза скорбящей тени",
+      "stem": "t7_concept_sleza_skorbiashchei_teni",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_sleza_skorbiashchei_teni.png",
+      "tier": 7
+    },
+    {
+      "name": "Страница подлинного имени Морхейна",
+      "stem": "t7_concept_stranitsa_podlinnogo_imeni_morkheina",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_stranitsa_podlinnogo_imeni_morkheina.png",
+      "tier": 7
+    },
+    {
+      "name": "Стройная костяная заклёпка",
+      "stem": "t7_concept_stroinaia_kostianaia_zakliopka",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_stroinaia_kostianaia_zakliopka.png",
+      "tier": 7
+    },
+    {
+      "name": "Сумеречный звериный коготь",
+      "stem": "t7_concept_sumerechnyi_zverinyi_kogot",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_sumerechnyi_zverinyi_kogot.png",
+      "tier": 7
+    },
+    {
+      "name": "Том Главного библиотекаря",
+      "stem": "t7_concept_tom_glavnogo_bibliotekaria",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_tom_glavnogo_bibliotekaria.png",
+      "tier": 7
+    },
+    {
+      "name": "Цепь душехранилища",
+      "stem": "t7_concept_tsep_dushekhranilishcha",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_tsep_dushekhranilishcha.png",
+      "tier": 7
+    },
+    {
+      "name": "Цепное весло переправы",
+      "stem": "t7_concept_tsepnoe_veslo_perepravy",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_tsepnoe_veslo_perepravy.png",
+      "tier": 7
+    },
+    {
+      "name": "Венец Архилича трона",
+      "stem": "t7_concept_venets_arkhilicha_trona",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_venets_arkhilicha_trona.png",
+      "tier": 7
+    },
+    {
+      "name": "Забрало рыцаря покоя",
+      "stem": "t7_concept_zabralo_rytsaria_pokoia",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_zabralo_rytsaria_pokoia.png",
+      "tier": 7
+    },
+    {
+      "name": "Знамя костяного генерала",
+      "stem": "t7_concept_znamia_kostianogo_generala",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_znamia_kostianogo_generala.png",
+      "tier": 7
+    },
+    {
+      "name": "Знамя Маршала забвения",
+      "stem": "t7_concept_znamia_marshala_zabveniia",
+      "source": "Assets/Sprites/Resources/Concepts/T7/t7_concept_znamia_marshala_zabveniia.png",
+      "tier": 7
+    },
+    {
+      "name": "Белый рог хозяина зеркал",
+      "stem": "t8_concept_belyi_rog_khoziaina_zerkal",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_belyi_rog_khoziaina_zerkal.png",
+      "tier": 8
+    },
+    {
+      "name": "Духовная брошь двора",
+      "stem": "t8_concept_dukhovnaia_brosh_dvora",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_dukhovnaia_brosh_dvora.png",
+      "tier": 8
+    },
+    {
+      "name": "Ключ Главного хранителя сна",
+      "stem": "t8_concept_kliuch_glavnogo_khranitelia_sna",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_kliuch_glavnogo_khranitelia_sna.png",
+      "tier": 8
+    },
+    {
+      "name": "Крошка ночного кошмара",
+      "stem": "t8_concept_kroshka_nochnogo_koshmara",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_kroshka_nochnogo_koshmara.png",
+      "tier": 8
+    },
+    {
+      "name": "Линза преломлённой башни",
+      "stem": "t8_concept_linza_prelomlionnoi_bashni",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_linza_prelomlionnoi_bashni.png",
+      "tier": 8
+    },
+    {
+      "name": "Лунный клык хозяина стаи",
+      "stem": "t8_concept_lunnyi_klyk_khoziaina_stai",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_lunnyi_klyk_khoziaina_stai.png",
+      "tier": 8
+    },
+    {
+      "name": "Лунный сереброкедр",
+      "stem": "t8_concept_lunnyi_serebrokedr",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_lunnyi_serebrokedr.png",
+      "tier": 8
+    },
+    {
+      "name": "Нектар княжны ночи",
+      "stem": "t8_concept_nektar_kniazhny_nochi",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_nektar_kniazhny_nochi.png",
+      "tier": 8
+    },
+    {
+      "name": "Опал пробуждения",
+      "stem": "t8_concept_opal_probuzhdeniia",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_opal_probuzhdeniia.png",
+      "tier": 8
+    },
+    {
+      "name": "Осколок двойника владыки",
+      "stem": "t8_concept_oskolok_dvoinika_vladyki",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_oskolok_dvoinika_vladyki.png",
+      "tier": 8
+    },
+    {
+      "name": "Осколок маски Ложной королевы",
+      "stem": "t8_concept_oskolok_maski_lozhnoi_korolevy",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_oskolok_maski_lozhnoi_korolevy.png",
+      "tier": 8
+    },
+    {
+      "name": "Осколок зеркала Первого Отражённого",
+      "stem": "t8_concept_oskolok_zerkala_pervogo_otrazhionnogo",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_oskolok_zerkala_pervogo_otrazhionnogo.png",
+      "tier": 8
+    },
+    {
+      "name": "Отражённая серебряная нить",
+      "stem": "t8_concept_otrazhionnaia_serebrianaia_nit",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_otrazhionnaia_serebrianaia_nit.png",
+      "tier": 8
+    },
+    {
+      "name": "Печать Канцлера желаний",
+      "stem": "t8_concept_pechat_kantslera_zhelanii",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_pechat_kantslera_zhelanii.png",
+      "tier": 8
+    },
+    {
+      "name": "Полуночная сон-трава",
+      "stem": "t8_concept_polunochnaia_son_trava",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_polunochnaia_son_trava.png",
+      "tier": 8
+    },
+    {
+      "name": "Рог Древнего сновидца",
+      "stem": "t8_concept_rog_drevnego_snovidtsa",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_rog_drevnego_snovidtsa.png",
+      "tier": 8
+    },
+    {
+      "name": "Рог призрачного оленя",
+      "stem": "t8_concept_rog_prizrachnogo_olenia",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_rog_prizrachnogo_olenia.png",
+      "tier": 8
+    },
+    {
+      "name": "Сердце стеклянного чудовища",
+      "stem": "t8_concept_serdtse_stekliannogo_chudovishcha",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_serdtse_stekliannogo_chudovishcha.png",
+      "tier": 8
+    },
+    {
+      "name": "Серебристая шкура лунного зверя",
+      "stem": "t8_concept_serebristaia_shkura_lunnogo_zveria",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_serebristaia_shkura_lunnogo_zveria.png",
+      "tier": 8
+    },
+    {
+      "name": "Шип кошмарного рыцаря",
+      "stem": "t8_concept_ship_koshmarnogo_rytsaria",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_ship_koshmarnogo_rytsaria.png",
+      "tier": 8
+    },
+    {
+      "name": "Шпора маршала теневых грёз",
+      "stem": "t8_concept_shpora_marshala_tenevykh_grioz",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_shpora_marshala_tenevykh_grioz.png",
+      "tier": 8
+    },
+    {
+      "name": "Сонная ветвь Ноктурна",
+      "stem": "t8_concept_sonnaia_vetv_nokturna",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_sonnaia_vetv_nokturna.png",
+      "tier": 8
+    },
+    {
+      "name": "Стеклянная чешуя зверя",
+      "stem": "t8_concept_stekliannaia_cheshuia_zveria",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_stekliannaia_cheshuia_zveria.png",
+      "tier": 8
+    },
+    {
+      "name": "Светящийся рог сновидческого зверя",
+      "stem": "t8_concept_svetiashchiisia_rog_snovidcheskogo_zveria",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_svetiashchiisia_rog_snovidcheskogo_zveria.png",
+      "tier": 8
+    },
+    {
+      "name": "Светохвостая лунная рыба",
+      "stem": "t8_concept_svetokhvostaia_lunnaia_ryba",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_svetokhvostaia_lunnaia_ryba.png",
+      "tier": 8
+    },
+    {
+      "name": "Цветок пробуждения",
+      "stem": "t8_concept_tsvetok_probuzhdeniia",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_tsvetok_probuzhdeniia.png",
+      "tier": 8
+    },
+    {
+      "name": "Узел нити сна",
+      "stem": "t8_concept_uzel_niti_sna",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_uzel_niti_sna.png",
+      "tier": 8
+    },
+    {
+      "name": "Венчик королевы цветения",
+      "stem": "t8_concept_venchik_korolevy_tsveteniia",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_venchik_korolevy_tsveteniia.png",
+      "tier": 8
+    },
+    {
+      "name": "Вуаль Первой придворной",
+      "stem": "t8_concept_vual_pervoi_pridvornoi",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_vual_pervoi_pridvornoi.png",
+      "tier": 8
+    },
+    {
+      "name": "Зеркалоцвет",
+      "stem": "t8_concept_zerkalotsvet",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_zerkalotsvet.png",
+      "tier": 8
+    },
+    {
+      "name": "Живой лепестковый шёлк",
+      "stem": "t8_concept_zhivoi_lepestkovyi_shiolk",
+      "source": "Assets/Sprites/Resources/Concepts/T8/t8_concept_zhivoi_lepestkovyi_shiolk.png",
+      "tier": 8
+    },
+    {
+      "name": "Чаша Великого тигля",
+      "stem": "t9_concept_chasha_velikogo_tiglia",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_chasha_velikogo_tiglia.png",
+      "tier": 9
+    },
+    {
+      "name": "Чешуя младшего титана",
+      "stem": "t9_concept_cheshuia_mladshego_titana",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_cheshuia_mladshego_titana.png",
+      "tier": 9
+    },
+    {
+      "name": "Громодуб",
+      "stem": "t9_concept_gromodub",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_gromodub.png",
+      "tier": 9
+    },
+    {
+      "name": "Грозовое перо штормовой птицы",
+      "stem": "t9_concept_grozovoe_pero_shtormovoi_ptitsy",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_grozovoe_pero_shtormovoi_ptitsy.png",
+      "tier": 9
+    },
+    {
+      "name": "Грозовой лосось",
+      "stem": "t9_concept_grozovoi_losos",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_grozovoi_losos.png",
+      "tier": 9
+    },
+    {
+      "name": "Искроцвет",
+      "stem": "t9_concept_iskrotsvet",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_iskrotsvet.png",
+      "tier": 9
+    },
+    {
+      "name": "Каменная связка великана",
+      "stem": "t9_concept_kamennaia_sviazka_velikana",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kamennaia_sviazka_velikana.png",
+      "tier": 9
+    },
+    {
+      "name": "Каменный щиток элементаля",
+      "stem": "t9_concept_kamennyi_shchitok_elementalia",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kamennyi_shchitok_elementalia.png",
+      "tier": 9
+    },
+    {
+      "name": "Капля первородного пламени",
+      "stem": "t9_concept_kaplia_pervorodnogo_plameni",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kaplia_pervorodnogo_plameni.png",
+      "tier": 9
+    },
+    {
+      "name": "Ключ командира печати",
+      "stem": "t9_concept_kliuch_komandira_pechati",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kliuch_komandira_pechati.png",
+      "tier": 9
+    },
+    {
+      "name": "Ключ шести замков",
+      "stem": "t9_concept_kliuch_shesti_zamkov",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kliuch_shesti_zamkov.png",
+      "tier": 9
+    },
+    {
+      "name": "Клык Владыки белого выводка",
+      "stem": "t9_concept_klyk_vladyki_belogo_vyvodka",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_klyk_vladyki_belogo_vyvodka.png",
+      "tier": 9
+    },
+    {
+      "name": "Клык вожака камнегривов",
+      "stem": "t9_concept_klyk_vozhaka_kamnegrivov",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_klyk_vozhaka_kamnegrivov.png",
+      "tier": 9
+    },
+    {
+      "name": "Корона Наследника хребта",
+      "stem": "t9_concept_korona_naslednika_khrebta",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_korona_naslednika_khrebta.png",
+      "tier": 9
+    },
+    {
+      "name": "Кристалл первопечати",
+      "stem": "t9_concept_kristall_pervopechati",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_kristall_pervopechati.png",
+      "tier": 9
+    },
+    {
+      "name": "Ледяной звериный гребень",
+      "stem": "t9_concept_ledianoi_zverinyi_greben",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_ledianoi_zverinyi_greben.png",
+      "tier": 9
+    },
+    {
+      "name": "Молот Главного кузнеца",
+      "stem": "t9_concept_molot_glavnogo_kuznetsa",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_molot_glavnogo_kuznetsa.png",
+      "tier": 9
+    },
+    {
+      "name": "Нить стихийного равновесия",
+      "stem": "t9_concept_nit_stikhiinogo_ravnovesiia",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_nit_stikhiinogo_ravnovesiia.png",
+      "tier": 9
+    },
+    {
+      "name": "Осколок посоха Патриарха",
+      "stem": "t9_concept_oskolok_posokha_patriarkha",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_oskolok_posokha_patriarkha.png",
+      "tier": 9
+    },
+    {
+      "name": "Осколок сердечного камня Тектониса",
+      "stem": "t9_concept_oskolok_serdechnogo_kamnia_tektonisa",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_oskolok_serdechnogo_kamnia_tektonisa.png",
+      "tier": 9
+    },
+    {
+      "name": "Печать Древнего голема",
+      "stem": "t9_concept_pechat_drevnego_golema",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_pechat_drevnego_golema.png",
+      "tier": 9
+    },
+    {
+      "name": "Перо Верховного штормокрыла",
+      "stem": "t9_concept_pero_verkhovnogo_shtormokryla",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_pero_verkhovnogo_shtormokryla.png",
+      "tier": 9
+    },
+    {
+      "name": "Первая искра Старейшины",
+      "stem": "t9_concept_pervaia_iskra_stareishiny",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_pervaia_iskra_stareishiny.png",
+      "tier": 9
+    },
+    {
+      "name": "Первая сердцевина голема",
+      "stem": "t9_concept_pervaia_serdtsevina_golema",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_pervaia_serdtsevina_golema.png",
+      "tier": 9
+    },
+    {
+      "name": "Первичный огнехвост",
+      "stem": "t9_concept_pervichnyi_ognekhvost",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_pervichnyi_ognekhvost.png",
+      "tier": 9
+    },
+    {
+      "name": "Пламелист",
+      "stem": "t9_concept_plamelist",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_plamelist.png",
+      "tier": 9
+    },
+    {
+      "name": "Шестерня первородного голема",
+      "stem": "t9_concept_shesternia_pervorodnogo_golema",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_shesternia_pervorodnogo_golema.png",
+      "tier": 9
+    },
+    {
+      "name": "Стихийный поршневой сердечник",
+      "stem": "t9_concept_stikhiinyi_porshnevoi_serdechnik",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_stikhiinyi_porshnevoi_serdechnik.png",
+      "tier": 9
+    },
+    {
+      "name": "Титаническая форель",
+      "stem": "t9_concept_titanicheskaia_forel",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_titanicheskaia_forel.png",
+      "tier": 9
+    },
+    {
+      "name": "Титанический сланец",
+      "stem": "t9_concept_titanicheskii_slanets",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_titanicheskii_slanets.png",
+      "tier": 9
+    },
+    {
+      "name": "Титанолист",
+      "stem": "t9_concept_titanolist",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_titanolist.png",
+      "tier": 9
+    },
+    {
+      "name": "Застывшая капля тигля",
+      "stem": "t9_concept_zastyvshaia_kaplia_tiglia",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_zastyvshaia_kaplia_tiglia.png",
+      "tier": 9
+    },
+    {
+      "name": "Жало Матки кристаллических туннелей",
+      "stem": "t9_concept_zhalo_matki_kristallicheskikh_tunnelei",
+      "source": "Assets/Sprites/Resources/Concepts/T9/t9_concept_zhalo_matki_kristallicheskikh_tunnelei.png",
+      "tier": 9
+    },
+    {
+      "name": "Чешуя небесного змея",
+      "stem": "t10_concept_cheshuia_nebesnogo_zmeia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_cheshuia_nebesnogo_zmeia.png",
+      "tier": 10
+    },
+    {
+      "name": "Фрагмент печати высшего хранителя",
+      "stem": "t10_concept_fragment_pechati_vysshego_khranitelia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_fragment_pechati_vysshego_khranitelia.png",
+      "tier": 10
+    },
+    {
+      "name": "Ядро Колосса упавшей звезды",
+      "stem": "t10_concept_iadro_kolossa_upavshei_zvezdy",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_iadro_kolossa_upavshei_zvezdy.png",
+      "tier": 10
+    },
+    {
+      "name": "Ядро Первого механизма врат",
+      "stem": "t10_concept_iadro_pervogo_mekhanizma_vrat",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_iadro_pervogo_mekhanizma_vrat.png",
+      "tier": 10
+    },
+    {
+      "name": "Ключ Главного ключника",
+      "stem": "t10_concept_kliuch_glavnogo_kliuchnika",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kliuch_glavnogo_kliuchnika.png",
+      "tier": 10
+    },
+    {
+      "name": "Ключ слуги Архитектора",
+      "stem": "t10_concept_kliuch_slugi_arkhitektora",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kliuch_slugi_arkhitektora.png",
+      "tier": 10
+    },
+    {
+      "name": "Клык кометного хищника",
+      "stem": "t10_concept_klyk_kometnogo_khishchnika",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_klyk_kometnogo_khishchnika.png",
+      "tier": 10
+    },
+    {
+      "name": "Клык кометного вожака",
+      "stem": "t10_concept_klyk_kometnogo_vozhaka",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_klyk_kometnogo_vozhaka.png",
+      "tier": 10
+    },
+    {
+      "name": "Коготь Дракона Хранителя",
+      "stem": "t10_concept_kogot_drakona_khranitelia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kogot_drakona_khranitelia.png",
+      "tier": 10
+    },
+    {
+      "name": "Кометная лиственница",
+      "stem": "t10_concept_kometnaia_listvennitsa",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kometnaia_listvennitsa.png",
+      "tier": 10
+    },
+    {
+      "name": "Кометный карп",
+      "stem": "t10_concept_kometnyi_karp",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kometnyi_karp.png",
+      "tier": 10
+    },
+    {
+      "name": "Компас Тринадцати Орбит",
+      "stem": "t10_concept_kompas_trinadtsati_orbit",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kompas_trinadtsati_orbit.png",
+      "tier": 10
+    },
+    {
+      "name": "Королевский звездолист",
+      "stem": "t10_concept_korolevskii_zvezdolist",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_korolevskii_zvezdolist.png",
+      "tier": 10
+    },
+    {
+      "name": "Коронный кварц",
+      "stem": "t10_concept_koronnyi_kvarts",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_koronnyi_kvarts.png",
+      "tier": 10
+    },
+    {
+      "name": "Кристалл небесного конструкта",
+      "stem": "t10_concept_kristall_nebesnogo_konstrukta",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kristall_nebesnogo_konstrukta.png",
+      "tier": 10
+    },
+    {
+      "name": "Кристалл оси мироздания",
+      "stem": "t10_concept_kristall_osi_mirozdaniia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_kristall_osi_mirozdaniia.png",
+      "tier": 10
+    },
+    {
+      "name": "Крыло Верховного архонта",
+      "stem": "t10_concept_krylo_verkhovnogo_arkhonta",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_krylo_verkhovnogo_arkhonta.png",
+      "tier": 10
+    },
+    {
+      "name": "Накидка Проводника вечной ночи",
+      "stem": "t10_concept_nakidka_provodnika_vechnoi_nochi",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_nakidka_provodnika_vechnoi_nochi.png",
+      "tier": 10
+    },
+    {
+      "name": "Осколок матрицы Архитектора",
+      "stem": "t10_concept_oskolok_matritsy_arkhitektora",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_oskolok_matritsy_arkhitektora.png",
+      "tier": 10
+    },
+    {
+      "name": "Осколок метеоритного голема",
+      "stem": "t10_concept_oskolok_meteoritnogo_golema",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_oskolok_meteoritnogo_golema.png",
+      "tier": 10
+    },
+    {
+      "name": "Осколок руки Титана Перехода",
+      "stem": "t10_concept_oskolok_ruki_titana_perekhoda",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_oskolok_ruki_titana_perekhoda.png",
+      "tier": 10
+    },
+    {
+      "name": "Осколок угасшей звезды Астрагора",
+      "stem": "t10_concept_oskolok_ugasshei_zvezdy_astragora",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_oskolok_ugasshei_zvezdy_astragora.png",
+      "tier": 10
+    },
+    {
+      "name": "Печать Маршала Короны",
+      "stem": "t10_concept_pechat_marshala_korony",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_pechat_marshala_korony.png",
+      "tier": 10
+    },
+    {
+      "name": "Перо крылатого архонта",
+      "stem": "t10_concept_pero_krylatogo_arkhonta",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_pero_krylatogo_arkhonta.png",
+      "tier": 10
+    },
+    {
+      "name": "Первая формула хранителя",
+      "stem": "t10_concept_pervaia_formula_khranitelia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_pervaia_formula_khranitelia.png",
+      "tier": 10
+    },
+    {
+      "name": "Первоцвет мироздания",
+      "stem": "t10_concept_pervotsvet_mirozdaniia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_pervotsvet_mirozdaniia.png",
+      "tier": 10
+    },
+    {
+      "name": "Последний приказ Архитектора",
+      "stem": "t10_concept_poslednii_prikaz_arkhitektora",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_poslednii_prikaz_arkhitektora.png",
+      "tier": 10
+    },
+    {
+      "name": "Сияющий хондрит",
+      "stem": "t10_concept_siiaiushchii_khondrit",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_siiaiushchii_khondrit.png",
+      "tier": 10
+    },
+    {
+      "name": "Знак Первородного Змея",
+      "stem": "t10_concept_znak_pervorodnogo_zmeia",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_znak_pervorodnogo_zmeia.png",
+      "tier": 10
+    },
+    {
+      "name": "Звёздная астра",
+      "stem": "t10_concept_zviozdnaia_astra",
+      "source": "Assets/Sprites/Resources/Concepts/T10/t10_concept_zviozdnaia_astra.png",
+      "tier": 10
+    }
+  ]
+}
