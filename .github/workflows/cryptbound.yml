@@ -51,6 +51,8 @@ jobs:
           node --check cryptbound/src/main/assets/equipment_art.js
           node --check cryptbound/src/main/assets/titles.js
           node --check cryptbound/src/main/assets/sprite_catalog.js
+          node --check cryptbound/src/main/assets/imported_art.js
+          node --check cryptbound/src/main/assets/combat_feedback.js
           node --check cryptbound/src/main/assets/hunter_bestiary.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
@@ -61,6 +63,7 @@ jobs:
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
           node cryptbound/tests/hunter_book.cjs
+          node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
 
       - name: Compile playable Android app
@@ -69,8 +72,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.3-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.3-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.4-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.4-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -83,7 +86,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.3 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.3 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.3 — охотничий бестиарий Лесной окраины" --notes "Охотничий бестиарий для Лесной окраины: обязательная находка книги у погибшего охотника на первом этаже; доступ из правого верхнего угла и инвентаря; три раздела Звери, Трофеи, Бонусы; накопительное изучение 10 видов по порогам 5/10/20/40; сохранение изучения между экспедициями; повторяемые лесные колодцы с вероятностью 25 процентов и накапливаемыми временными характеристиками. Первая версия интерфейса выполнена в рисованном тёмном стиле. Особые охоты и полная библиотека 50 лесных событий — следующий этап."
+          if ! gh release view cryptbound-v0.7.4 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.4 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.4 — бестиарий поверх рисованного интерфейса v0.7.2" --notes "Исправлена ошибка основы сборки v0.7.3: восстановлен настоящий интерфейс v0.7.2 с painted.css, компактным боевым экраном и инвентарём. На этот интерфейс перенесён охотничий бестиарий: обязательный труп охотника с книгой на первом этаже, быстрый доступ возле ключа, накапливаемые бонусы изучения 10 видов, колодцы с шансом 25%, сохранение прогресса. Проверки: основные smoke-тесты v0.7.2, новые тесты книги, защита от отката интерфейса. Альфа-охоты и 50 событий будут реализованы позднее."
           fi
-          gh release upload cryptbound-v0.7.3 dist/Cryptbound-v0.7.3-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.4 dist/Cryptbound-v0.7.4-offline-Android.apk dist/SHA256SUMS.txt --clobber
