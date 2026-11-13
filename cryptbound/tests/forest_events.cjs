@@ -68,7 +68,11 @@ assert.equal(r.turn,turn+1,'Starting wolf battle must cost one turn');
 assert.equal(squirrel.forestPhase,'fight');
 let wolves=r.tiles.filter(t=>t.foe&&t.foe.forestTask==='encounter:'+squirrel.id+':'+r.floor);
 assert.equal(wolves.length,3,'Exactly 3 wolves must spawn');
-for(const wolf of wolves){wolf.foe.hp=1;wolf.revealed=true;A('strike',wolf.id);}
+for(const wolf of wolves){
+ wolf.foe.hp=1;wolf.foe.evadeCharges=0;wolf.revealed=true;
+ A('strike',wolf.id);
+ assert.equal(wolf.foe.hp,0,'Quest wolf must die during the scripted kill test');
+}
 assert.equal(squirrel.forestPhase,'reward','Squirrel must be freed after three kills');
 A('pickup',squirrel.id);assert.match(el('overlay').innerHTML,/Поговорить с Рыжухой/);
 A('forest-choice',squirrel.id+':0');
