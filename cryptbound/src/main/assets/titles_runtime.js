@@ -21,7 +21,7 @@ function statBonuses(r){
  var st={atk:0,hp:0,mp:0,pow:0,def:0};
  data.forEach(function(t){
   var n=level(r,t.id);if(!n)return;
-  if(t.rank===5){masterKeys(t).forEach(function(k){var lv=rank5(r,t.id,k);st[k]+=lv*(k==='atk'||k==='pow'?3:k==='hp'?60:40);});return;}
+  if(t.rank===5){masterKeys(t).forEach(function(k){var lv=rank5(r,t.id,k);if(lv)st[k]+=(k==='atk'||k==='pow'?[2,4,6][lv-1]:[40,60,80][lv-1]);});return;}
   var re=/(Атака|магия|Магия|HP|MP|Броня)\s*\+(\d+(?:\/\d+)*)/gi;
   var m;while((m=re.exec(t.stats))!==null){
    var k=/^атака$/i.test(m[1])?'atk':/^магия$/i.test(m[1])?'pow':m[1].toLowerCase();
