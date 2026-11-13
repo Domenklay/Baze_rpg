@@ -81,7 +81,7 @@ try{
   stun:0,cooldown:4,evadeCharges:0,skill:{every:99}};
  cave.kind='chamber';cave.revealed=true;cave.cleared=false;cave.entered=true;
  cave.room={guards:[guard],guardHp:350,rewardTaken:false,secretTaken:false,secret:false,turns:0};
- run.chamberActive=18;run.titleEchoCharges=1;
+ run.chamberActive=18;run.titleEchoCharges=1;run.log=[];
  const startTurn=run.turn,logAt=run.log.length;
  A('chamber-fight','18:1');
  const sideEvents=run.log.slice(0,run.log.length-logAt);
