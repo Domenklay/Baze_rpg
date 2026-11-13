@@ -475,16 +475,28 @@ function load(){
 function save(){try{if(!s)return;localStorage.setItem(KEY,JSON.stringify(s));}catch(e){console.warn('Save unavailable',e);}}
 function enemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.hp>0&&t.revealed;});}
 function hiddenEnemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.hp>0;});}
-/* A discovered enemy is attackable only if a continuous explored route reaches it. */
+/* Combat needs a connected, excavated route, not a collected/loot-free route.
+   Visible empty cells (including legacy unsynchronized cleared flags) are passages;
+   uncollected drops cannot make a corridor impassable. */
 function reachableEnemy(t){
  if(!r||!t||!t.foe||t.foe.hp<=0||!t.revealed)return false;
- var origin=r.heroTile,visited=new Set([origin]),queue=[origin],body=t.forestAlphaSquare||[t.id];
- function passable(id){var c=r.tiles[id];return !!c&&c.revealed&&c.cleared&&!c.drops&&(!c.foe||c.foe.hp<=0);}
- if(!passable(origin))return false;
- while(queue.length){var here=queue.shift();for(var next of CR.near(here)){
-  if(body.indexOf(next)>=0)return true;
-  if(!visited.has(next)&&passable(next)){visited.add(next);queue.push(next);}
- }}
+ var origin=Number(r.heroTile),body=t.forestAlphaSquare||[t.id];
+ if(!r.tiles[origin]||!r.tiles[origin].revealed)return false;
+ var visited=new Set([origin]),queue=[origin];
+ function passable(id){
+  var c=r.tiles[id];
+  if(!c||!c.revealed||(c.foe&&c.foe.hp>0)||c.forestAlphaAnchor!=null)return false;
+  if(c.kind==='trap'&&!c.trapSpent)return false;
+  return id===origin||c.cleared||c.kind==='start'||c.kind==='empty'||
+   c.kind==='exit'||(c.foe&&c.foe.hp<=0);
+ }
+ while(queue.length){
+  var here=queue.shift();
+  for(var next of CR.near(here)){
+   if(body.indexOf(next)>=0)return true;
+   if(!visited.has(next)&&passable(next)){visited.add(next);queue.push(next);}
+  }
+ }
  return false;
 }
 function target(){return enemies().find(reachableEnemy)||null;}
@@ -1493,12 +1505,17 @@ function kill(t){
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
  if(!r.floorCleared&&hiddenEnemies().length===0){
   r.floorCleared=true;r.clearAnimationStarted=Date.now();
-  var opened=0;
+  var opened=0,armedTraps=0;
   r.tiles.forEach(function(t){
-   if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&t.kind!=='trap'){
+   // Full-clearing ordinary slabs must never silently reveal or disarm traps.
+   if(!t.revealed&&t.kind==='trap'){
+    t.cleared=false;t.trapSpent=false;t.trapActive=false;armedTraps++;return;
+   }
+   if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
     t.revealed=true;t.autoOpened=opened++;if(t.kind==='empty')t.cleared=true;
    }
   });
+  if(armedTraps)log('После зачистки осталось '+armedTraps+' закрытых капканов. Они по-прежнему опасны.');
   var bonusGold=Math.max(1,Math.round(6*depthMultiplier()));addGold(bonusGold);
   log('Полная зачистка: '+opened+' обычных клеток раскрыто, +'+bonusGold+' монет.');
  }
@@ -2054,8 +2071,9 @@ function claimTile(t){
   finishAction();if(r)floatLoot(t.id,['✚ Эликсир ×1']);return;
  }
  if(kind==='trap'){
-  // A triggered trap cannot be ignored: removing it requires a separate turn.
-  t.cleared=true;t.trapSpent=true;
+  // Exposed by magic/automation? It is still live until actually sprung.
+  if(!t.trapActive&&!t.trapSpent){triggerTrap(t);finishAction();return;}
+  t.cleared=true;t.trapSpent=true;t.trapActive=false;
   if(r.trappedTile===t.id){r.trappedTile=null;log('Капкан обезврежен, кровотечение от него прекращено.');}
   else log('Разряженный капкан разобран.');
   finishAction();if(r)floatLoot(t.id,['Капкан обезврежен']);return;
