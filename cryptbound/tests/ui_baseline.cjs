@@ -31,6 +31,14 @@ assert.equal(fs.readdirSync(path.join(root,'ui/locations')).filter(x=>x.endsWith
  'All 30 locations need floor and cover art');
 assert.equal(fs.readdirSync(path.join(root,'ui')).filter(x=>x.startsWith('atlas-')&&x.endsWith('.png')).length,12,
  '12 original area atlases must be packaged');
+for(const sprite of ['hunter_spread.svg','hunter_row.svg','hunter_stage.svg','hunter_progress.svg','hunter_milestone.svg','gear_boots_hunter.svg','gear_ring_hunter.svg']){
+ const file=path.join(root,sprite);assert.ok(fs.existsSync(file),'New painted UI sprite absent: '+sprite);
+ assert.ok(fs.statSync(file).size>450,'Painted UI sprite empty: '+sprite);
+}
+assert.ok(bookCss.includes('hunter_spread.svg')&&bookCss.includes('hunter_stage.svg'),'Bestiary book textures not enabled');
+assert.ok(bookCss.includes('minmax(0,44%) minmax(0,56%)'),'Portrait screen must keep the two facing book pages');
+assert.ok(js.includes('spell-target-banner')&&js.includes('cast-target')&&js.includes('cancel-target'),'Target selection mode is not present');
+assert.ok(js.includes('gear_boots_hunter.svg')&&js.includes('gear_ring_hunter.svg'),'Boot and ring graphics not wired to inventory');
 const painted=fs.readFileSync(path.join(root,'painted.css'),'utf8');
 assert.ok(painted.includes('--ui-frame'),'v0.7.2 illustrated panel nine-slice style missing');
 console.log('PASS v0.7.2 painted UI preserved, b​​estiary integrated, all referenced assets present.');
