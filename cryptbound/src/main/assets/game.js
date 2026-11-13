@@ -349,7 +349,7 @@ function startFloor(){
  for(var i=0;i<revealCount;i++){
   var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
   if(!available.length)break;
-  var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='empty')chosen.cleared=true;
+  var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='trap')triggerTrap(chosen);if(chosen.kind==='empty')chosen.cleared=true;
  }
  log('Этаж '+r.floor+' · '+maxFloorLabel()+'. Герой начинает исследование со случайной клетки.');
  fairyRemark('floor');
@@ -1456,7 +1456,7 @@ function kill(t){
   r.floorCleared=true;r.clearAnimationStarted=Date.now();
   var opened=0;
   r.tiles.forEach(function(t){
-   if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
+   if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&t.kind!=='trap'){
     t.revealed=true;t.autoOpened=opened++;if(t.kind==='empty')t.cleared=true;
    }
   });
@@ -1599,7 +1599,7 @@ function useSkill(chosenTarget){
   var count=0;
   for(var i=0;i<3;i++){var candidates=r.tiles.filter(function(tile){return CR.exploreStatus(tile,r.tiles).ok;});
    if(!candidates.length)break;var cell=pick(candidates);
-   cell.revealed=true;if(cell.kind==='empty')cell.cleared=true;count++;}
+   cell.revealed=true;if(cell.kind==='trap')triggerTrap(cell);if(cell.kind==='empty')cell.cleared=true;count++;}
   addGold(4+r.floor*2);
   log('Лучник разведывает '+count+' доступных клеток.');
  }
@@ -1638,7 +1638,7 @@ function advancedCast(sp,chosenTarget){
  };
  function revealConnected(n){
   var count=0;for(var i=0;i<n;i++){var cells=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
-   if(!cells.length)break;var t=pick(cells);t.revealed=true;if(t.kind==='empty')t.cleared=true;count++;}
+   if(!cells.length)break;var t=pick(cells);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;count++;}
   return count;
  }
  if(key==='earthgate'){
@@ -1685,7 +1685,7 @@ function advancedCast(sp,chosenTarget){
    else{t.foe.hp=0;kill(t);}
   });
   r.tiles.forEach(function(t){
-   if(t.kind!=='start'&&!t.revealed){t.revealed=true;if(t.kind==='empty')t.cleared=true;}
+   if(t.kind!=='start'&&!t.revealed){t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;}
   });
   r.materials['Кристалл переписанной материи']=(r.materials['Кристалл переписанной материи']||0)+5;
   log('Материя перестроена. Обязательные ключи и выходы остались на месте.');
@@ -1739,7 +1739,7 @@ function cast(id,chosenTarget){
   for(var j=0;j<sp.base;j++){
    var covered=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
    if(!covered.length)break;
-   var t=pick(covered);t.revealed=true;if(t.kind==='empty')t.cleared=true;count++;
+   var t=pick(covered);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;count++;
   }
   log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
@@ -1788,9 +1788,9 @@ function forestEventDialog(t){
 function forestReveals(count){
  var opened=0;
  for(var i=0;i<count;i++){
-  var valid=r.tiles.filter(function(t){return !t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&CR.exploreStatus(t,r.tiles).ok;});
+  var valid=r.tiles.filter(function(t){return !t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&t.kind!=='trap'&&CR.exploreStatus(t,r.tiles).ok;});
   if(!valid.length)break;
-  var t=pick(valid);t.revealed=true;if(t.kind==='empty')t.cleared=true;opened++;
+  var t=pick(valid);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;opened++;
  }
  return opened;
 }
@@ -2616,7 +2616,7 @@ function usePreparedPotion(index){
  }else if(id==='fury'){r.rageTurns=Math.max(r.rageTurns||0,11);
  }else if(id==='insight'){
   for(var i=0;i<5;i++){var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
-   if(!available.length)break;var t=pick(available);t.revealed=true;if(t.kind==='empty')t.cleared=true;}
+   if(!available.length)break;var t=pick(available);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;}
  }else if(id==='phoenix'){r.resurrection=(r.resurrection||0)+1;
  }else if(id==='reflection'){r.reflectionTurns=Math.max(r.reflectionTurns||0,6);
  }else if(id==='barrier'){r.shield+=Math.ceil(stats().hp*.65);r.barrierTurns=Math.max(r.barrierTurns||0,11);
