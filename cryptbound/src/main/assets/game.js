@@ -462,7 +462,18 @@ function hud(){
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
 function monsterVisual(e,still){return SP.monster(e,!still&&e.spriteFxUntil>Date.now()?e.spriteFx:'idle')||icon('enemy',e.visual||CR.visualId(e.name));}
+function forestAlphaVisual(t){
+ var anchor=t.forestAlphaAnchor!=null?r.tiles[t.forestAlphaAnchor]:t;
+ if(!anchor||!anchor.foe||anchor.foe.hp<=0)return '';
+ var quarter=Math.max(0,(anchor.forestAlphaSquare||[anchor.id]).indexOf(t.id));
+ return '<span class="forest-alpha-quarter alpha-q'+quarter+'">'+monsterVisual(anchor.foe)+'</span>';
+}
 function activeTileView(t){
+ if(t.forestAlphaAnchor!=null){
+  var anchor=r.tiles[t.forestAlphaAnchor];
+  if(anchor&&anchor.foe&&anchor.foe.hp>0)return '<button class="tile tile-discovered tile-danger tile-forest-alpha'+(r.pendingSpell?' spell-target-valid':'')+
+   '" data-action="'+(r.pendingSpell?'cast-target':'strike')+'" data-id="'+anchor.id+'" title="'+esc(anchor.foe.name)+'">'+forestAlphaVisual(t)+'</button>';
+ }
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
  var clearAge=Date.now()-(r.clearAnimationStarted||0),opening=t.autoOpened!=null&&clearAge>=0&&clearAge<t.autoOpened*35+260;
  var hero=r.heroTile===t.id?'<span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
@@ -481,14 +492,14 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?monsterVisual(t.foe):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&r.pendingSpell?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&r.pendingSpell?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
@@ -1768,6 +1779,7 @@ function claimTile(t){
  }
  if(kind==='forest-well'){forestWellDialog(t.id);return;}
  if(kind==='forest-event'){forestEventDialog(t);return;}
+ if(kind==='forest-alpha-block')return;
  if(pending){
   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');labels.push('⚿ Ключ');}
   if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');labels.push('◈ +'+found);}
