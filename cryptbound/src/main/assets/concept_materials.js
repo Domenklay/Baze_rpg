@@ -95,5 +95,18 @@ window.CryptConceptMaterials={
  "Префектская сигилла": "t5_concept_prefektskaia_sigilla",
  "Сердце шлаковой норы": "t5_concept_serdtse_shlakovoi_nory",
  "Сердце Везриного котла": "t5_concept_serdtse_vezrinogo_kotla",
- "Шеврон Железного легиона": "t5_concept_shevron_zheleznogo_legiona"
+ "Шеврон Железного легиона": "t5_concept_shevron_zheleznogo_legiona",
+ "Шлаковый панцирь охотника": "t5_concept_shlakovyi_pantsir_okhotnika",
+ "Шлем чёрного маршала": "t5_concept_shlem_chiornogo_marshala",
+ "Штабной военный жетон": "t5_concept_shtabnoi_voennyi_zheton",
+ "Тройной клык вожака": "t5_concept_troinoi_klyk_vozhaka",
+ "Цепноплавый сом": "t5_concept_tsepnoplavyi_som",
+ "Зазубренная палаческая цепь": "t5_concept_zazubrennaia_palacheskaia_tsep",
+ "Железная огнелоза": "t5_concept_zheleznaia_ogneloza",
+ "Железная петля погонщика": "t5_concept_zheleznaia_petlia_pogonshchika",
+ "Знак пограничного легиона": "t5_concept_znak_pogranichnogo_legiona",
+ "Бездонная мурена": "t6_concept_bezdonnaia_murena",
+ "Бездонный корнествол": "t6_concept_bezdonnyi_kornestvol",
+ "Бездонный синий кварц": "t6_concept_bezdonnyi_sinii_kvarts",
+ "Черноводная ламинария": "t6_concept_chernovodnaia_laminariia"
 };
