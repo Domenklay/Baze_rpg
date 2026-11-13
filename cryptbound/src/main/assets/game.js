@@ -633,7 +633,8 @@ function renderMaze(){
  }
  return '<div class="dungeon-root theme-'+(r.actIndex||0)+'" data-location="'+((r.actIndex||0)*3+(r.locationIndex||0))+'" style="--floor-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-floor.svg);--cover-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-cover.svg);--floor-art:url(ui/atlas-'+String(artPair).padStart(2,'0')+'.png);--cover-art:url(ui/atlas-'+String(artPair+1).padStart(2,'0')+'.png)">'+
  '<div class="expedition-top"><div class="dungeon-name"><small>АКТ '+((r.actIndex||0)+1)+' · '+(r.locationIndex+1)+'/3</small><h1>'+esc(room?'Заброшенное убежище':region.name)+'</h1></div><button class="floor-seal" data-action="battle-log" aria-label="Журнал этажа">'+r.floor+'<small>ЭТАЖ</small></button><div class="expedition-money"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('gem')+(r.diamonds||0)+'</span></div><button class="hud-menu" data-action="menu" aria-label="Меню">'+uiIcon('menu')+'</button></div>'+
- '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+'</div></div>'+
+ '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.titlePanther&&r.titlePanther.hp>0?'<button data-action="title-panther-info" aria-label="Чёрная пантера">'+uiIcon('skull')+'<small>'+r.titlePanther.hp+'</small></button>':'')+
+  (r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+'</div></div>'+
  '<div class="dungeon-board'+(room?' cave-active':'')+'"><div class="dungeon-border'+(room?' cave-scene':'')+'"><div class="maze'+(room?' chamber-maze':'')+'">'+(room?renderChamberTiles(room):r.tiles.map(activeTileView).join(''))+'</div></div></div>'+
  '<div class="encounter-slot">'+encounter+(!room&&r.portalReady?'<button class="portal-compact" data-action="safe-portal">Безопасный портал · на базу</button>':'')+'</div>'+
  '<div class="battle-dock"><div class="dock-wing"><div class="quick-spells" aria-label="Классовые способности">'+quick+'</div><button class="dock-button" data-action="ui-panel" data-id="spells">'+uiIcon('book')+'<span>Свитки</span></button></div>'+
@@ -667,6 +668,7 @@ function backpackExtraSlots(){
   var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id);
   add(usable?'active-item-info':'forest-item-info',(usable?'forest:':'')+id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
  });
+ if(TR.curSup(r,'leopard')>0)add('active-item-info','panther','Статуэтка чёрной пантеры',uiIcon('skull'),TR.curSup(r,'leopard'));
  (r.soulBag||[]).forEach(function(x){add('active-item-info','soul:'+x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
  (r.questItems||[]).forEach(function(x){add('quest-item-info',x,x,uiIcon('key'),null);});
  (r.journalNotes||[]).forEach(function(x,index){add('note-info',index,x,uiIcon('journal'),null);});
@@ -704,6 +706,12 @@ function activeItemDetails(token){
   return {name:def[0],description:usable[id],qty:stock[id],action:'forest-use',id:id,
    disabled:attack?!enemies().some(reachableEnemy):healing&&r.hp>=st.hp,
    reason:attack?'Нет доступного врага.':healing?'Здоровье уже полное.':''};
+ }
+ if(kind==='panther'){
+  var statues=TR.curSup(r,'leopard');
+  if(statues<=0)return null;
+  return {name:'Статуэтка чёрной пантеры',description:'Призывает чёрную пантеру с собственными HP и физической атакой. Она действует в бою, получает ответ врага на свои удары и сопровождает героя до конца этажа или гибели.',qty:statues,
+   action:'title-panther-use',id:null,disabled:!!(r.titlePanther&&r.titlePanther.hp>0),reason:'Чёрная пантера уже призвана.'};
  }
  if(kind==='soul'){
   var soul=(r.soulBag||[]).find(function(x){return String(x.id)===id;});if(!soul)return null;
@@ -1487,6 +1495,16 @@ function consumeTurn(){
    }
    if(provoked&&retaliationTarget==='ghost'){
     if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,Math.ceil(amount)));if(!r.ghost.hp){r.ghost=null;log('Призрачный страж развеялся.');}}
+    return;
+   }
+   if(provoked&&retaliationTarget==='panther'){
+    if(r.titlePanther&&r.titlePanther.hp>0){
+     var p=r.titlePanther,pantherDmg=Math.max(1,Math.ceil(amount)-(p.def||0));
+     if(FD)FD.actor(e,ready?'skill':'attack','Удар по чёрной пантере');
+     p.hp=Math.max(0,p.hp-pantherDmg);
+     log(e.name+' отвечает чёрной пантере: −'+pantherDmg+' HP.');
+     if(!p.hp){log('Чёрная пантера погибла.');r.titlePanther=null;}
+    }
     return;
    }
    amount=incomingDamage(amount,e); // Player defense only applies to attacks targeting the hero.
@@ -2388,6 +2406,15 @@ function chamberEnemyPhase(frozen){
     if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,damage));if(!r.ghost.hp)r.ghost=null;}
     return;
    }
+   if(provoked&&retaliationTarget==='panther'){
+    if(r.titlePanther&&r.titlePanther.hp>0){
+     var panther=r.titlePanther,hit=Math.max(1,Math.ceil(damage)-(panther.def||0));
+     panther.hp=Math.max(0,panther.hp-hit);
+     log(g.name+' отвечает чёрной пантере: −'+hit+' HP.');
+     if(!panther.hp){log('Чёрная пантера погибла.');r.titlePanther=null;}
+    }
+    return;
+   }
    damage=incomingDamage(damage,g);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
@@ -2607,7 +2634,11 @@ function puzzleAnswer(id){
 }
 function titleHelpers(){
  return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,addMaterial:function(name,qty){r.materials[name]=(r.materials[name]||0)+qty;},addFood:function(kind,qty){var stock=FE.ensure(r).items;stock[kind]=(stock[kind]||0)+Math.max(1,Number(qty)||1);},
- targets:function(){return enemies();},hiddenTargets:function(){return hiddenEnemies();},reachable:reachableEnemy,kill:kill,
+ targets:function(){return activeRoom()?[]:enemies();},
+ roomTargets:function(){return livingRoomGuards();},
+ hitRoom:function(guard,amount){guard.hp=Math.max(0,guard.hp-amount);var room=activeRoom();if(room)room.room.guardHp=room.room.guards.reduce(function(n,x){return n+Math.max(0,x.hp);},0);},
+ provoke:provoke,
+ hiddenTargets:function(){return activeRoom()?[]:hiddenEnemies();},reachable:reachableEnemy,kill:kill,
  hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
  flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
   if(t.foe.hp<=0)return;var hit=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=hit;if(t.foe.hp<=0)kill(t);});},
@@ -2628,6 +2659,15 @@ function gainTalent(id){
 function gainTitleMastery(id){
  var x=String(id).split(':'),t=TALENTS.find(function(z){return z.id===x[0];});if(!t||!TR.masteryUpgrade(r,t,x[1],titleHelpers()))return;
  toast('Улучшение звания: '+t.name);draw();save();
+}
+function usePantherStatue(){
+ var result=TR.summonPanther(r,titleHelpers());
+ if(!result||!result.ok){toast(result&&result.message||'Призыв не удался.');return;}
+ log(result.message);close();finishAction();
+}
+function titlePantherInfo(){
+ var p=r&&r.titlePanther;if(!p||p.hp<=0)return;
+ dialog('<h2>Чёрная пантера</h2><p>HP '+p.hp+'/'+p.maxHp+' · атака '+p.atk+' · броня '+p.def+'.</p><p>Наносит физические удары, получает ответ врага. Призыв действует до конца этажа или гибели.</p><button class="btn wide" data-action="close">Закрыть</button>');
 }
 function titleToolDialog(){
  var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
@@ -3036,7 +3076,9 @@ function action(name,id){
  if(name==='reveal'){reveal(id);return;}
  if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
- if(name==='active-item-info'){activeItemInfo(id);return;}
+ if(name==='title-panther-use'){usePantherStatue();return;}
+  if(name==='title-panther-info'){titlePantherInfo();return;}
+  if(name==='active-item-info'){activeItemInfo(id);return;}
   if(name==='active-item-use'){activeItemUse(id);return;}
   if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='use-pocket'){usePocket(id);return;}
