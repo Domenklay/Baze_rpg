@@ -158,7 +158,6 @@ function rarityRoll(){
 }
 function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
- if(r.items.length>=48){r.gold+=10+r.floor*2;log('Сумка переполнена. Добыча обменяна на монеты.');return null;}
  r.items.push(i);log('Найдено: '+i.name+' ('+RARITY[i.rarity]+').');return i;
 }
 function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
@@ -253,7 +252,7 @@ function distributeTiles(){
  // flood it with treasure: most added cells contain tiny finds or curios.
  var desired=rand(14,18),occupied=types.filter(function(kind){return kind!=='empty';}).length;
  while(occupied<desired){
-  insert(pick(['vial-hp','vial-mp','coin-small','trinket','trinket','trinket']),1);occupied++;
+  insert(pick(['vial-hp','vial-mp','coin-small','coin-small','coin-small']),1);occupied++;
  }
  var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
@@ -443,6 +442,9 @@ function load(){
   if(v.run.burnTurns==null)v.run.burnTurns=0;
    if(v.run.trappedTile===undefined)v.run.trappedTile=null;
    if(!Array.isArray(v.run.lootBag))v.run.lootBag=[];
+   v.run.lootBag=v.run.lootBag.filter(function(x){return x.kind!=='trinket'&&x.qty>0;});
+   if(v.run.scoutDodgeTurns==null)v.run.scoutDodgeTurns=0;
+   (v.run.tiles||[]).forEach(function(t){if(t.kind==='trinket')t.kind='vial-hp';});
    v.run.pendingSkill=null;
   if(v.run.bleedTurns==null)v.run.bleedTurns=0;
   if(v.run.silenceTurns==null)v.run.silenceTurns=0;
@@ -1921,16 +1923,12 @@ function forestWellOffer(id,coin){
   '<p class="golden">+'+amount+' '+result[1]+bonusScroll+' до конца экспедиции.</p>'+
   '<button class="btn wide" data-action="close">Продолжить</button>');}
 }
-function addPocketItem(kind,qty){
- var definitions={ 'vial-hp':['Склянка здоровья','Восстанавливает 1–2 HP'],
-  'vial-mp':['Склянка маны','Восстанавливает 1–2 MP']};
- var oddities=['Погнутая ложка','Треснувшая пуговица','Обрывок старой ленты','Бесполезная гайка','Камешек с дыркой','Ржавая игла'];
- var label=kind==='trinket'?pick(oddities):(definitions[kind]||[kind])[0],amount=Math.max(1,qty||1);
- r.lootBag=r.lootBag||[];
- var slot=r.lootBag.find(function(x){return x.kind===kind&&x.name===label;});
- if(slot){slot.qty+=amount;return slot;}
- var item={id:++s.seq,kind:kind,name:label,description:kind==='trinket'?'Старая безделушка без игрового эффекта.':definitions[kind][1],qty:amount};
- r.lootBag.push(item);return item;
+function drinkSmallVial(kind){
+ var hp=kind==='vial-hp',old=hp?r.hp:r.mp,maximum=hp?stats().hp:stats().mp;
+ var restored=Math.min(Math.max(0,maximum-old),hp?rand(5,20):rand(3,10));
+ if(hp)r.hp+=restored;else r.mp+=restored;
+ log((hp?'Малое зелье здоровья':'Малое зелье маны')+': сразу выпито, +'+restored+(hp?' HP.':' MP.'));
+ return restored;
 }
 function claimTile(t){
  if(!t||!t.revealed||t.cleared)return;
@@ -1995,9 +1993,9 @@ function claimTile(t){
   return;
  }
  if(kind==='vial-hp'||kind==='vial-mp'||kind==='trinket'){
-  var amount=kind==='trinket'?1:rand(1,2),found=addPocketItem(kind,amount);
-  t.cleared=true;log('В рюкзак: '+found.name+' ×'+amount+'.');
-  finishAction();if(r)floatLoot(t.id,[found.name+' ×'+amount]);return;
+  var isHp=kind!=='vial-mp',restored=drinkSmallVial(isHp?'vial-hp':'vial-mp');
+  t.cleared=true;finishAction();
+  if(r)floatLoot(t.id,[(isHp?'Малое зелье HP +':'Малое зелье MP +')+restored]);return;
  }
  if(kind==='coin-small'){
   var coins=addGold(rand(0,2));t.cleared=true;
