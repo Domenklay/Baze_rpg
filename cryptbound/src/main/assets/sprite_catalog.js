@@ -29,7 +29,7 @@ function monster(e,pose){
  var path=e&&routes[e.id],portrait=e&&portraitRoutes[e.id];if(!path&&!portrait)return null;
  pose=pose==='attack'||pose==='skill'?pose:'idle';
  var src=path?'imported/enemies/'+path+'/'+pose+'.png':'imported/enemies/portraits/'+portrait+'.png';
- return '<img class="crypt-monster-sprite pose-'+pose+'" src="'+src+'" alt="" draggable="false"/>';
+ return '<img class="crypt-monster-sprite pose-'+pose+'" src="'+src+'"'+(pose!=='idle'&&e.spriteFxUntil?' style="animation-delay:'+Math.min(0,e.spriteFxUntil-Date.now()-1000)+'ms"':'')+' alt="" draggable="false"/>';
 }
 function gearIcon(it){var src=it&&window.CryptEquipmentIcons&&window.CryptEquipmentIcons[it.catalogId];return src?'<img class="painted-gear" src="'+src+'" alt="" draggable="false"/>':null;}
 function canonicalMaterial(name){

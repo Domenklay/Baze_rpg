@@ -51,6 +51,8 @@ jobs:
           node --check cryptbound/src/main/assets/equipment_art.js
           node --check cryptbound/src/main/assets/titles.js
           node --check cryptbound/src/main/assets/sprite_catalog.js
+          node --check cryptbound/src/main/assets/imported_art.js
+          node --check cryptbound/src/main/assets/combat_feedback.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -67,8 +69,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.1-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.1-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.2-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.2-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -81,7 +83,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.1 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.1 — пещеры, спрайты и компактный экран" --notes "Исправлена повторная анимация зачистки, экран подогнан под WebView без прокрутки, пещеры 3×3 встроены в основной интерфейс. Подключены готовые спрайты монстров и снаряжения; доработаны окна героя, монстра, свитка и припасов. Офлайн debug-сборка."
+          if ! gh release view cryptbound-v0.7.2 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.2 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.2 — рисованный интерфейс и боевые эффекты" --notes "Единые рисованные панели и кнопки, компактная добыча, читаемое сравнение вещей и события. Классовая способность перенесена в левую нижнюю ячейку; две свободны. Всплывающие действия, урон и лечение, атака скелета; одно случайное изображение героя на действие без повтора. Офлайн debug-сборка."
           fi
-          gh release upload cryptbound-v0.7.1 dist/Cryptbound-v0.7.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.2 dist/Cryptbound-v0.7.2-offline-Android.apk dist/SHA256SUMS.txt --clobber

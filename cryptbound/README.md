@@ -1,6 +1,8 @@
 # Пепельный лабиринт (Cryptbound)
 
-## Текущая версия разработки — v0.6.2 (сложность актов и боевые роли)
+**Рисованный интерфейс v0.7.2:** [APK](https://github.com/Domenklay/Baze_rpg/releases/download/cryptbound-v0.7.2/Cryptbound-v0.7.2-offline-Android.apk) · [Компоновка, спрайты и боевые эффекты](docs/UI_COMPACT.ru.md).
+
+## Предыдущее описание — v0.6.2 (сложность актов и боевые роли)
 
 **[APK v0.6.2](https://github.com/Domenklay/Baze_rpg/releases/tag/cryptbound-v0.6.2)** · [Баланс T1–T10 и список механик](docs/DUNGEONS_IMPLEMENTATION_2026-11-12.ru.md).
 

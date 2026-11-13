@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
 const api=win.Crypt,A=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 let checks=0;
@@ -225,16 +225,29 @@ test('Village permanently consumes material quantities for upgrades',()=>{
  A('town');assert.match(el('overlay').innerHTML,/ПОГРАНИЧНЫЙ ПРИВАЛ/);
  assert.match(el('overlay').innerHTML,/СКЛАД/);A('close');
 });
-test('Original animation frame appears when attacking and spellcasting',()=>{
- r.tab='maze';r.mp=1000;
- const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);
- if(target){target.revealed=true;target.foe.hp=100;A('strike',target.id);}
- assert.match(el('portrait').innerHTML,/mage_m_attack.png/);
- assert.match(el('portrait').innerHTML,/mage_m_attack_2.png/);
- assert.match(el('portrait').innerHTML,/mage_m_attack_3.png/);
- A('skill');assert.match(el('portrait').innerHTML,/mage_m_skill.png/);
- assert.match(el('portrait').innerHTML,/mage_m_skill_2.png/);
- assert.match(el('portrait').innerHTML,/mage_m_skill_3.png/);
+test('Hero actions choose one original frame, retain it on redraw and never repeat the previous variant',()=>{
+ r.tab='maze';r.mp=10000;r.hp=10000;
+ const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);assert.ok(target);
+ target.revealed=true;target.foe.hp=100000;target.foe.maxHp=100000;
+ let previous=null;
+ for(let i=0;i<5;i++){
+  A('strike',target.id);const html=el('portrait').innerHTML;
+  assert.equal((html.match(/<img /g)||[]).length,1);
+  const src=html.match(/src="([^"]+)"/)[1];assert.match(src,/mage_m_attack(?:_[23])?\.png$/);
+  if(previous)assert.notEqual(src,previous);
+  api.debug.draw();assert.ok(el('portrait').innerHTML.includes(src),'Redraw keeps this action frame');previous=src;
+ }
+ previous=null;
+ for(let i=0;i<4;i++){
+  r.skillUsed=r.turn-10;A('skill');const html=el('portrait').innerHTML;
+  assert.equal((html.match(/<img /g)||[]).length,1);
+  const src=html.match(/src="([^"]+)"/)[1];assert.match(src,/mage_m_skill(?:_[23])?\.png$/);
+  if(previous)assert.notEqual(src,previous);previous=src;
+ }
+ assert.ok(r.fxUntil>Date.now()+800,'Pose lasts about one second');
+ const effects=win.CryptFeedback.events();
+ assert.ok(effects.some(x=>x.kind==='damage'&&x.actor.startsWith('enemy:')));
+ assert.ok(effects.some(x=>x.kind==='action'&&x.actor==='summon'));
 });
 test('Saves remain local and APK has no Internet permission',()=>{
  api.save();
@@ -759,6 +772,23 @@ test('Full-clear animation expires, keeps its original timeline on redraw and ne
   vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'clear-animation-reload',timeout:12000});
   assert.doesNotMatch(el('content').innerHTML,/tile-auto-open/,'Saved animation markers are not replayed on load');
  }finally{ctx.Date=RealDate;}
+});
+
+test('Combat feedback separates healing from retaliation and does not damage units when changing maps',()=>{
+ const live=win.Crypt;live.state().meta.selectedAct=0;live.debug.action('begin','necromancer');
+ const run=live.state().run,st=live.debug.stats();run.hp=st.hp-20;run.mp=st.mp;run.scrolls.heal=1;run.shield=0;run.setShieldRemaining=0;run.guardCharges=0;run.summon=null;
+ run.tiles.forEach(t=>{if(t.foe)t.revealed=false;});
+ const foe=run.tiles.find(t=>t.foe);foe.revealed=true;Object.assign(foe.foe,{hp:500,maxHp:500,atk:st.def+5,cooldown:99,guard:0,stun:0,burn:0,poison:0});
+ const mark=win.CryptFeedback.events().at(-1)?.id||0;
+ live.debug.action('cast','heal');
+ const emitted=win.CryptFeedback.events().filter(x=>x.id>mark&&x.actor==='hero');
+ assert.ok(emitted.some(x=>x.kind==='heal'&&x.text==='+20'),'Heal is reported before the enemy turn');
+ assert.ok(emitted.some(x=>x.kind==='damage'),'Retaliation is reported independently of the positive net HP change');
+ const chamber=run.tiles.find(t=>t.kind==='empty'&&!t.foe);chamber.kind='chamber';chamber.revealed=true;chamber.cleared=false;
+ const before=win.CryptFeedback.events().at(-1)?.id||0;live.debug.action('pickup',chamber.id);
+ assert.equal(run.chamberActive,chamber.id);
+ assert.ok(!win.CryptFeedback.events().some(x=>x.id>before&&x.kind==='damage'&&x.actor.startsWith('enemy:')),'Hidden main-map units do not take fictitious damage on cave entry');
+ live.debug.action('chamber-exit');
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);

@@ -23,6 +23,8 @@ const {chromium}=require('playwright');
  assert.equal(await page.locator('#navbar').isVisible(),false);
  assert.equal(await page.locator('.maze .tile').count(),25);
  assert.equal(await page.locator('.quick-spell').count(),3);
+ assert.equal(await page.locator('.ability-empty:disabled').count(),2);
+ assert.equal(await page.locator('.class-ability').count(),1);
  assert.equal(await page.locator('.dungeon-potion-slot').count(),3);
  for(const [width,height] of [[320,568],[360,640],[390,720],[390,844],[430,932],[480,736]]){
   await page.setViewportSize({width,height});
@@ -51,8 +53,8 @@ const {chromium}=require('playwright');
  await page.locator('[data-action="spell-rank"][data-id="2"]').click();
  assert.equal(await page.locator('.book-spell').count(),1);
  assert.ok((await page.locator('.book-spell small').innerText()).startsWith('2★'));
- await page.locator('.book-spell').click();await page.locator('[data-action="pin-spell"]').click();
- assert.equal(await page.evaluate(()=>Crypt.state().run.quickSpells.length),1);
+ await page.locator('.book-spell').click();assert.equal(await page.locator('[data-action="pin-spell"]').count(),0);
+ await page.locator('.panel-close').click();
  await page.locator('[data-action="spell-page"][data-id="special"]').click();
  assert.equal(await page.locator('.book-spell').count(),1);assert.ok((await page.locator('.book-spell small').innerText()).startsWith('6★'));
  await page.locator('[data-action="spell-school"][data-id="all"]').click();
@@ -105,7 +107,7 @@ const {chromium}=require('playwright');
  assert.equal(await page.locator('.progression-sheet').count(),1);assert.equal(await page.locator('.gear-layout').count(),0,'Secondary inventory no longer duplicates the whole hero');
  if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/progression.png'});
  await page.locator('.panel-close').click();await page.locator('.panel-close').click();
- await page.evaluate(()=>{Crypt.debug.action('pin-spell','heal');Crypt.debug.action('close');});
+ await page.evaluate(()=>Crypt.debug.action('close'));
  // Side rooms keep the battle HUD and isolate every attack from the main map.
  await page.evaluate(()=>{
   Crypt.debug.action('begin','executioner');const r=Crypt.state().run;
@@ -140,7 +142,7 @@ const {chromium}=require('playwright');
  assert.equal(await page.evaluate(()=>Crypt.state().run.chamberActive),caveId);
  assert.ok(await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp)<caveHp);
  const skillHp=await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp);
- await page.locator('.hero-skill').click();
+ await page.locator('.class-ability').click();
  assert.ok(await page.evaluate(()=>Crypt.state().run.tiles[Crypt.state().run.chamberActive].room.guardHp)<skillHp,'Class ability targets cave guards');
  assert.deepEqual(await page.evaluate(()=>Crypt.state().run.tiles.filter(t=>t.foe).map(t=>[t.id,t.foe.hp])),mainEnemies,'Main enemies are not hit from the cave');
  if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/cave.png'});
@@ -156,7 +158,7 @@ const {chromium}=require('playwright');
  const secrets=await page.evaluate(()=>Crypt.state().run.secrets);
  await page.locator('.cave-secret').click();assert.equal(await page.evaluate(()=>Crypt.state().run.secrets),secrets+1);
  await page.locator('.cave-exit').click();assert.equal(await page.locator('.maze .tile').count(),25);
- await page.evaluate(()=>{Crypt.debug.action('pin-spell','heal');Crypt.debug.action('close');});
+ await page.evaluate(()=>Crypt.debug.action('close'));
  // Inspect each location and load both original texture layers. No broken resources.
  for(let act=0;act<10;act++)for(let loc=0;loc<3;loc++){
   await page.evaluate(([a,l])=>{const r=Crypt.state().run;r.actIndex=a;r.locationIndex=l;Crypt.debug.draw();},[act,loc]);
@@ -165,8 +167,8 @@ const {chromium}=require('playwright');
  }
  await page.evaluate(()=>{const r=Crypt.state().run;r.actIndex=0;r.locationIndex=0;r.poisonTurns=0;Crypt.debug.draw();Crypt.save();});
  if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/maze.png'});
- const saved=await page.evaluate(()=>({turn:Crypt.state().run.turn,quick:Crypt.state().run.quickSpells[0]}));
- await page.reload();assert.deepEqual(await page.evaluate(()=>({turn:Crypt.state().run.turn,quick:Crypt.state().run.quickSpells[0]})),saved);
+ const saved=await page.evaluate(()=>({turn:Crypt.state().run.turn,school:Crypt.state().run.spellSchool}));
+ await page.reload();assert.deepEqual(await page.evaluate(()=>({turn:Crypt.state().run.turn,school:Crypt.state().run.spellSchool})),saved);
  assert.deepEqual(errors,[]);
  console.log('PASS mobile UI: 6 viewport sizes, 30 locations, inventory, spell filters/quick slot, talent forks, buffs, turn cost, inline 3×3 caves and isolated room combat, save/reload; no browser or asset errors');
  } finally {await browser.close();}
