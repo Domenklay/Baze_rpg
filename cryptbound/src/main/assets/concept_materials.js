@@ -108,5 +108,18 @@ window.CryptConceptMaterials={
  "Бездонная мурена": "t6_concept_bezdonnaia_murena",
  "Бездонный корнествол": "t6_concept_bezdonnyi_kornestvol",
  "Бездонный синий кварц": "t6_concept_bezdonnyi_sinii_kvarts",
- "Черноводная ламинария": "t6_concept_chernovodnaia_laminariia"
+ "Черноводная ламинария": "t6_concept_chernovodnaia_laminariia",
+ "Чёрная вестникова чешуя": "t6_concept_chiornaia_vestnikova_cheshuia",
+ "Древний якорный ключ": "t6_concept_drevnii_iakornyi_kliuch",
+ "Глубинная органосоль": "t6_concept_glubinnaia_organosol",
+ "Костяная клешня химеры": "t6_concept_kostianaia_kleshnia_khimery",
+ "Костяной шип прибрежного охотника": "t6_concept_kostianoi_ship_pribrezhnogo_okhotnika",
+ "Кварц безмолвия": "t6_concept_kvarts_bezmolviia",
+ "Линза Великого архонта": "t6_concept_linza_velikogo_arkhonta",
+ "Мимическая кожа": "t6_concept_mimicheskaia_kozha",
+ "Нервокорень": "t6_concept_nervokoren",
+ "Нота чёрной хороводчицы": "t6_concept_nota_chiornoi_khorovodchitsy",
+ "Обломок древней якорной связки": "t6_concept_oblomok_drevnei_iakornoi_sviazki",
+ "Осколок сердечной оболочки": "t6_concept_oskolok_serdechnoi_obolochki",
+ "Остаток голодающей сердцевины": "t6_concept_ostatok_golodaiushchei_serdtseviny"
 };
