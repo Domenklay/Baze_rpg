@@ -78,9 +78,9 @@ function render(meta,tab,selected){
   var x=beasts.find(function(c){return c.id===selected;}),n=score(meta,selected);
   var list=beasts.map(function(c){var q=score(meta,c.id);
    return '<button class="hb-beast'+(selected===c.id?' on':'')+'" data-action="hunter-select" data-id="'+c.id+'">'+
-    '<span class="hb-small-portrait">'+iconFor(c)+'</span><span class="hb-beast-meta"><b>'+e(c.name)+'</b>'+
-    '<span class="hb-progress-track"><i style="width:'+Math.min(100,q/40*100)+'%"></i></span></span>'+
-    '<span class="hb-count">'+q+'/40</span></button>';
+    '<span class="hb-small-portrait">'+iconFor(c)+'</span><span class="hb-beast-meta"><span class="hb-label-row"><b>'+e(c.name)+'</b>'+
+    '<span class="hb-count">'+q+'/40</span></span>'+
+    '<span class="hb-progress-track"><i style="width:'+Math.min(100,q/40*100)+'%"></i></span></span></button>';
   }).join('');
   var detail='<div class="hb-detail-header"><div><h3>'+e(x.name)+'</h3><small>'+e(x.kind)+' · '+(n?'Изучено':'Не изучено')+'</small></div>'+
    '<span class="hb-pawmark">♣</span></div>'+
@@ -88,7 +88,7 @@ function render(meta,tab,selected){
    '<div class="hb-study"><span>Изучено: '+n+' / 40</span><div class="hb-progress-track"><i style="width:'+Math.min(100,n/40*100)+'%"></i></div></div>'+
    '<h4>Награды изучения <small>(суммируются)</small></h4>'+
    '<div class="hb-milestones">'+thresholds.map(function(t,i){return '<div class="'+(n>=t?'unlocked':'locked')+'"><span class="hb-milestone-symbol">'+(n>=t?'✓':'◆')+'</span>'+
-    '<strong>'+t+' убийств</strong><span>+'+x.increments[i]+' '+e(x.label)+'</span></div>';}).join('')+'</div>';
+    '<span class="hb-stage-copy"><strong>'+t+' убийств</strong><span>+'+x.increments[i]+' '+e(x.label)+'</span></span></div>';}).join('')+'</div>';
   body='<div class="hb-beasts-layout"><div class="hb-beast-list">'+list+'</div><div class="hb-detail">'+detail+'</div></div>';
  }else if(tab==='trophies'){
   body='<div class="hb-trophy-intro">Трофеи особых охот открывают постоянные способности книги. Обычные элитники трофеев не выдают.</div>'+
