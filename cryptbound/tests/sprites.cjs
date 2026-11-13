@@ -39,7 +39,7 @@ for(const id of spr.materialIds){
  const svg=fs.readFileSync(file,'utf8');
  assert.match(svg,/data:image\/png;base64,iVBOR/,'embedded PNG '+id);
 }
-const conceptIndex=JSON.parse(fs.readFileSync(path.resolve(assetDir,'../../docs/CLICKER_CONCEPT_INDEX.json'),'utf8'));
+const conceptIndex=JSON.parse(fs.readFileSync(path.resolve(assetDir,'../../../docs/CLICKER_CONCEPT_INDEX.json'),'utf8'));
 const concepts=sandbox.window.CryptConceptMaterials;
 assert.equal(conceptIndex.items.length,257,'257 original Clicker illustrations in the audit index');
 assert.equal(Object.keys(concepts).length,conceptIndex.items.length,'Every original Clicker image is mapped');
@@ -50,7 +50,7 @@ for(const entry of conceptIndex.items){
  const art=path.join(assetDir,'imported/concepts',entry.stem+'.svg');
  assert.ok(fs.existsSync(art),'Missing offline resource '+art);
  const svg=fs.readFileSync(art,'utf8');
- assert.match(svg,/data:image\\/png;base64,iVBOR/,'Original PNG must be embedded '+entry.name);
+ assert.match(svg,/data:image\/png;base64,iVBOR/,'Original PNG must be embedded '+entry.name);
 }
 console.log('PASS All 257 exact-name Clicker material icons are present and mapped for offline use');
 console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 132 equipment icons,',spr.materialIds.length,'material icons');
