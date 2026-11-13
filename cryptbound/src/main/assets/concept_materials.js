@@ -173,5 +173,18 @@ window.CryptConceptMaterials={
  "Забрало рыцаря покоя": "t7_concept_zabralo_rytsaria_pokoia",
  "Знамя костяного генерала": "t7_concept_znamia_kostianogo_generala",
  "Знамя Маршала забвения": "t7_concept_znamia_marshala_zabveniia",
- "Белый рог хозяина зеркал": "t8_concept_belyi_rog_khoziaina_zerkal"
+ "Белый рог хозяина зеркал": "t8_concept_belyi_rog_khoziaina_zerkal",
+ "Духовная брошь двора": "t8_concept_dukhovnaia_brosh_dvora",
+ "Ключ Главного хранителя сна": "t8_concept_kliuch_glavnogo_khranitelia_sna",
+ "Крошка ночного кошмара": "t8_concept_kroshka_nochnogo_koshmara",
+ "Линза преломлённой башни": "t8_concept_linza_prelomlionnoi_bashni",
+ "Лунный клык хозяина стаи": "t8_concept_lunnyi_klyk_khoziaina_stai",
+ "Лунный сереброкедр": "t8_concept_lunnyi_serebrokedr",
+ "Нектар княжны ночи": "t8_concept_nektar_kniazhny_nochi",
+ "Опал пробуждения": "t8_concept_opal_probuzhdeniia",
+ "Осколок двойника владыки": "t8_concept_oskolok_dvoinika_vladyki",
+ "Осколок маски Ложной королевы": "t8_concept_oskolok_maski_lozhnoi_korolevy",
+ "Осколок зеркала Первого Отражённого": "t8_concept_oskolok_zerkala_pervogo_otrazhionnogo",
+ "Отражённая серебряная нить": "t8_concept_otrazhionnaia_serebrianaia_nit",
+ "Печать Канцлера желаний": "t8_concept_pechat_kantslera_zhelanii"
 };
