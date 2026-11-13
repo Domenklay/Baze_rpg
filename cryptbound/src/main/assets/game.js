@@ -1631,6 +1631,24 @@ function counterBeforeHero(enemy,mainTile,room){
  }
  return true;
 }
+/* Echo is a second physical strike against the same living enemy. The normal
+   enemy counterattack and hero's turn are processed only once by the caller. */
+function echoFollowUp(enemy,st){
+ if(!r||!enemy||enemy.hp<=0)return 0;
+ if(enemy.evadeCharges>0){
+  enemy.evadeCharges--;
+  if(Math.random()<.45){log('Эхо: '+enemy.name+' уклоняется от второго удара.');return 0;}
+ }
+ var critical=Math.random()*100<st.crit;
+ var damage=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-(enemy.def||0)-(enemy.guard||0));
+ enemy.guard=0;
+ if(enemy.boss)damage=Math.floor(damage*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
+ if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
+ damage=TR.attack(r,enemy,damage,titleHelpers());
+ if(enemy.hp>0)enemy.hp=Math.max(0,enemy.hp-damage);
+ log('Эхо — второй удар по '+enemy.name+': '+damage+(critical?' КРИТ!':'')+'. Без контратаки.');
+ return damage;
+}
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  if(!reachableEnemy(t)){toast('Нет прохода к врагу. Сначала исследуйте путь к нему.');return;}
@@ -1643,6 +1661,7 @@ function strike(tid){
    log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
   }
  }
+ var echo=TR.consumeEcho(r);
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-t.foe.def-(t.foe.guard||0));
  t.foe.guard=0;
@@ -1659,6 +1678,7 @@ function strike(tid){
  if(setBonus('burnChance')>0&&Math.random()*100<setBonus('burnChance'))t.foe.burn=Math.max(t.foe.burn||0,2);
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
+ else if(echo){echoFollowUp(t.foe,st);if(t.foe.hp<=0)kill(t);}
  finishAction();
 }
 function finishAction(){if(!r)return;if(FD)FD.commit();consumeTurn();if(FD)FD.capture();if(r){draw();save();}}
@@ -2401,8 +2421,10 @@ function fightChamber(id){
  provoke(g);
   if(g.evadeCharges>0){g.evadeCharges--;
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
- var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
+ var st=stats(),echo=TR.consumeEcho(r);
+ var dmg=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
  dmg=TR.attack(r,g,dmg,titleHelpers());g.guard=0;g.hp=Math.max(0,g.hp-dmg);
+ if(echo&&g.hp>0)echoFollowUp(g,st);
  room.guardHp=room.guards.reduce(function(sum,x){return sum+x.hp;},0);
  if(room.guardHp===0)log('Все стражи побочной комнаты побеждены.');
  else log('Удар по '+g.name+': '+dmg+' урона.');
