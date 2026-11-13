@@ -20,7 +20,12 @@ function materialStem(name){
 }
 function materialIcon(name){
  var stem=materialStem(name);
- if(!stem)return '<span class="crypt-resource-fallback" aria-hidden="true">◆</span>';
+ if(!stem){
+  var concept=(window.CryptConceptMaterials||{})[name];
+  if(concept&&/^t\\d+_concept_[a-z0-9_]+$/.test(concept))
+   return '<img class="crypt-resource-icon" src="imported/concepts/'+concept+'.svg" alt="" loading="lazy" draggable="false"/>';
+  return '<span class="crypt-resource-fallback" aria-hidden="true">◆</span>';
+ }
  return '<img class="crypt-resource-icon" src="imported/materials/'+stem+'.svg" alt="" loading="lazy" draggable="false"/>';
 }
 // Static portraits are extracted from the source game's named 3×4 atlas or hunting sprites.
