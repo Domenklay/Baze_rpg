@@ -67,6 +67,7 @@ jobs:
           node cryptbound/tests/smoke.cjs
           node cryptbound/tests/titles_v2.cjs
           node cryptbound/tests/path_items_regression.cjs
+          node cryptbound/tests/shadow_echo.cjs
           node cryptbound/tests/hunter_book.cjs
           node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
