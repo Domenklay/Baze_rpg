@@ -163,7 +163,7 @@ test('Necromancer finds a legitimate summon tile and fills a hidden empty when n
 test('Six hero archetypes have distinct starting skills',()=>{
  for(const klass of ['necromancer','executioner','scout','sorceress','guardian','assassin']){
   A('begin',klass);r=state.run;r.mp=1000;r.hp=5000;
-  if(!['necromancer','scout'].includes(klass)){
+  if(klass!=='necromancer'){
    const target=r.tiles.find(t=>t.foe&&!t.foe.ranged);target.revealed=true;
    target.foe.hp=200;target.foe.maxHp=200;
   }
@@ -848,6 +848,112 @@ test('Enemy retaliation, flat armor and red/green damage badges update live',()=
   foe.atk=foe.baseAtk+defense+15;live.debug.draw();
   assert.match(el('content').innerHTML,/damage-boosted/,'Buffed attack exceeding the base damage turns green');
  }finally{Math.random=random;}
+});
+
+
+test('Unlimited backpack displays found items in slots but not equipped gear or scrolls',()=>{
+ const live=win.Crypt;live.debug.action('begin','necromancer');
+ const run=live.state().run;
+ for(let i=0;i<65;i++)run.items.push({id:90000+i,name:'Перчатки находка '+i,slot:'gloves',rarity:1,plus:0,atk:0,def:0,hp:0,mp:0,pow:0});
+ run.equip.gloves=90000;
+ run.scrolls.bolt=7;run.questItems=['Печать испытания'];run.journalNotes=['Запись о тайной тропе'];
+ win.CryptForestEvents.ensure(run).items.honey=2;
+ run.soulBag.push({id:99001,name:'Память спутника',kind:'common'});
+ live.debug.action('ui-panel','bag');
+ const html=el('overlay').innerHTML;
+ assert.match(html,/64 предметов|65 предметов|66 предметов|67 предметов|68 предметов|69 предметов|70 предметов/);
+ assert.doesNotMatch(html,/data-action="item-select" data-id="90000"/,'Worn equipment must not occupy a backpack cell');
+ assert.match(html,/data-action="item-select" data-id="90001"/);
+ assert.match(html,/data-action="forest-use" data-id="honey"/);
+ assert.match(html,/data-action="consume-soul" data-id="99001"/);
+ assert.match(html,/data-action="quest-item-info"/);
+ assert.match(html,/data-action="note-info"/);
+ assert.doesNotMatch(html,/data-action="spell-detail"/,'Scrolls belong exclusively in the spellbook');
+ assert.match(html,/без ограничения/);
+ const free=run.tiles.find(t=>t.kind==='empty'&&!t.foe);assert.ok(free);
+ free.kind='chest';free.revealed=true;free.cleared=false;
+ const random=Math.random;
+ try{
+  Math.random=()=>.1;
+  const before=run.items.length;live.debug.action('pickup',free.id);
+  assert.equal(run.items.length,before+1,'Loot does not get sold when the old 48-slot cap is exceeded');
+ }finally{Math.random=random;}
+});
+
+test('Small floor vials are consumed instantly with HP 5–20 and MP 3–10',()=>{
+ const live=win.Crypt;live.debug.action('begin','necromancer');
+ const run=live.state().run,st=live.debug.stats();
+ run.hp=st.hp-30;run.mp=st.mp-15;run.regenTurns=0;run.poisonTurns=0;run.bleedTurns=0;
+ const cell=run.tiles.find(t=>t.kind==='empty'&&!t.foe);assert.ok(cell);
+ const oldBag=run.lootBag.length;
+ cell.kind='vial-hp';cell.revealed=true;cell.cleared=false;
+ const oldHp=run.hp;live.debug.action('pickup',cell.id);
+ assert.ok(run.hp-oldHp>=5&&run.hp-oldHp<=20,'HP vial heals 5–20 immediately');
+ assert.equal(run.lootBag.length,oldBag,'Small HP vial must not be stored');
+ cell.kind='vial-mp';cell.revealed=true;cell.cleared=false;
+ const oldMp=run.mp;live.debug.action('pickup',cell.id);
+ assert.ok(run.mp-oldMp>=3&&run.mp-oldMp<=10,'MP vial heals 3–10 immediately');
+ assert.equal(run.lootBag.length,oldBag,'Small MP vial must not be stored');
+});
+
+test('Summon retaliation hits the summon, while targeted magic causes no melee counterattack',()=>{
+ const live=win.Crypt;live.debug.action('begin','necromancer');
+ const run=live.state().run,foeTile=run.tiles.find(t=>t.foe&&!t.foe.boss);assert.ok(foeTile);
+ run.tiles.forEach(t=>{if(t.foe)t.foe.hp=0;});
+ foeTile.revealed=true;foeTile.cleared=false;
+ Object.assign(foeTile.foe,{hp:5000,maxHp:5000,atk:11,def:0,stun:0,burn:0,poison:0,bleed:0,
+  cooldown:100,skill:{name:'Удар',every:100,kind:'none'},ranged:false,boss:false,guard:0});
+ run.hp=1000;run.mp=1000;run.shield=0;run.ghost=null;run.guardCharges=0;run.bleedTurns=0;run.poisonTurns=0;
+ run.summon={name:'Костяной страж',hp:120,maxHp:120,atk:5,def:2,specialCooldown:4};
+ const random=Math.random;
+ try{
+  Math.random=()=>.99;
+  live.debug.action('wait');
+  assert.equal(run.hp,1000,'Summon-initiated retaliation must not hit the hero');
+  assert.equal(run.summon.hp,111,'The monster deals its retaliation to the summoned creature');
+  run.summon=null;run.summonTile=null;foeTile.foe.provoked=false;foeTile.foe.provokedBy=null;
+  run.scrolls.bolt=1;
+  const hp=run.hp,foeHp=foeTile.foe.hp;
+  live.debug.action('cast','bolt');
+  assert.equal(run.pendingSpell,'bolt');
+  live.debug.action('cast-target',foeTile.id);
+  assert.equal(run.hp,hp,'Casting an attack spell must not trigger an enemy counter');
+  assert.ok(foeTile.foe.hp<foeHp,'Targeted spell damages its selected enemy');
+ }finally{Math.random=random;}
+});
+
+test('Scout double shot damages target twice and grants temporary +50 evasion',()=>{
+ const live=win.Crypt;live.debug.action('begin','scout');
+ const run=live.state().run,t=run.tiles.find(t=>t.foe&&!t.foe.boss);assert.ok(t);
+ run.tiles.forEach(x=>{if(x.foe)x.foe.hp=0;});
+ t.revealed=true;t.cleared=false;
+ Object.assign(t.foe,{hp:2000,maxHp:2000,atk:2,def:0,stun:0,burn:0,poison:0,
+  cooldown:100,skill:{name:'Удар',every:100,kind:'none'},ranged:false,boss:false,guard:0});
+ run.mp=1000;run.hp=1000;run.shield=0;run.ghost=null;run.summon=null;run.guardCharges=0;
+ const base=live.debug.stats().dodge;
+ run.scoutDodgeTurns=1;
+ assert.equal(live.debug.stats().dodge,Math.min(100,base+50));
+ run.scoutDodgeTurns=0;
+ const before=t.foe.hp,turn=run.turn,random=Math.random;
+ try{
+  Math.random=()=>.99;
+  live.debug.action('skill');
+  assert.equal(run.turn,turn+1,'Scout skill consumes one action');
+  assert.ok(t.foe.hp<before-1.5*live.debug.stats().atk,'Both arrows strike the enemy');
+  assert.ok(run.log.some(x=>x.includes('Двойной выстрел: 2 стрелы')),'New skill is used');
+  assert.equal(run.scoutDodgeTurns,0,'Evasion buff expires after the round');
+ }finally{Math.random=random;}
+});
+
+test('Loading a legacy save removes useless trinkets without deleting real gear',()=>{
+ const live=win.Crypt,run=live.state().run;
+ run.lootBag=[{id:99002,kind:'trinket',name:'Треснувшая пуговица',qty:1}];
+ const itemCount=run.items.length;
+ live.save();
+ vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'legacy-curios-migration',timeout:12000});
+ const migrated=win.Crypt.state().run;
+ assert.ok(migrated&&!migrated.lootBag.some(x=>x.kind==='trinket'));
+ assert.equal(migrated.items.length,itemCount);
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
