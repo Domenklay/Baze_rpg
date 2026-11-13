@@ -482,7 +482,19 @@ function load(){
 function save(){try{if(!s)return;localStorage.setItem(KEY,JSON.stringify(s));}catch(e){console.warn('Save unavailable',e);}}
 function enemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.hp>0&&t.revealed;});}
 function hiddenEnemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.hp>0;});}
-function target(){return enemies()[0]||null;}
+/* A discovered enemy is attackable only if a continuous explored route reaches it. */
+function reachableEnemy(t){
+ if(!r||!t||!t.foe||t.foe.hp<=0||!t.revealed)return false;
+ var origin=r.heroTile,visited=new Set([origin]),queue=[origin],body=t.forestAlphaSquare||[t.id];
+ function passable(id){var c=r.tiles[id];return !!c&&c.revealed&&c.cleared&&!c.drops&&(!c.foe||c.foe.hp<=0);}
+ if(!passable(origin))return false;
+ while(queue.length){var here=queue.shift();for(var next of CR.near(here)){
+  if(body.indexOf(next)>=0)return true;
+  if(!visited.has(next)&&passable(next)){visited.add(next);queue.push(next);}
+ }}
+ return false;
+}
+function target(){return enemies().find(reachableEnemy)||enemies()[0]||null;}
 function tile(n){return r.tiles[Number(n)]||null;}
 function icon(kind,foe){return window.CryptArt.tile(kind,foe);}
 function hud(){
@@ -760,7 +772,7 @@ function spellValid(sp){
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(sp.id==='earthgate'&&r.floor<=1)return 'Нет нижних этажей для возвращения';
- if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().length&&!livingRoomGuards().length)return 'Нет цели';
+ if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().some(reachableEnemy)&&!livingRoomGuards().length)return 'Нет пути к врагам';
  if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
  return null;
 }
@@ -777,9 +789,8 @@ function shownSpells(){return SPELLS.filter(function(sp){return (r.spellSchool||
  .sort(function(a,b){return a.rank-b.rank;});}
 
 function renderSpells(){
- var mode=r.spellPage||'rank',rank=r.spellRank||0;
- var list=shownSpells().filter(function(sp){return mode==='special'?sp.rank===6:rank===0||sp.rank===rank;});
- return '<div class="spellbook"><aside class="element-tabs">'+[{id:'all',name:'Все',icon:'scroll'}].concat(SYS.schools.map(function(x){return {id:x.id,name:x.name,icon:schoolIcon(x.id)};})).map(function(x){return '<button class="'+((r.spellSchool||'all')===x.id?'active':'')+'" data-action="spell-school" data-id="'+x.id+'" aria-label="'+esc(x.name)+'">'+uiIcon(x.icon)+'<span>'+esc(x.name)+'</span></button>';}).join('')+'</aside><div class="book-page"><div class="book-title">'+esc((SYS.schools.find(function(x){return x.id===r.spellSchool;})||{name:'Все школы'}).name)+'<small>Мана '+r.mp+'/'+stats().mp+'</small></div><div class="book-spells">'+list.map(function(sp){var error=spellValid(sp);return '<button class="book-spell '+(r.scrolls[sp.id]?'owned':'')+'" data-action="spell-detail" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<strong>'+esc(sp.name)+'</strong><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · ×'+(r.scrolls[sp.id]||0)+'</small><span class="spell-availability">'+esc(error||'Можно применить')+'</span></button>';}).join('')+'</div></div><div class="book-bottom"><button data-action="spell-page" data-id="rank" class="'+(mode==='rank'?'active':'')+'">По рангам</button><button data-action="spell-page" data-id="special" class="'+(mode==='special'?'active':'')+'">Особые · VI</button></div>'+(mode==='rank'?'<div class="rank-tabs">'+[0,1,2,3,4,5].map(function(n){return '<button data-action="spell-rank" data-id="'+n+'" class="'+(rank===n?'active':'')+'">'+(n?n+'★':'Все')+'</button>';}).join('')+'</div>':'')+'</div>';
+ var list=shownSpells();
+ return '<div class="spellbook"><aside class="element-tabs">'+[{id:'all',name:'Все',icon:'scroll'}].concat(SYS.schools.map(function(x){return {id:x.id,name:x.name,icon:schoolIcon(x.id)};})).map(function(x){return '<button class="'+((r.spellSchool||'all')===x.id?'active':'')+'" data-action="spell-school" data-id="'+x.id+'" aria-label="'+esc(x.name)+'">'+uiIcon(x.icon)+'<span>'+esc(x.name)+'</span></button>';}).join('')+'</aside><div class="book-page"><div class="book-title">'+esc((SYS.schools.find(function(x){return x.id===r.spellSchool;})||{name:'Все школы'}).name)+'<small>Мана '+r.mp+'/'+stats().mp+'</small></div><div class="book-spells">'+list.map(function(sp){var error=spellValid(sp);return '<button class="book-spell '+(r.scrolls[sp.id]?'owned':'')+'" data-action="spell-detail" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<strong>'+esc(sp.name)+'</strong><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · ×'+(r.scrolls[sp.id]||0)+'</small><span class="spell-availability">'+esc(error||'Можно применить')+'</span></button>';}).join('')+'</div></div></div>';
 }
 function renderTalents(){
  var tree=clamp(r.treeView||0,0,2),nodes=talentsByTree(tree),positions={};
@@ -1300,8 +1311,8 @@ function consumeTurn(){
  var frozen=!!(r.timeStopTurns>0);
  if(r.timeStopTurns>0)r.timeStopTurns--;
  var alive=r.chamberActive!=null?[]:enemies();
- if(r.summon&&r.summon.hp>0&&alive.length){
-  var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
+ if(r.summon&&r.summon.hp>0&&alive.some(reachableEnemy)){
+  var victim=alive.find(reachableEnemy),hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
    provoke(victim.foe,'summon');
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
   if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
@@ -1325,7 +1336,7 @@ function consumeTurn(){
  }
  if(r.ghost&&r.ghost.hp>0){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
-  if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
+  if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies().find(reachableEnemy);
    if(activeRoom()){
      var roomGuard=livingRoomGuards()[0];if(roomGuard){provoke(roomGuard,'ghost');if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
      var room=activeRoom().room;room.guardHp=room.guards.reduce(function(n,g){return n+g.hp;},0);
@@ -1531,6 +1542,7 @@ function counterBeforeHero(enemy,mainTile,room){
 }
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
+ if(!reachableEnemy(t)){toast('Нет прохода к врагу. Сначала исследуйте путь к нему.');return;}
  setHeroPose('attack');
  if(!counterBeforeHero(t.foe,t,null)||!r)return;
  if(t.foe.hp<=0){finishAction();return;}
@@ -1574,7 +1586,7 @@ function useSkill(chosenTarget){
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
  var cave=activeRoom();
  var caveGuards=cave?livingRoomGuards():null;
- var available=cave?caveGuards:enemies();
+ var available=cave?caveGuards:enemies().filter(reachableEnemy);
  var single=['executioner','guardian','assassin','scout'].includes(r.class);
  if(single&&available.length>1&&chosenTarget==null){
   r.pendingSkill=r.class;close();draw();save();toast('Выберите врага для «'+skill.name+'».');return;
@@ -1583,12 +1595,14 @@ function useSkill(chosenTarget){
  if(chosenTarget!=null){
   if(cave){var fragments=String(chosenTarget).split(':');
    if(Number(fragments[0])===cave.id)selected=caveGuards.find(function(g){return g.slot===Number(fragments[1]);});}
-  else{var chosen=tile(chosenTarget);if(chosen&&chosen.revealed&&chosen.foe&&chosen.foe.hp>0)selected=chosen;}
+  else{var chosen=tile(chosenTarget);if(chosen&&reachableEnemy(chosen))selected=chosen;}
   if(!selected){toast('Эта цель недоступна.');return;}
  }
  r.pendingSkill=null;
  var t=cave?(selected?{foe:selected,roomGuard:true}:caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):selected||target(),st=stats(),damage=0;
+ if(r.class==='scout'&&!t){toast('Нет доступной цели. Сначала откройте путь к врагу.');return;}
  if(t&&['executioner','guardian','assassin','scout'].includes(r.class)){
+  if(r.class==='scout')r.scoutDodgeTurns=1;
   if(!counterBeforeHero(t.foe,t.roomGuard?null:t,cave&&cave.room)||!r)return;
   if(t.foe.hp<=0){finishAction();return;}
  }
@@ -1614,7 +1628,7 @@ function useSkill(chosenTarget){
    if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
  }else if(r.class==='sorceress'){
-  var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
+  var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().filter(reachableEnemy).slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
   targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
     enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
@@ -1626,7 +1640,6 @@ function useSkill(chosenTarget){
   if(t.foe.hp<=0)skillKill(t);
  }else if(r.class==='scout'){
   if(!t){toast('Нужен обнаруженный противник для двойного выстрела.');return;}
-  r.scoutDodgeTurns=1;
   var arrows=0;
   for(var shot=0;shot<2&&t.foe.hp>0;shot++){
    var arrowDamage=Math.max(1,Math.floor(st.atk*.95)+rand(0,3)-(t.foe.def||0)-(t.foe.guard||0));
@@ -1660,7 +1673,7 @@ function spellPower(sp,st){
 
 function advancedCast(sp,chosenTarget){
  var st=stats(),magic=spellPower(sp,st);
- var foes=enemies(),key=sp.kind;
+ var foes=enemies().filter(reachableEnemy),key=sp.kind;
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
    if(!t||!t.foe||t.foe.hp<=0)return;
@@ -1752,7 +1765,7 @@ function cast(id,chosenTarget){
   var room=activeRoom(),parts=String(chosenTarget).split(':'),valid=room?
    Number(parts[0])===room.id&&livingRoomGuards().some(function(g){return g.slot===Number(parts[1]);}):
    parts.length===1&&!!tile(parts[0])&&tile(parts[0]).revealed&&!!tile(parts[0]).foe&&tile(parts[0]).foe.hp>0;
-  if(!valid){toast('Выберите живого обнаруженного противника.');return;}
+  if(!valid||(!room&&!reachableEnemy(tile(parts[0])))){toast('Нет прохода к выбранному противнику.');return;}
  }
  r.pendingSpell=null;
  setHeroPose('skill');
@@ -1777,7 +1790,7 @@ function cast(id,chosenTarget){
   log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
   var first=chosenTarget!=null?tile(chosenTarget):target();
-   var victims=[first].concat(enemies().filter(function(t){return t!==first;})).filter(Boolean).slice(0,3+bonus('chainTargets'));
+   var victims=[first].concat(enemies().filter(function(t){return t!==first&&reachableEnemy(t);})).filter(function(t){return t&&reachableEnemy(t);}).slice(0,3+bonus('chainTargets'));
   victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
     t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
@@ -1907,7 +1920,7 @@ function forestUse(id,chosenTarget){
    r.pendingForestUse=id;close();draw();save();toast('Выберите цель для охотничьего капкана.');return;
   }
   var selected=tile(chosenTarget);
-  if(!selected||!selected.revealed||!selected.foe||selected.foe.hp<=0){toast('Капкан можно применить только на живого обнаруженного врага.');return;}
+  if(!selected||!reachableEnemy(selected)){toast('Капкан можно применить только на живого обнаруженного врага.');return;}
  }
  var provider=forestApi(null);
  if(chosenTarget!=null)provider.target=function(){return tile(chosenTarget);};
