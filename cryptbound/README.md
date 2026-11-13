@@ -10,7 +10,7 @@
 
 
 
-**[APK v0.7.4](https://github.com/Domenklay/Baze_rpg/releases/tag/cryptbound-v0.7.4)** · [Баланс и механики T1–T10](docs/DUNGEONS_IMPLEMENTATION_2026-11-12.ru.md).
+**[APK v0.7.5](https://github.com/Domenklay/Baze_rpg/releases/tag/cryptbound-v0.7.5)** · [Баланс и механики T1–T10](docs/DUNGEONS_IMPLEMENTATION_2026-11-12.ru.md).
 
 ### Основа интерфейса — восстановленная v0.7.2
 - В v0.7.3 случайно использовали устаревшие файлы интерфейса из разошедшейся ветки `main`. Версия v0.7.4 восстановила **все оригинальные UI-файлы и игровую компоновку релиза v0.7.2**: `painted.css`, `compact.css`, `refined.css`, `ui-art.js`, `combat_feedback.js`, расширенный `index.html` и обновлённый `game.js`.
