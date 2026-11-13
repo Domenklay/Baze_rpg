@@ -15,6 +15,24 @@ var spellRewards={
 };
 function level(r,id){return r&&r.talents?Math.max(0,Number(r.talents[id])||0):0;}
 function has(r,id){return level(r,id)>0;}
+var TITLE_SUITS={
+ adv_magic_bandit:{id:'noble',pieces:[['bracer','Лента дворянина'],['ring','Кольцо этикета'],['cloak','Бархатный плащ']]},
+ adv_treasure_hunter:{id:'hunter',pieces:[['armor','Броня охотника'],['amulet','Охотничий медальон'],['boots','Сапоги охотника']]},
+ adv_royal_rune:{id:'rune',pieces:[['ring','Рунное кольцо'],['gloves','Перчатки гоблина'],['amulet','Кулон магической энергии']]},
+ adv_royal_blacksmith:{id:'smith',pieces:[['helm','Спектральный шлем'],['bracer','Наручи литейщика'],['boots','Сапоги кузнеца']]}
+};
+function titleSetEquipped(r,id){
+ var items=r&&r.items||[],equip=r&&r.equip||{};
+ return Object.keys(equip).filter(function(slot){return items.some(function(it){return it.id===equip[slot]&&it.titleSet===id;});}).length;
+}
+function grantTitlePiece(r,t,levelNum,h){
+ var suit=TITLE_SUITS[t.id];if(!suit)return;
+ var piece=suit.pieces[Math.min(suit.pieces.length-1,levelNum-1)];
+ var item=h.addItem(piece[0],2);if(!item)return;
+ item.name=piece[1];item.titleSet=suit.id;item.titlePiece=levelNum;
+ item.setId=null;item.setName=null;item.catalogId=null;
+ h.log('Получена часть комплекта «'+piece[1]+'». Предмет помещён в рюкзак и не надет.');
+}
 function rank5(r,id,key){return Math.max(0,Math.min(3,Number(r.titleMastery&&r.titleMastery[id]&&r.titleMastery[id][key])||0));}
 function masterKeys(t){if(t.tree===1)return t.id==='mag_light_bishop'?['pow','atk','hp']:['pow','mp','hp'];if(t.tree===2)return t.id.indexOf('rune')>=0||t.id==='adv_great_enchanter'?['pow','hp','mp']:t.id.indexOf('blacksmith')>=0||t.id==='adv_great_swordsmith'?['atk','hp','mp']:['atk','pow','hp'];return t.id==='war_warrior'||t.id==='war_commander'?['atk','mp','hp']:['atk','pow','hp'];}
 function statBonuses(r){
@@ -30,6 +48,8 @@ function statBonuses(r){
   }
  });
  if(r.titleSupplies&&r.titleSupplies.license){st.atk+=2*r.titleSupplies.license;st.pow+=2*r.titleSupplies.license;}
+ if(titleSetEquipped(r,'rune')===3){st.pow+=5;st.mp+=50;}
+ if(titleSetEquipped(r,'hunter')===3){st.def+=3;st.dodge=12;}
  return st;
 }
 function init(r){
@@ -65,8 +85,8 @@ function cost(r,t){
  var n=level(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
  var main=(r.class==='necromancer'||r.class==='sorceress')?1:(r.class==='guardian'||r.class==='executioner')?0:2;
  if(t.tree!==main)raw*=2;
- var noble=(r.titleSupplies&&r.titleSupplies.noble)||0;
- return Math.max(1,Math.ceil(raw*(1-Math.min(.27,noble*.09))));
+ var noble=titleSetEquipped(r,'noble');
+ return Math.max(1,Math.ceil(raw*(1-Math.min(.28,noble*.06+(noble===3?.10:0)))));
 }
 function supply(r,key,amount){r.titleSupplies=r.titleSupplies||{};r.titleSupplies[key]=(r.titleSupplies[key]||0)+amount;}
 function curSup(r,key){return (r.titleSupplies&&r.titleSupplies[key])||0;}
@@ -74,10 +94,7 @@ function reward(r,t,levelNum,h){
  var got=spellRewards[t.id];if(got)h.grant(got[0],got[1],'title');
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
  if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',1);
- if(t.id==='adv_magic_bandit')supply(r,'noble',1);
- if(t.id==='adv_treasure_hunter')supply(r,'hunter_piece',1);
- if(t.id==='adv_royal_rune')supply(r,'rune_piece',1);
- if(t.id==='adv_royal_blacksmith')supply(r,'smith_piece',1);
+ grantTitlePiece(r,t,levelNum,h);
  if(t.id==='adv_weapon_master'){supply(r,'license',1);}
  if(t.id==='adv_elven_ranger')supply(r,'leopard',1);
  if(t.id==='adv_demon_hunter')supply(r,'arrow',3+2*levelNum);
@@ -132,7 +149,9 @@ function floor(r,h){
  if(has(r,'adv_explorer'))r.ep+=10+5*(level(r,'adv_explorer')-1);
  if(has(r,'adv_explorationist'))r.hp=Math.min(h.stats().hp,r.hp+6+3*(level(r,'adv_explorationist')-1));
  if(has(r,'mag_priest')){var b=3*level(r,'mag_priest');r.hp=Math.min(h.stats().hp,r.hp+b);r.mp=Math.min(h.stats().mp,r.mp+b);}
- if(has(r,'adv_treasure_hunter'))r.ep+=5*level(r,'adv_treasure_hunter');
+ if(r.floor>1&&titleSetEquipped(r,'hunter')>0)r.ep+=3*titleSetEquipped(r,'hunter');
+ if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'rune')===3)supply(r,'rune',1);
+ if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'smith')===3)supply(r,'quench',1);
  if(has(r,'adv_night_walker')&&Math.random()<.2+.17*level(r,'adv_night_walker')){var key=r.tiles.find(function(t){return t.hasKey||t.drops&&t.drops.key;});if(key){key.hinted=true;h.log('Фонарь указывает на камень, за которым спрятан ключ.');}}
  if(has(r,'adv_seeker')){var mobs=r.tiles.filter(function(t){return t.foe&&t.foe.hp>0;});for(var i=0;i<Math.min(mobs.length,2+level(r,'adv_seeker'));i++){mobs[i].hinted=true;}}
  if(has(r,'adv_god_thieves')){r.tiles.filter(function(t){return t.kind==='chamber'||t.kind==='secret';}).forEach(function(t){t.hinted=true;});}
@@ -170,7 +189,7 @@ function onKill(r,e,drop,h){
  if(has(r,'war_shadow'))r.titleDarkSoulTurns=Math.max(r.titleDarkSoulTurns||0,1+level(r,'war_shadow'));
  if(has(r,'mag_conjuror'))r.titleTotemTurns=Math.max(r.titleTotemTurns||0,3*level(r,'mag_conjuror'));
  if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&Math.random()<.15+.10*rank5(r,'adv_farplane','atk'))drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
- if(has(r,'adv_treasure_hunter'))r.ep+=curSup(r,'hunter_piece')*2;
+ if(titleSetEquipped(r,'hunter')===3)r.ep+=2;
  if(has(r,'war_dragon')&&Math.random()<(0.1+.1*level(r,'war_dragon')))h.cross(e,Math.ceil(h.stats().atk*.65));
  if(has(r,'war_duke')&&Math.random()<.1)h.cross(e,Math.ceil(h.stats().atk*.7));
  if(has(r,'war_light_arbiter')&&Math.random()<.1)h.flash(Math.max(8,h.stats().pow*2));
@@ -231,8 +250,8 @@ function corpse(r,entry,h){
 }
 function onScrap(r,it,h){
  if(has(r,'adv_blacksmith')){supply(r,'quench',Math.max(1,Math.ceil(it.rarity/2)));h.log('Наковальня получила закалочную эссенцию.');}
- if(has(r,'adv_royal_blacksmith'))r.ep+=curSup(r,'smith_piece')*5;
- if(has(r,'adv_royal_rune'))r.mp=Math.min(h.stats().mp,r.mp+curSup(r,'rune_piece')*3);
+ if(titleSetEquipped(r,'smith')>0)r.ep+=2*titleSetEquipped(r,'smith');
+ if(titleSetEquipped(r,'rune')>0)r.mp=Math.min(h.stats().mp,r.mp+3*titleSetEquipped(r,'rune'));
 }
 function useTool(r,h,selected){
  var tool=toolOf(r);if(!tool)return 'Сначала изучите звание III ранга авантюриста.';
@@ -262,7 +281,7 @@ function useTool(r,h,selected){
   if(!has(r,'adv_holy_rune')){
    if(!has(r,'adv_royal_rune'))return 'Объединение свитков открывается Святым мастером рун.';
    r.scrolls[sp.id]--;var recovered=3+3*curSup(r,'rune_piece');
-   r.mp=Math.min(h.stats().mp,r.mp+recovered);
+   r.mp=Math.min(h.stats().mp,r.mp+recovered+2*titleSetEquipped(r,'rune'));
    return 'Тигель разобрал свиток: восстановлено '+recovered+' маны.';
   }
   if(curSup(r,'rune')<1)return 'Нужна магическая руна для объединения свитков.';
@@ -282,5 +301,5 @@ function useTool(r,h,selected){
  }
  return 'Этот предмет работает автоматически.';
 }
-window.CryptTitlesRuntime={data:data,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={data:data,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
