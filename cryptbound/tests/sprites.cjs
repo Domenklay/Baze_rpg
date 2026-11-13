@@ -4,7 +4,9 @@ const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
 const assetDir=path.resolve(__dirname,'../src/main/assets');
-const sandbox={window:{}};vm.runInNewContext(fs.readFileSync(path.join(assetDir,'sprite_catalog.js'),'utf8'),sandbox);
+const sandbox={window:{}};
+vm.runInNewContext(fs.readFileSync(path.join(assetDir,'concept_materials.js'),'utf8'),sandbox);
+vm.runInNewContext(fs.readFileSync(path.join(assetDir,'sprite_catalog.js'),'utf8'),sandbox);
 const spr=sandbox.window.CryptSprites;
 for(let i=10;i<20;i++){
  const id='r1_'+i;assert.ok(spr.monster({id},'idle'),id);
@@ -37,4 +39,18 @@ for(const id of spr.materialIds){
  const svg=fs.readFileSync(file,'utf8');
  assert.match(svg,/data:image\/png;base64,iVBOR/,'embedded PNG '+id);
 }
+const conceptIndex=JSON.parse(fs.readFileSync(path.resolve(assetDir,'../../docs/CLICKER_CONCEPT_INDEX.json'),'utf8'));
+const concepts=sandbox.window.CryptConceptMaterials;
+assert.equal(conceptIndex.items.length,257,'257 original Clicker illustrations in the audit index');
+assert.equal(Object.keys(concepts).length,conceptIndex.items.length,'Every original Clicker image is mapped');
+for(const entry of conceptIndex.items){
+ assert.equal(concepts[entry.name],entry.stem,'Russian loot name must resolve to the matching original artwork');
+ const html=spr.materialIcon(entry.name);
+ assert.match(html,/class="crypt-resource-icon"/,'Missing image for '+entry.name);
+ const art=path.join(assetDir,'imported/concepts',entry.stem+'.svg');
+ assert.ok(fs.existsSync(art),'Missing offline resource '+art);
+ const svg=fs.readFileSync(art,'utf8');
+ assert.match(svg,/data:image\\/png;base64,iVBOR/,'Original PNG must be embedded '+entry.name);
+}
+console.log('PASS All 257 exact-name Clicker material icons are present and mapped for offline use');
 console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 132 equipment icons,',spr.materialIds.length,'material icons');
