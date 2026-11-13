@@ -88,6 +88,26 @@ sp('worldrewrite','earth',6,'Перепись материи','worldrewrite',0,9
 sp('timeloop','air',6,'Разрыв причинности','timeloop',0,90,'Останавливает время надолго; все открытые противники теряют право отвечать на ходы.','◷');
 sp('firstlight','light',6,'Первый рассвет','firstlight',0,90,'Полностью очищает и исцеляет героя, создаёт живой барьер и отменяет следующую смерть.','✺');
 sp('soulcovenant','dark',6,'Пакт с бездной','soulcovenant',0,90,'Превращает обычных врагов в души, оставляя боссу тяжёлое проклятие.','☽');
+/* Rank-specific spells awarded by the original Gumballs title branches.
+ * Only shown after acquiring their scrolls; regular random loot remains unchanged.
+ */
+function titleSpell(id,school,rank,name,kind,base,cost,description,icon){
+ sp(id,school,rank,name,kind,base,cost,description,icon);
+ spells[spells.length-1].titleOnly=true;
+}
+titleSpell('bless','light',1,'Благословение','blessing',5,6,'Усиливает атаку героя на несколько ходов.','✚');
+titleSpell('fireball','fire',1,'Огненный шар','burn',28,8,'Огненный снаряд по выбранной цели.','♨');
+titleSpell('holybolt','light',3,'Святой луч','holy',48,21,'Светлая магия, особенно эффективная против нежити.','☀');
+titleSpell('deathripple','dark',3,'Волна смерти','aoe',36,21,'Тёмная магия по всем доступным противникам.','☽');
+titleSpell('iceshield','water',3,'Ледяной щит','shield',58,19,'Защитный ледяной барьер; Архиепископ способен усилить его до Барьера Авроры.','❄');
+titleSpell('gravity','earth',4,'Гравитация','aoe',65,32,'Наносит урон землею всем доступным противникам.','⬡');
+titleSpell('icicle','water',3,'Ледяное копьё','stun',32,17,'Магический ледяной удар и оглушение.','❄');
+titleSpell('lightningbolt','air',2,'Удар молнии','chain',22,12,'Воздушная магия по цепочке целей.','ϟ');
+titleSpell('electrostatic','air',3,'Электростатическое поле','blessing',8,20,'Повышает атаку и устойчивость героя на несколько ходов.','ϟ');
+titleSpell('implosion','dark',5,'Имплозия','attack',145,55,'Мощный сгусток тёмной энергии в одну цель.','●');
+titleSpell('disrupting','air',3,'Разрушающий луч','weakness',30,18,'Ослабляет выбранную цель.','ϟ');
+titleSpell('recovering','light',3,'Восстановление','heal',55,23,'Восстанавливает здоровье героя.','✚');
+titleSpell('divinefavor','light',4,'Божественная благодать','healshield',85,35,'Исцеляет героя и усиливает защиту.','☀');
 var bySpell={};for(var i=0;i<spells.length;i++)bySpell[spells[i].id]=spells[i];
 var byPotion={};for(var j=0;j<potions.length;j++)byPotion[potions[j].id]=potions[j];
 window.CryptSystems={potions,byPotion,spells,bySpell,schools:[
