@@ -63,6 +63,7 @@ jobs:
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
           node cryptbound/tests/hunter_book.cjs
+          node cryptbound/tests/hunter_book_visual.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
 
@@ -72,8 +73,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.5-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.5-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.6-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.6-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -86,7 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.5 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.5 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.5 — рисованная книга, прицеливание и снаряжение" --notes "Бестиарий с нарисованным разворотом и графическими деталями: звери слева со шкалами, справа крупный игровой idle-спрайт и накопительные награды 5/10/20/40. Все десять существ используют готовые спрайты RPG Clicker Infinity, не новые заглушки. Таргетные заклинания открывают выбор подсвеченного противника на основном поле и в побочной комнате. Мана, свиток и ход расходуются после нажатия на цель; отмена бесплатна. Новые оригинальные рисованные текстуры сапог и колец вместо цветных символов. Сохранён интерфейс v0.7.2, 30 локаций и существующая механика Лесной окраины."
+          if ! gh release view cryptbound-v0.7.6 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.6 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.6 — исправленный разворот бестиария" --notes "Исправление разворота Охотничьего бестиария: полностью заменены конфликтующие CSS, страницы получили фиксированные границы, прокручиваемый список с компактными строками, читаемый тёмный текст на пергаменте и отдельные карточки этапов. Слева прогресс зверей, справа их штатные idle-спрайты и описание. Дополнительные вкладки Трофеи и Бонусы оформлены как страницы книги. Добавлены браузерные проверки геометрии экрана в Chrome для портретных размеров 544×915 и 390×844. Сохранены функции предыдущей версии: прицеливание заклинаний, иконки сапог и колец, лесная генерация."
           fi
-          gh release upload cryptbound-v0.7.5 dist/Cryptbound-v0.7.5-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.6 dist/Cryptbound-v0.7.6-offline-Android.apk dist/SHA256SUMS.txt --clobber
