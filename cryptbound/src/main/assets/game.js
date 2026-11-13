@@ -2511,7 +2511,7 @@ function gainTitleMastery(id){
 }
 function titleToolDialog(){
  var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
- var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Тигель для свитков':'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
+ var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Магические руны: '+TR.curSup(r,'rune'):'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
  dialog('<h2>'+esc(title)+'</h2><p>'+esc(t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Работает со свитками магии.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.')+'</p><p>'+esc(counts)+'</p>'+
  (t?'<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>':'')+
  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
