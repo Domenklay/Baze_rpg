@@ -654,24 +654,81 @@ function backpackExtraSlots(){
    (qty!=null?'<b class="bag-item-count">×'+qty+'</b>':'')+
    '<span>'+esc(name)+'</span></button>');
  };
- if(r.potions>0)add('potion',null,'Целебный эликсир',uiIcon('potion'),r.potions);
+ if(r.potions>0)add('active-item-info','potion','Целебный эликсир',uiIcon('potion'),r.potions);
  (r.preparedPotions||[]).forEach(function(id,index){
-  var p=SYS.byPotion[id];if(p)add('use-prepared',index,p.name,uiIcon('potion'),1);
+  var p=SYS.byPotion[id];if(p)add('active-item-info','prepared:'+index,p.name,uiIcon('potion'),1);
  });
  (r.lootBag||[]).filter(function(x){return x.qty>0&&x.kind!=='trinket';}).forEach(function(x){
-  add('use-pocket',x.id,x.name,uiIcon('potion'),x.qty);
+  add('active-item-info','pocket:'+x.id,x.name,uiIcon('potion'),x.qty);
  });
  var forest=FE.ensure(r).items;
  Object.keys(forest).filter(function(id){return forest[id]>0;}).forEach(function(id){
   var def=FE.itemDefs[id]||[id,'F02_001'];
   var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id);
-  add(usable?'forest-use':'forest-item-info',id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
+  add(usable?'active-item-info':'forest-item-info',(usable?'forest:':'')+id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
  });
- (r.soulBag||[]).forEach(function(x){add('consume-soul',x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
+ (r.soulBag||[]).forEach(function(x){add('active-item-info','soul:'+x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
  (r.questItems||[]).forEach(function(x){add('quest-item-info',x,x,uiIcon('key'),null);});
  (r.journalNotes||[]).forEach(function(x,index){add('note-info',index,x,uiIcon('journal'),null);});
  if(HB.owned(s.meta))add('hunter-book',null,'Охотничий бестиарий',HB.bookIcon(),null);
  return {html:result.join(''),count:result.length};
+}
+/* Consumables in the backpack open a description before spending a turn.
+   Quick battle-dock buttons intentionally keep their existing one-tap behavior. */
+function activeItemDetails(token){
+ if(!r)return null;
+ var parts=String(token||'').split(':'),kind=parts[0],id=parts.slice(1).join(':'),st=stats();
+ if(kind==='potion'&&r.potions>0)return {
+  name:'Целебный эликсир',description:'Восстанавливает 45% максимального здоровья. Расходует один эликсир и один ход.',
+  qty:r.potions,action:'potion',id:null,disabled:r.hp>=st.hp,reason:'Здоровье уже полное.'};
+ if(kind==='prepared'){
+  var slot=Number(id),p=Number.isInteger(slot)&&slot>=0&&slot<2?SYS.byPotion[(r.preparedPotions||[])[slot]]:null;
+  if(!p)return null;
+  return {name:p.name,description:p.description,qty:1,action:'use-prepared',id:String(slot)};
+ }
+ if(kind==='pocket'){
+  var obj=(r.lootBag||[]).find(function(x){return String(x.id)===id&&x.qty>0&&['vial-hp','vial-mp'].includes(x.kind);});
+  if(!obj)return null;
+  var hp=obj.kind==='vial-hp';
+  return {name:obj.name,description:hp?'Восстанавливает от 5 до 20 HP (не выше максимума).':'Восстанавливает от 3 до 10 MP (не выше максимума).',
+   qty:obj.qty,action:'use-pocket',id:id,disabled:hp?r.hp>=st.hp:r.mp>=st.mp,
+   reason:hp?'Здоровье уже полное.':'Мана уже полная.'};
+ }
+ if(kind==='forest'){
+  var usable={bleed_trap:'Накладывает на выбранного доступного врага кровотечение на 3 хода и оглушение на 1 ход.',
+   stun_trap:'Оглушает выбранного доступного врага на 3 хода.',
+   honey:'Восстанавливает до 24 HP.',mushroom:'Восстанавливает до 14 HP.',
+   water:'Снимает отравление и кровотечение, а также восстанавливает до 8 HP.'};
+  var stock=FE.ensure(r).items,def=FE.itemDefs[id];if(!Object.prototype.hasOwnProperty.call(usable,id)||!def||!stock[id])return null;
+  var attack=id==='bleed_trap'||id==='stun_trap',healing=id==='honey'||id==='mushroom';
+  return {name:def[0],description:usable[id],qty:stock[id],action:'forest-use',id:id,
+   disabled:attack?!enemies().some(reachableEnemy):healing&&r.hp>=st.hp,
+   reason:attack?'Нет доступного врага.':healing?'Здоровье уже полное.':''};
+ }
+ if(kind==='soul'){
+  var soul=(r.soulBag||[]).find(function(x){return String(x.id)===id;});if(!soul)return null;
+  var description=soul.kind==='unique'?'Превращает особую душу исследователя в уникальную находку (если её история известна).':
+   soul.kind==='elite'?'Исцеляет на 35% максимального здоровья и создаёт защитный щит.':
+   'Превращает обычную душу в магический щит.';
+  return {name:soul.name,description:description,qty:1,action:'consume-soul',id:id};
+ }
+ return null;
+}
+function activeItemInfo(token){
+ var info=activeItemDetails(token);if(!info){toast('Предмет больше не доступен.');panelDialog('bag');return;}
+ var disabled=!!info.disabled;
+ dialog('<div class="panel-heading"><div><small class="sheet-kicker">РЮКЗАК · АКТИВНЫЙ ПРЕДМЕТ</small><h2>'+esc(info.name)+'</h2></div>'+
+ '<button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div>'+
+ '<article class="active-item-sheet"><p>'+esc(info.description)+'</p><p class="fine">В наличии: ×'+info.qty+' · Применение: 1 ход</p>'+
+ (disabled?'<p class="fine muted">'+esc(info.reason||'Сейчас использовать невозможно.')+'</p>':'')+'</article>'+
+ '<button class="btn gold wide" data-action="active-item-use" data-id="'+esc(String(token))+'"'+(disabled?' disabled':'')+'>Использовать · 1 ход</button>'+
+ '<button class="btn alt wide space-top" data-action="ui-panel" data-id="bag">Вернуться в рюкзак</button>');
+}
+function activeItemUse(token){
+ var info=activeItemDetails(token);
+ if(!info){toast('Предмет больше не доступен.');panelDialog('bag');return;}
+ if(info.disabled){toast(info.reason||'Использование сейчас невозможно.');return;}
+ close();action(info.action,info.id);
 }
 function usePocket(id){
  var obj=(r.lootBag||[]).find(function(x){return x.id===Number(id)&&x.qty>0;});if(!obj||obj.kind==='trinket')return;
@@ -2926,7 +2983,9 @@ function action(name,id){
  if(name==='reveal'){reveal(id);return;}
  if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
- if(name==='consume-soul'){consumeSpiritSoul(id);return;}
+ if(name==='active-item-info'){activeItemInfo(id);return;}
+  if(name==='active-item-use'){activeItemUse(id);return;}
+  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
  if(name==='use-pocket'){usePocket(id);return;}
  if(name==='forest-item-info'){var forestDef=FE.itemDefs[id];if(forestDef)dialog('<h2>'+esc(forestDef[0])+'</h2><p>Находка хранится в рюкзаке и может пригодиться в лесных событиях.</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
  if(name==='quest-item-info'){dialog('<h2>'+esc(id)+'</h2><p>Квестовый предмет. Используется в подходящем событии.</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
