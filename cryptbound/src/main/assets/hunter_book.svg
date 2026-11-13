@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" aria-label="Охотничий бестиарий">
+<defs><linearGradient id="c" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#6a3d25"/><stop offset=".5" stop-color="#301c15"/><stop offset="1" stop-color="#140e0b"/></linearGradient><linearGradient id="p" x2="1"><stop stop-color="#d2ad72"/><stop offset=".5" stop-color="#8e6341"/><stop offset="1" stop-color="#d2a976"/></linearGradient></defs>
+<path d="M13 14 96 8 117 22 114 111 29 118 14 103Z" fill="#0c0a08" stroke="#0c0908" stroke-width="8" stroke-linejoin="round"/>
+<path d="M25 17 100 12 111 22 109 103 27 111 17 100 17 28Z" fill="url(#c)" stroke="#b28a50" stroke-width="3" stroke-linejoin="round"/>
+<path d="M27 13 21 22 22 103 30 113" fill="none" stroke="#dfad67" stroke-width="5"/><path d="M30 18 25 24 26 101 32 107" fill="none" stroke="#251910" stroke-width="2"/>
+<path d="M34 24 97 21M36 101 99 98M37 25 34 99M96 23 100 94" fill="none" stroke="#77502c" stroke-width="1.7" stroke-dasharray="5 4"/>
+<path d="M40 25q4 9 15 5M94 33q-8 5-7 10M42 96q10-8 17-4M97 88q-7 1-10 8" fill="none" stroke="#b88b4a" stroke-width="2"/>
+<path d="M47 60q1-8 7-8 7 1 8 9l-3 7q-10 6-15-3ZM63 59q1-11 8-11 8 3 7 12l-3 10q-7 7-12-3ZM80 65q3-9 9-7 7 4 4 12l-6 8q-7 4-9-5Z" fill="#b39058" stroke="#211811" stroke-width="2"/>
+<path d="M58 82q-6 2-10-2-2-5 2-8l7-5q8-9 16 0l8 6q8 2 6 9-3 9-13 9-8-1-14 0-7 0-8-5Z" fill="url(#p)" stroke="#1c130d" stroke-width="3"/>
+<path d="M42 40q-3-7 0-9l8 1M86 37q8-5 9-1M35 86l9 6M85 91l8-8" stroke="#c1a16a" stroke-width="2" fill="none"/>
+<path d="M17 28q12-6 13 5M18 96q9-1 10 9M97 14q2 10 11 13M99 97q8-1 10-10" stroke="#ca9b58" stroke-width="4" fill="none"/>
+<path d="M100 104 90 116 89 103" fill="#8f3229" stroke="#2d1713" stroke-width="2"/>
+<path d="M18 21 27 13M18 37l9-4M17 51l9-2M18 65l9-2M19 79l9-1M19 94l9 1" stroke="#e8be7b" stroke-width="2" opacity=".8"/>
+</svg>
