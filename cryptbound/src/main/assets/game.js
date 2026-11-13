@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var HB=window.CryptHunterBook;
+var FD=window.CryptFeedback,HB=window.CryptHunterBook;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -60,7 +60,7 @@ function pick(a){return a[rand(0,a.length-1)];}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function pct(a,b){return Math.floor(100*(b?clamp(a,0,b)/b:0));}
 function esc(v){return String(v).replace(/[&<>"']/g,function(a){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[a];});}
-function log(t){r.log.unshift(t);r.log=r.log.slice(0,12);}
+function log(t){r.log.unshift(t);r.log=r.log.slice(0,12);if(FD)FD.capture();}
 function currentRegion(){return DN.location(r.actIndex||0,r.locationIndex||0)||DN.location(0,0);}
 function levelTheme(){return ((r.actIndex||0)*3+(r.locationIndex||0))%6;}
 function maxFloorLabel(){return currentRegion().name;}
@@ -213,13 +213,11 @@ function distributeTiles(){
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
  if(r.actIndex===0&&r.locationIndex===0&&!boss){
-  // Forest outskirts: independent variety, no mandatory treasure / vendor / riddles.
   insert('chest',Math.random()<.68?rand(1,2):0);
   if(Math.random()<.35)insert('trap',1);
   if(Math.random()<.13)insert('altar',1);
   if(Math.random()<.14)insert('shop',1);
   if(Math.random()<.45)insert('event',1);
-  // The old abstract riddle quiz is excluded from this story-driven location.
   if(Math.random()<.22)insert('secret',1);
   if(Math.random()<.61)insert('coin',rand(1,2));
   if(Math.random()<.42)insert('potion',1);
@@ -301,7 +299,7 @@ function startFloor(){
  heroMoveToken++;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
- r.tiles=distributeTiles();r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
+ r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
  if(lvl('seeker')>0&&Math.random()<Math.min(.6,.15*lvl('seeker'))){
@@ -325,10 +323,10 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
- r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,hunterCounted:{},forestWellStats:{},forestWellUses:0,
+ r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
-    potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},
+    potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
  ['weapon','armor','amulet'].forEach(function(slot){
   var i=newItem(slot,1,0);r.items.push(i);r.equip[slot]=i.id;
@@ -381,11 +379,12 @@ function load(){
  if(meta.diamonds==null)meta.diamonds=0;
  if(meta.rainbowDiamonds==null)meta.rainbowDiamonds=0;
  if(meta.activeExpedition)migrateEquipSlots(meta.activeExpedition);
- if(v.run){migrateEquipSlots(v.run);for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
+ if(v.run){v.run.fx=null;v.run.fxUntil=0;delete v.run.clearAnimationStarted;migrateEquipSlots(v.run);for(var k of Object.keys(SLOT))if(!(k in v.run.equip))v.run.equip[k]=null;
   if(v.run.treeView==null)v.run.treeView=0;if(!v.run.bagFilter)v.run.bagFilter='all';if(!v.run.spellSchool)v.run.spellSchool='all';
   if(v.run.actIndex==null)v.run.actIndex=0;
    if(!v.run.hunterCounted)v.run.hunterCounted={};
    if(!v.run.forestWellStats)v.run.forestWellStats={};
+   if(v.run.forestWellUses==null)v.run.forestWellUses=0;
    if(v.run.actIndex===0&&v.run.locationIndex===0&&!HB.owned(meta)){
     if(v.run.floor>1){HB.acquire(meta);v.run.journalNotes=v.run.journalNotes||[];v.run.journalNotes.push('Охотничий бестиарий восстановлен при обновлении сохранения.');}
     else if(!v.run.tiles.some(function(t){return t.kind==='hunter-corpse';})){
@@ -420,10 +419,10 @@ function load(){
   if(!v.run.uniqueFinds)v.run.uniqueFinds={};
   if(!v.run.poisonTurns)v.run.poisonTurns=0;
   v.run.chamberActive=null; // A modal room is reopened explicitly after loading.
-  for(var enemyTile of v.run.tiles){if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=enemy.ranged?{name:'Дальний выстрел',every:3,description:'Стреляет каждые три хода.',kind:'shot'}:EX.monster(enemy.visual||CR.visualId(enemy.name));
+  for(var enemyTile of v.run.tiles){if(enemyTile.foe)enemyTile.foe.spriteFxUntil=0;if(enemyTile.room&&enemyTile.room.guards)enemyTile.room.guards.forEach(function(g){g.spriteFxUntil=0;});if(enemyTile.foe&&enemyTile.foe.hp>0){var enemy=enemyTile.foe;enemy.skill=enemy.ranged?{name:'Дальний выстрел',every:3,description:'Стреляет каждые три хода.',kind:'shot'}:EX.monster(enemy.visual||CR.visualId(enemy.name));
   if(enemy.ranged&&enemy.attackCooldown==null)enemy.attackCooldown=3;
   if(enemy.cooldown==null)enemy.cooldown=enemy.skill.every;if(enemy.guard==null)enemy.guard=0;}}
-  if(v.run.summon){if(v.run.summon.specialCooldown==null)v.run.summon.specialCooldown=4;if(!v.run.summon.def)v.run.summon.def=2;}
+  if(v.run.summon){v.run.summon.spriteFxUntil=0;if(v.run.summon.specialCooldown==null)v.run.summon.specialCooldown=4;if(!v.run.summon.def)v.run.summon.def=2;}
   if(typeof v.run.key!=='boolean')v.run.key=!v.run.tiles.some(function(t){return t.foe&&t.foe.hp>0;});
   if(!v.run.key&&!v.run.tiles.some(function(t){return t.hasKey||(t.drops&&t.drops.key);})){
     // Migrate a v0.1 floor where enemies had no key-carrier marker.
@@ -454,18 +453,19 @@ function hud(){
 }
 function section(title,extra){return '<div class="section-head"><h2>'+title+'</h2><span class="fine muted">'+(extra||'')+'</span></div>';}
 function frame(title,content,side){return '<section class="frame"><div class="frame-title">'+title+'<small>'+(side||'')+'</small></div>'+content+'</section>';}
-function monsterVisual(e){return SP.monster(e,e.spriteFxUntil>Date.now()?e.spriteFx:'idle')||icon('enemy',e.visual||CR.visualId(e.name));}
+function monsterVisual(e,still){return SP.monster(e,!still&&e.spriteFxUntil>Date.now()?e.spriteFx:'idle')||icon('enemy',e.visual||CR.visualId(e.name));}
 function activeTileView(t){
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
- var hero=r.heroTile===t.id?'<span class="hero-on-board">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
+ var clearAge=Date.now()-(r.clearAnimationStarted||0),opening=t.autoOpened!=null&&clearAge>=0&&clearAge<t.autoOpened*35+260;
+ var hero=r.heroTile===t.id?'<span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
  if(t.revealed&&t.kind==='start')return '<button class="tile tile-origin" data-action="move-hero" data-id="'+t.id+'" aria-label="Стартовая клетка">'+hero+'<span class="origin-dot">◆</span></button>';
  if(r.summon&&r.summon.hp>0&&r.summonTile===t.id)
-  return '<button class="tile tile-summon" data-action="inspect-summon" data-hold="summon" aria-label="Скелет: удерживайте для изучения">'+
-   icon('enemy','skeleton')+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
+  return '<button class="tile tile-summon" data-unit="summon" data-action="inspect-summon" data-hold="summon" aria-label="Скелет: удерживайте для изучения">'+
+   summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
-  return '<button class="tile tile-bare'+(t.autoOpened!=null?' tile-auto-open':'')+'"'+(t.autoOpened!=null?' style="animation-delay:'+t.autoOpened*35+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
+  return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
   var access=CR.exploreStatus(t,r.tiles);
   return access.ok?
@@ -473,42 +473,31 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?monsterVisual(t.foe):marker==='hunter-corpse'?'<span class="hb-corpse-art">☠'+HB.bookIcon()+'</span>':marker==='forest-well'?'<span class="hb-corpse-art">♜</span>':icon(marker);
+ var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?monsterVisual(t.foe):marker==='hunter-corpse'?'<span class="hb-corpse-art">☠'+HB.bookIcon()+'</span>':marker==='forest-well'?'<span class="hb-corpse-art">♜</span>':icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната'})[t.kind]||'Находка';
  var action=alive?'strike':t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(t.autoOpened!=null?' tile-auto-open':'')+
-  '"'+(t.autoOpened!=null?' style="animation-delay:'+t.autoOpened*35+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-hold="enemy"':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
+  '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
 }
 function inspectUnit(kind,id){
  if(!r)return;
- if(kind==='summon'){
-  var u=r.summon;if(!u||u.hp<=0)return;
-  dialog('<div class="emblem">☠</div><div class="subhead">СОЮЗНИК · ПРИЗЫВ</div><h2>'+esc(u.name)+'</h2>'+
-   '<div class="unit-profile">'+icon('enemy','skeleton')+'<div><b>♥ '+u.hp+' / '+u.maxHp+' HP</b><b>⚔ '+u.atk+' УРОН</b><b>⬡ '+(u.def||0)+' БРОНЯ</b></div></div>'+
-   '<div class="unit-skill"><strong>Костяной удар</strong><p>Самостоятельно атакует ближайшего обнаруженного врага каждый ход.</p></div>'+
-   '<div class="unit-skill"><strong>Прикрытие хозяина</strong><p>С вероятностью 72% принимает удар врага вместо героя.</p></div>'+
-   '<div class="unit-skill"><strong>Гробовой раскол · ◷ '+(u.specialCooldown||4)+'</strong><p>Каждый 4-й ход наносит усиленный урон цели.</p></div>'+
-   '<button class="btn wide space-top" data-action="close">Вернуться</button>');
-  return;
- }
- var t=tile(id),e=t&&t.foe;if(!e||e.hp<=0)return;
- var special=e.skill||EX.monster(e.id);
- dialog('<div class="emblem">⚔</div><div class="subhead">'+(e.boss?'ПОВЕЛИТЕЛЬ ЭТАЖА':'ОБИТАТЕЛЬ ПОДЗЕМЕЛЬЯ')+'</div>'+
-  '<h2>'+esc(e.name)+'</h2>'+
-  '<div class="unit-profile">'+monsterVisual(e)+'<div><b>♥ '+e.hp+' / '+e.maxHp+' HP</b><b>⚔ '+e.atk+' УРОН</b><b>⬡ '+e.def+' БРОНЯ</b></div></div>'+
-  (e.boss?'<p class="golden">Фаза '+(e.phase||1)+'/3'+(e.telegraph?' — готовится опасный удар!':'')+'</p>':'')+
-  '<div class="unit-skill"><strong>Обычная атака</strong><p>Атакует каждый свой ход. Урон уменьшается вашей бронёй.</p></div>'+
-  (!e.boss?'<p class="fine golden">Роль: '+esc(e.roleName||'Неизвестная')+' · угроза '+(r.actIndex+1)+'/10</p>':'')+
-  '<div class="unit-skill"><strong>'+esc(special.name)+' · ◷ '+(e.cooldown||special.every)+'</strong>'+
-  '<p>'+esc(e.abilityDescription||special.description)+' Особая атака: '+esc(e.abilityName||special.name)+'; следующая через '+(e.cooldown||special.every)+' ход(а) этого врага.</p></div>'+
-  '<button class="btn wide space-top" data-action="close">Продолжить бой</button>');
+ var summon=kind==='summon',parts=String(id).split(':'),t=summon?null:tile(parts[0]),e=summon?r.summon:kind==='chamber-enemy'&&t&&t.room?t.room.guards.find(function(g){return g.slot===Number(parts[1]);}):t&&t.foe;if(!e||e.hp<=0)return;
+ var special=e.skill||EX.monster(e.id||'skeleton');
+ var graphic=summon?summonVisual(true):monsterVisual(e,true);
+ var skills=summon?[
+  ['Костяной удар','Самостоятельно атакует ближайшего обнаруженного врага каждый ход.'],
+  ['Прикрытие хозяина','С вероятностью 72% принимает удар врага вместо героя.'],
+  ['Гробовой раскол · '+(e.specialCooldown||4)+' хода','Каждый 4-й ход наносит усиленный урон цели.']
+ ]:[['Обычная атака','Урон уменьшается вашей бронёй.'],[e.abilityName||special.name,(e.abilityDescription||special.description)+' Следующее применение через '+(e.cooldown||special.every)+' ход(а) врага.']];
+ dialog('<div class="panel-heading"><div><small class="sheet-kicker">'+(summon?'СОЮЗНИК · ПРИЗЫВ':e.boss?'ПОВЕЛИТЕЛЬ ЭТАЖА':'ОБИТАТЕЛЬ ПОДЗЕМЕЛЬЯ')+'</small><h2>'+esc(e.name)+'</h2></div><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div><article class="unit-dossier"><div class="dossier-top"><div class="dossier-portrait">'+graphic+'</div><div class="dossier-vitals"><div class="meter health"><i style="width:'+pct(e.hp,e.maxHp)+'%"></i><strong>'+e.hp+' / '+e.maxHp+'</strong></div><dl><dt>Атака</dt><dd>'+e.atk+'</dd><dt>Броня</dt><dd>'+(e.def||0)+'</dd><dt>'+(summon?'Особый удар':'Действие через')+'</dt><dd>'+(summon?e.specialCooldown||4:e.attackCooldown||e.cooldown||1)+'</dd></dl><small>'+esc(summon?'Перехватывает удары':e.roleName||'')+'</small></div></div>'+(e.boss?'<div class="dossier-warning">Фаза '+(e.phase||1)+'/3'+(e.telegraph?' · Готовится опасный удар':'')+'</div>':'')+'<div class="dossier-skills">'+skills.map(function(x){return '<section><h3>'+esc(x[0])+'</h3><p>'+esc(x[1])+'</p></section>';}).join('')+'</div></article><button class="btn wide space-top" data-action="close">'+(summon?'Вернуться':'Продолжить бой')+'</button>');
 }
+function summonVisual(still){var pose=!still&&r.summon&&r.summon.spriteFxUntil>Date.now()?r.summon.spriteFx:'idle';return '<img class="crypt-monster-sprite summon-art pose-'+pose+'" src="ui/summon-guard'+(pose==='attack'?'-attack':pose==='skill'?'-skill':'')+'.png"'+(pose!=='idle'?' style="animation-delay:'+Math.min(0,r.summon.spriteFxUntil-Date.now()-1000)+'ms"':'')+' alt="" draggable="false"/>';}
 
 function combatView(){
  var t=target();
@@ -525,87 +514,71 @@ function summonView(){
 }
 function skillText(){return r.class==='necromancer'?'☠ Призвать скелета':r.class==='executioner'?'⚔ Казнящий удар':'◉ Вскрыть тайники';}
 function skillHint(){return r.class==='necromancer'?'8 маны, 5 ходов восстановления':r.class==='executioner'?'4 маны, 4 хода восстановления':'6 маны, 5 ходов восстановления';}
-/* Always-visible compact potion strip: healing + two separate alchemy slots. */
+/* Three battle-dock consumables: healing plus two separate alchemy slots. */
 function dungeonPotionBar(){
  var slots=[0,1].map(function(index){
   var id=r.preparedPotions&&r.preparedPotions[index],p=SYS.byPotion[id];
   return '<button type="button" class="dungeon-potion-slot" data-action="use-prepared" data-id="'+index+'"'+(!p?' disabled':'')+
    ' title="'+esc(p?p.name+' — '+p.description:'Алхимический слот '+(index+1)+' пуст')+'" aria-label="'+esc(p?p.name:'Пустой слот '+(index+1))+'">'+
-   '<b class="potion-symbol">'+(p?esc(p.icon):'◇')+'</b><span class="potion-caption">'+esc(p?p.name:'Зелье '+(index+1))+'</span>'+
+   '<b class="potion-symbol">'+uiIcon(p?'potion':'drop')+'</b><span class="potion-caption">'+esc(p?p.name:'Зелье '+(index+1))+'</span>'+
    '<small>'+(p?'×1':'×0')+'</small></button>';
  }).join('');
  var disabled=!r.potions||r.hp>=stats().hp;
  return '<div class="dungeon-potion-bar" role="group" aria-label="Три зелья быстрого доступа">'+
   '<button type="button" class="dungeon-potion-slot potion-heal" data-action="potion"'+(disabled?' disabled':'')+
   ' title="Целебный эликсир — восстановить 45% HP" aria-label="Целебный эликсир, '+r.potions+' штук">'+
-  '<b class="potion-symbol">✚</b><span class="potion-caption">Лечение HP</span><small>×'+r.potions+'</small></button>'+
+  '<b class="potion-symbol">'+uiIcon('potion')+'</b><span class="potion-caption">Лечение HP</span><small>×'+r.potions+'</small></button>'+
   slots+'</div>';
 }
 
-function renderMaze(){
- var exposed=r.tiles.filter(function(t){return t.revealed;}).length;
- var focus=target(),foe=focus&&focus.foe,turns=r.turn-r.skillUsed,skill=SKILLS[r.class];
- var sceneTitle=maxFloorLabel();
- var footer=foe?
-   '<div class="dungeon-foe-icon">'+monsterVisual(foe)+'</div><div class="dungeon-foe-info">'+
-   '<strong>'+esc(foe.name)+(foe.boss?' · БОСС':foe.elite?' · ЭЛИТНЫЙ':'')+'</strong>'+
-   '<small>♥ '+foe.hp+'/'+foe.maxHp+' HP · ⚔ '+foe.atk+' ATK · ◷ '+(foe.ranged?foe.attackCooldown:(foe.cooldown||EX.monster(foe.visual||foe.id).every))+'</small>'+
-   '<small>'+esc((foe.skill||EX.monster(foe.visual||foe.id)).name)+(foe.elite&&foe.enraged?' · ЯРОСТЬ':'')+(foe.boss?' · фаза '+(foe.phase||1)+'/3'+(foe.telegraph?' · ⚠ готовится удар':''):'')+'</small></div>'+
-   '<button class="btn small" data-action="strike" data-id="'+focus.id+'">⚔ Удар</button>'
-   :'<div class="dungeon-quiet"><b>✥ '+(r.log[0]?esc(r.log[0]):'Здесь царит тишина')+'</b><small>Открывайте плитки и забирайте найденное повторным нажатием</small></div>';
- var summon=(r.summon&&r.summon.hp>0)?'<div class="dungeon-summon">☠ '+r.summon.name+' '+r.summon.hp+'/'+r.summon.maxHp+'</div>':'';
- return '<div class="dungeon-root">'+
- '<div class="dungeon-header"><div><span class="subhead">'+esc(DN.acts[r.actIndex||0].name)+' · '+(r.locationIndex+1)+'/3 · ЭТАЖ '+r.floor+' · '+sceneTitle+'</span>'+
- '<div class="dungeon-progress">Плит '+exposed+'/25 · Врагов '+hiddenEnemies().length+' · Ход '+r.turn+'</div><div class="fine muted">'+esc(currentRegion().story||'')+'</div></div>'+
- '<div class="hb-quick"><span class="dungeon-key '+(r.key?'found':'')+'" title="'+(r.key?'Ключ найден':'Ключ ещё не найден')+'">⚿</span>'+
- (r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-open" data-action="hunter-book" aria-label="Открыть охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<span class="hb-bang">!</span>':'')+'</button>':'')+'</div></div>'+
- dungeonPotionBar()+
- '<div class="dungeon-board"><div class="dungeon-border"><div class="maze">'+r.tiles.map(activeTileView).join('')+'</div></div></div>'+
- '<div class="dungeon-footer">'+
- '<div class="dungeon-encounter">'+footer+'</div>'+summon+
- (r.ghost&&r.ghost.hp>0?'<div class="dungeon-summon">☽ Призрачный страж '+r.ghost.hp+'/'+r.ghost.maxHp+' HP · атака каждые 3 хода</div>':'')+
- (r.guardCharges?'<div class="fine golden">⬡ Защитных зарядов: '+r.guardCharges+'</div>':'')+
-
- (r.portalReady?'<button class="btn gold wide" data-action="safe-portal">◈ Безопасный портал · вернуться на базу</button>':'')+
- '<div class="dungeon-buttons">'+
- '<button class="dungeon-action special" data-action="skill" '+(turns<skill.turns?'disabled':'')+'><span>'+skill.icon+'</span><small>'+skill.name+'</small></button>'+
- '<button class="dungeon-action" data-action="spell-modal"><span>✣</span><small>Магия</small></button>'+
-
- '<button class="dungeon-action" data-action="wait"><span>⧖</span><small>Пропустить</small></button>'+
- '<button class="dungeon-action" data-action="battle-log"><span>▤</span><small>Журнал</small></button></div></div></div>';
+/* Expedition HUD: the board stays visible while management opens in dialogs. */
+var uiPanel=null, selectedTitle=null;
+function uiIcon(name){return '<svg class="ui-icon" aria-hidden="true"><use href="#'+name+'"></use></svg>';}
+function effectList(){
+ var defs=[['shield','Щит','Поглощает входящий урон.','shield'],['resurrection','Возрождение','Предотвращает смертельный исход; каждый раз расходуется один заряд.','sun'],['guardCharges','Защитные заряды','Каждый заряд блокирует одно прямое попадание.','shield'],['setShieldRemaining','Щит комплекта','Временная защита от комплекта снаряжения.','shield'],['blessed','Благословение','Действует благословение алтаря.','sun'],['poisonTurns','Яд','Отравление наносит урон каждый ход.','drop'],['bleedTurns','Кровотечение','Потеря здоровья каждый ход.','drop'],['burnTurns','Горение','Огонь наносит урон каждый ход.','flame'],['silenceTurns','Молчание','Использование магии временно недоступно.','moon'],['rageTurns','Ярость','Временно усиливает боевые возможности.','sword'],['reflectionTurns','Отражение','Отражает часть входящего урона.','shield'],['barrierTurns','Барьер','Временная магическая защита.','shield'],['timeStopTurns','Остановка времени','Ходы противников остановлены.','hourglass'],['armorBreakTurns','Раскол брони','Броня временно ослаблена.','shield'],['regenTurns','Регенерация','Восстанавливает здоровье каждый ход.','sun'],['burnWardTurns','Защита от огня','Поглощает горение.','flame']];
+ return defs.filter(function(x){return r[x[0]]>0;});
 }
+function renderMaze(){
+ var artPair=[0,2,4,6,0,4,6,2,6,10][r.actIndex||0];
+ var room=activeRoom();
+ var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
+ var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+'" '+(ready<skill.turns||r.mp<skill.cost||(room&&r.class==='scout')?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small>'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
+ var focus=room?null:target(),foe=focus&&focus.foe;
+ var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+foe.atk+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
+ if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
+ return '<div class="dungeon-root theme-'+(r.actIndex||0)+'" data-location="'+((r.actIndex||0)*3+(r.locationIndex||0))+'" style="--floor-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-floor.svg);--cover-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-cover.svg);--floor-art:url(ui/atlas-'+String(artPair).padStart(2,'0')+'.png);--cover-art:url(ui/atlas-'+String(artPair+1).padStart(2,'0')+'.png)">'+
+ '<div class="expedition-top"><div class="dungeon-name"><small>АКТ '+((r.actIndex||0)+1)+' · '+(r.locationIndex+1)+'/3</small><h1>'+esc(room?'Заброшенное убежище':region.name)+'</h1></div><button class="floor-seal" data-action="battle-log" aria-label="Журнал этажа">'+r.floor+'<small>ЭТАЖ</small></button><div class="expedition-money"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('gem')+(r.diamonds||0)+'</span></div><button class="hud-menu" data-action="menu" aria-label="Меню">'+uiIcon('menu')+'</button></div>'+
+ '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip"><button data-action="skill-info" aria-label="Восстановление особого навыка">'+uiIcon('hourglass')+'<span>'+ready+'/'+skill.turns+'</span></button><button data-action="ui-panel" data-id="talents" aria-label="Очки исследования">'+uiIcon('talent')+'<span>'+r.ep+'</span></button>'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+'</div></div>'+
+ '<div class="dungeon-board'+(room?' cave-active':'')+'"><div class="dungeon-border'+(room?' cave-scene':'')+'"><div class="maze'+(room?' chamber-maze':'')+'">'+(room?renderChamberTiles(room):r.tiles.map(activeTileView).join(''))+'</div></div></div>'+
+ '<div class="encounter-slot">'+encounter+(!room&&r.portalReady?'<button class="portal-compact" data-action="safe-portal">Безопасный портал · на базу</button>':'')+'</div>'+
+ '<div class="battle-dock"><div class="dock-wing"><div class="quick-spells" aria-label="Классовые способности">'+quick+'</div><button class="dock-button" data-action="ui-panel" data-id="spells">'+uiIcon('book')+'<span>Свитки</span></button></div>'+
+ '<div class="dock-hero"><div class="hero-skill" role="img" aria-label="'+esc(C[r.class].name)+'" data-unit="hero">'+window.CryptArt.hero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</div><div class="hero-numbers"><span>'+uiIcon('sword')+st.atk+'</span><button data-action="ui-panel" data-id="talents">'+uiIcon('talent')+'</button><span>'+uiIcon('flame')+st.pow+'</span></div><div class="meter health"><i style="width:'+pct(r.hp,st.hp)+'%"></i><strong>'+r.hp+' / '+st.hp+'</strong></div><div class="meter mana"><i style="width:'+pct(r.mp,st.mp)+'%"></i><strong>'+r.mp+' / '+st.mp+'</strong></div></div>'+
+ '<div class="dock-wing dock-supplies"><div class="dock-tools"><span aria-label="Текущий ход">Ход '+r.turn+'</span><button data-action="wait" aria-label="Пропустить ход">'+uiIcon('hourglass')+'<small>Ждать</small></button><button data-action="battle-log" aria-label="Журнал похода">'+uiIcon('journal')+'<small>Журнал</small></button></div>'+dungeonPotionBar()+'<button class="dock-button" data-action="ui-panel" data-id="bag">'+uiIcon('bag')+'<span>Рюкзак</span></button></div></div></div>';
+}
+function titleIcon(t){return {atk:'sword',def:'shield',crit:'crossbow',hp:'heart',mp:'drop',pow:'staff',shieldFloor:'shield',bossDamage:'crown',damageFlat:'sword',thorns:'leaf',killHeal:'heart',reflect:'sun',critDamage:'bolt',spellDamage:'staff',summonBase:'skull',manaDiscount:'moon',burnDamage:'flame',chainDamage:'bolt',summonAtk:'skull',manaFloor:'drop',darkCrit:'moon',earthDistance:'mountain',fireProc:'flame',epFloor:'compass',trapReduce:'boot',gold:'coin',chamberHint:'eye',chestGold:'key',soulDrop:'skull',corpseSoul:'skull',chamberSecret:'eye',relicMemory:'journal',soulPower:'skull',corpseBonus:'bag',deepSecret:'compass',relicBlessing:'sun',eliteSoul:'crown',corpseMemory:'journal',utilityPower:'staff',timeBonus:'hourglass',lightEcho:'sun',healPower:'heart',iceArmor:'shield'}[t.effect]||'talent';}
+function schoolIcon(school){return {fire:'flame',water:'drop',earth:'mountain',air:'wind',light:'sun',dark:'moon'}[school]||'scroll';}
+function panelDialog(panel){
+ if(!r)return;var titles={bag:'Снаряжение и рюкзак',hero:'Снаряжение и рюкзак',spells:'Книга заклинаний',talents:'Пути титулов'};
+ var body=panel==='bag'||panel==='hero'?inventoryPanel():panel==='spells'?renderSpells():renderTalents();
+ dialog('<div class="panel-heading"><h2>'+titles[panel]+'</h2><button class="panel-close" data-action="close" aria-label="Закрыть окно">×</button></div><div class="panel-body panel-'+panel+'">'+body+'</div>');uiPanel=panel;
+}
+function inventoryPanel(){
+ var st=stats(),items=r.items.slice().sort(function(a,b){return b.rarity-a.rarity;});
+ var empty='';for(var i=items.length;i<Math.max(30,Math.ceil(items.length/5)*5);i++)empty+='<div class="inventory-empty" aria-hidden="true"></div>';
+ return '<div class="inventory-upper"><div class="paper-doll"><div class="doll-left">'+['helm','armor','bracer','boots'].map(gearSlotButton).join('')+'</div><div class="doll-center">'+window.CryptArt.hero(r.class)+'<b>'+C[r.class].name+'</b>'+gearSlotButton('weapon')+'</div><div class="doll-right">'+['ring','amulet','cloak','gloves'].map(gearSlotButton).join('')+'</div></div><dl class="inventory-stats">'+[['Здоровье',r.hp+'/'+st.hp],['Мана',r.mp+'/'+st.mp],['Атака',st.atk],['Магия',st.pow],['Броня',st.def],['Крит',st.crit+'%'],['Уклон',st.dodge+'%'],['Щит',r.shield+(r.setShieldRemaining||0)]].map(function(x){return '<dt>'+x[0]+'</dt><dd>'+x[1]+'</dd>';}).join('')+'</dl></div><div class="inventory-divider"><b>Рюкзак</b><span>'+r.items.length+'/30</span></div><div class="inventory-grid">'+itemGrid(items)+empty+'</div>'+
+ (HB.owned(s.meta)?'<div class="hb-inventory-access"><button class="hb-special-item" data-action="hunter-book">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Особый предмет · постоянный · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов</small></span><strong>Открыть</strong></button></div>':'')+
+ '<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы, души и записи</button>';
+}
+function gearArt(it,slot){return SP.gearIcon&&SP.gearIcon(it)||window.CryptArt.item(slot||(it&&it.slot)||'weapon',it?it.rarity:0);}
 function gearSlotButton(slot){
  var it=equippedItem(slot);
  return '<button class="gear-slot '+(it?'r'+it.rarity:'empty-slot')+'" data-action="inspect-slot" data-id="'+slot+'" aria-label="'+esc(SLOT[slot])+'">'+
-  window.CryptArt.item(slot,it?it.rarity:0)+
+  gearArt(it,slot)+
   '<span>'+SLOT[slot]+'</span>'+(it&&it.plus?'<i>+'+it.plus+'</i>':'')+'</button>';
 }
 function renderHero(){
- var c=C[r.class],st=stats();
- var left=['helm','armor','bracer','boots'];
- var right=['ring','amulet','cloak','gloves'];
- var statsHtml='<div class="statlist">'+
-  '<span>Здоровье</span><b>'+r.hp+' / '+st.hp+'</b><span>Мана</span><b>'+r.mp+' / '+st.mp+'</b>'+
-  '<span>Атака</span><b>'+st.atk+'</b><span>Броня</span><b>'+st.def+'</b>'+
-  '<span>Мощь магии</span><b>'+st.pow+'</b><span>Крит. шанс</span><b>'+st.crit+'%</b>'+
-  '<span>Уклонение</span><b>'+st.dodge+'%</b><span>Щит</span><b>'+(r.shield+(r.setShieldRemaining||0))+'</b></div>';
- return section('Экипировка',c.type)+
- frame('ГЕРОЙ И ПРЕДМЕТЫ','<div class="gear-layout">'+
-  '<div class="gear-slots gear-left">'+left.map(gearSlotButton).join('')+'</div>'+
-  '<div class="gear-center"><div class="gear-portrait">'+window.CryptArt.hero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</div>'+
-   '<div class="gear-hero-name">'+c.name+'</div><small>'+c.title+'</small><div class="gear-weapon-slot">'+gearSlotButton('weapon')+'</div></div>'+
-  '<div class="gear-slots gear-right">'+right.map(gearSlotButton).join('')+'</div></div>'+
-  '<p class="fine muted space-top">Нажмите ячейку экипировки, чтобы открыть сумку с подходящими предметами.</p>')+
- frame('ХАРАКТЕРИСТИКИ',statsHtml)+
- frame('АКТИВНЫЕ КОМПЛЕКТЫ',Object.entries(CR.counts(r.equip,r.items)).filter(function(e){return e[1]>0;}).map(function(e){
-  var set=CR.setDefinition(e[0]),desc=CR.descriptions(e[0]);
-  return '<div class="set-status"><strong>'+esc(set?set.name:e[0])+' · '+e[1]+'/'+(CR.setRules(e[0])?.slots.length||4)+'</strong>'+
-   desc.map(function(t,i){return '<small class="'+(e[1]>=CR.thresholds(e[0])[i]?'set-on':'')+'">'+t+'</small>';}).join('')+'</div>';
- }).join('')||'<p class="fine muted">Соберите хотя бы две части одного комплекта.</p>')+
- '<button class="btn gold wide space-top space-bottom" data-action="hero-stats" data-id="'+r.class+'">✥ Постоянное развитие '+C[r.class].name+'</button>'+frame('ОТРЯД И ПУТЬ','<div class="kpis"><div><b>'+r.floor+'</b><small>Этаж</small></div><div><b>'+r.kills+'</b><small>Убийств</small></div><div><b>'+r.secrets+'</b><small>Тайн</small></div></div>'+
- (r.summon?'<p class="fine golden space-top">☠ Ваш скелет: '+r.summon.hp+' HP, '+r.summon.atk+' ATK</p>':'')+
- '<button class="btn alt wide space-top" data-action="camp">Память предков</button>')+
- '<div class="btnrow"><button class="btn dark wide" data-action="abandon">Завершить забег</button></div>';
+ var sets=Object.entries(CR.counts(r.equip,r.items)).filter(function(e){return e[1]>0;}).map(function(e){var set=CR.setDefinition(e[0]),desc=CR.descriptions(e[0]);return '<div class="set-ledger"><h3>'+esc(set?set.name:e[0])+' <small>'+e[1]+'/'+(CR.setRules(e[0])?.slots.length||4)+'</small></h3>'+desc.map(function(t,i){return '<p class="'+(e[1]>=CR.thresholds(e[0])[i]?'set-on':'')+'">'+esc(t)+'</p>';}).join('')+'</div>';}).join('');
+ return '<div class="progression-sheet"><div class="sheet-kicker">ПУТЬ ГЕРОЯ</div><h2>'+esc(C[r.class].name)+'</h2><div class="frame-title">АКТИВНЫЕ КОМПЛЕКТЫ</div>'+(sets||'<p class="fine muted">Найдите две части одного комплекта.</p>')+'<div class="progress-kpis"><span><b>'+r.floor+'</b>Этаж</span><span><b>'+r.kills+'</b>Победы</span><span><b>'+r.secrets+'</b>Тайны</span></div><button class="btn gold wide" data-action="hero-stats" data-id="'+r.class+'">Постоянное развитие героя</button><button class="btn alt wide space-top" data-action="camp">Память предков</button><button class="btn dark wide space-top" data-action="abandon">Завершить забег</button></div>';
 }
 
 /* Weighted scroll discovery: rank VI is never sold and never a normal chest reward.
@@ -695,40 +668,19 @@ function shownSpells(){return SPELLS.filter(function(sp){return (r.spellSchool||
  .sort(function(a,b){return a.rank-b.rank;});}
 
 function renderSpells(){
- var cards=shownSpells().map(function(sp){
-  var error=spellValid(sp);
-  return '<button class="spell-card" data-action="cast" data-id="'+sp.id+'" '+(error?'disabled':'')+'>'+
-  '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4><p>'+sp.description+'</p><small>'+sp.rank+'★ · ◈ '+manaCost(sp)+' маны · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
- }).join('');
- return section('Книга магии','Мощь '+stats().pow)+
- frame('ПЕЧАТИ И СВИТКИ',spellTabs()+'<div class="spell-list">'+cards+'</div>')+
- frame('ПРАВИЛА МАГИИ','<p class="fine muted">Заклинания тратят ману, свиток и один ход. Враждебные заклинания направляются в первое найденное живое чудовище. Свитки можно найти в сундуках, купить у странствующего торговца и получить за загадки.</p>');
+ var mode=r.spellPage||'rank',rank=r.spellRank||0;
+ var list=shownSpells().filter(function(sp){return mode==='special'?sp.rank===6:rank===0||sp.rank===rank;});
+ return '<div class="spellbook"><aside class="element-tabs">'+[{id:'all',name:'Все',icon:'scroll'}].concat(SYS.schools.map(function(x){return {id:x.id,name:x.name,icon:schoolIcon(x.id)};})).map(function(x){return '<button class="'+((r.spellSchool||'all')===x.id?'active':'')+'" data-action="spell-school" data-id="'+x.id+'" aria-label="'+esc(x.name)+'">'+uiIcon(x.icon)+'<span>'+esc(x.name)+'</span></button>';}).join('')+'</aside><div class="book-page"><div class="book-title">'+esc((SYS.schools.find(function(x){return x.id===r.spellSchool;})||{name:'Все школы'}).name)+'<small>Мана '+r.mp+'/'+stats().mp+'</small></div><div class="book-spells">'+list.map(function(sp){var error=spellValid(sp);return '<button class="book-spell '+(r.scrolls[sp.id]?'owned':'')+'" data-action="spell-detail" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<strong>'+esc(sp.name)+'</strong><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · ×'+(r.scrolls[sp.id]||0)+'</small><span class="spell-availability">'+esc(error||'Можно применить')+'</span></button>';}).join('')+'</div></div><div class="book-bottom"><button data-action="spell-page" data-id="rank" class="'+(mode==='rank'?'active':'')+'">По рангам</button><button data-action="spell-page" data-id="special" class="'+(mode==='special'?'active':'')+'">Особые · VI</button></div>'+(mode==='rank'?'<div class="rank-tabs">'+[0,1,2,3,4,5].map(function(n){return '<button data-action="spell-rank" data-id="'+n+'" class="'+(rank===n?'active':'')+'">'+(n?n+'★':'Все')+'</button>';}).join('')+'</div>':'')+'</div>';
 }
 function renderTalents(){
- var names=['БИТВА','МАГИЯ','ПРИКЛЮЧЕНИЕ'],icons=['⚔','✣','✥'],tree=clamp(r.treeView||0,0,2);
- var treeButtons=names.map(function(n,i){return '<button class="tree-tab '+(tree===i?'current':'')+'" data-action="tree" data-id="'+i+'">'+icons[i]+' '+n+'</button>';}).join('');
- var tiers=['ПОСВЯЩЕНИЕ','ВЫБОР ПУТИ','СПЕЦИАЛИЗАЦИЯ','ВЕЛИКИЙ ТИТУЛ','ВЕНЕЦ ПУТИ'];
- var progress=0;
- var ranks=tiers.map(function(tier,i){
-  var nodes=talentsByTree(tree).filter(function(t){return t.rank===i;});
-  return '<div class="tree-tier">'+
-   '<div class="tree-tier-label"><span>СТУПЕНЬ '+(i+1)+' · '+tier+'</span></div>'+
-   '<div class="tree-nodes tier-'+i+'">'+nodes.map(function(t){
-    var current=lvl(t.id),cost=levelCost(t),ok=talentUnlocked(t),can=current<3&&r.ep>=cost&&ok;
-    if(current>0)progress++;
-    return '<button class="title-node '+(current?'learned ':'')+(!ok?'locked ':'')+
-      (current===3?'maxed':'')+'" data-action="talent" data-id="'+t.id+'" '+(can?'':'disabled')+'>'+
-      '<span class="title-glyph">'+t.icon+'</span><strong>'+t.name+'</strong>'+
-      '<small>'+t.desc+'</small><em>'+(current===3?'МАКС · 3/3':current+'/3 · '+cost+' ✧')+'</em>'+
-      (!ok?'<span class="need-title">'+(talentPathConflict(t)?'Путь закрыт':'Нужен: '+esc((TALENTS.find(function(p){return p.id===t.parent;})||{}).name||'?'))+'</span>':'')+'</button>';
-   }).join('')+'</div></div>';
- }).join('');
- return section('Пути титулов','✧ '+r.ep)+
- '<div class="tree-choice">'+treeButtons+'</div>'+
- '<div class="title-tree-info"><div><strong>'+names[tree]+'</strong><small>5 ступеней · '+talentsByTree(tree).length+' званий · 3 улучшения каждого</small></div>'+
-  '<span>'+progress+'/'+talentsByTree(tree).length+'</span></div>'+
- '<p class="fine muted space-bottom">Титулы универсальные. Для '+C[r.class].name+' основная ветка '+names[r.class==='necromancer'?1:r.class==='executioner'?0:2]+': её развитие дешевле остальных.</p>'+ '<div class="title-tree">'+ranks+'</div>'+
- '<p class="fine muted center">Развивайте один из доступных путей, затем выбирайте ответвления. На каждой развилке можно выбрать только один путь.</p>';
+ var tree=clamp(r.treeView||0,0,2),nodes=talentsByTree(tree),positions={};
+ var rows={};nodes.forEach(function(t){(rows[t.rank]||(rows[t.rank]=[])).push(t);});
+ Object.keys(rows).forEach(function(rank){rows[rank].forEach(function(t,i){positions[t.id]={x:50+Number(rank)*142,y:45+(i+.5)*420/rows[rank].length};});});
+ var selected=nodes.find(function(t){return t.id===selectedTitle;})||nodes.find(function(t){return lvl(t.id)>0;})||nodes[0];
+ var lines=nodes.filter(function(t){return t.parent&&positions[t.parent];}).map(function(t){var a=positions[t.parent],b=positions[t.id];return '<path class="'+(lvl(t.id)?'learned':'')+'" d="M '+a.x+' '+a.y+' H '+(a.x+68)+' V '+b.y+' H '+b.x+'"/>';}).join('');
+ var graph=nodes.map(function(t){var pos=positions[t.id];return '<button class="talent-dot '+(lvl(t.id)?'learned ':'')+(!talentUnlocked(t)?'locked ':'')+(selected.id===t.id?'selected':'')+'" style="left:'+pos.x+'px;top:'+pos.y+'px" data-action="title-detail" data-id="'+t.id+'"><span>'+uiIcon(titleIcon(t))+'</span><b>'+esc(t.name)+'</b><small>'+lvl(t.id)+'/3</small></button>';}).join('');
+ var reason=talentPathConflict(selected)?'Выбрано другое ответвление':!talentUnlocked(selected)?'Сначала изучите предыдущее звание':lvl(selected.id)>=3?'Звание полностью изучено':r.ep<levelCost(selected)?'Недостаточно очков исследования':'Выбор ответвления сохранится до конца экспедиции';
+ return '<div class="talent-tabs">'+['Воин','Маг','Авантюрист'].map(function(n,i){return '<button data-action="tree" data-id="'+i+'" class="'+(tree===i?'active':'')+'">'+uiIcon(['sword','flame','talent'][i])+n+'</button>';}).join('')+'</div><div class="talent-scroll"><div class="talent-canvas"><svg class="talent-lines" viewBox="0 0 690 510">'+lines+'</svg>'+graph+'</div></div><div class="talent-inspector"><div><h3>'+esc(selected.name)+'</h3><p>'+esc(selected.desc)+'</p><small>'+reason+'</small></div><button class="btn gold" data-action="talent" data-id="'+selected.id+'" '+(lvl(selected.id)>=3||r.ep<levelCost(selected)||!talentUnlocked(selected)?'disabled':'')+'>'+(lvl(selected.id)>=3?'3/3':levelCost(selected)+' ✧')+'</button></div><div class="talent-balance">Очки исследования <b>'+r.ep+'</b><span>Проведите по дереву →</span></div>';
 }
 
 function statName(k){return {atk:'Атака',def:'Броня',hp:'Здоровье',mp:'Мана',pow:'Магия',crit:'Крит %'}[k];}
@@ -752,38 +704,28 @@ function gearComparison(slot,selectedId){
   CR.descriptions(candidate.setId).map(function(line,i){return '<small class="'+((setCount[candidate.setId]||0)>=CR.thresholds(candidate.setId)[i]?'set-on':'')+'">'+esc(line)+'</small>';}).join('')+'</div>':
   '<div class="compact-set-help fine muted">'+(candidate&&candidate.uniqueEffect?'Уникальный предмет 6★: '+esc(candidate.trait):'Самостоятельная экипировка')+'</div>';
  var list=available.map(function(it){return '<button class="item r'+it.rarity+(candidate&&candidate.id===it.id?' selected':'')+
-  '" data-action="modal-select" data-id="'+it.id+'">'+window.CryptArt.item(it.slot,it.rarity)+
+  '" data-action="modal-select" data-id="'+it.id+'">'+gearArt(it)+
   '<span>'+esc(it.name)+'</span></button>';}).join('');
  var cost=candidate?upgradeCost(candidate):0;
- dialog('<div class="subhead">ЭКИПИРОВКА · '+esc(SLOT[slot])+'</div><h2>Компактное сравнение</h2>'+
- '<div class="gear-two-columns gear-compact-head"><div>'+window.CryptArt.item(slot,worn?worn.rarity:0)+
- '<small>Надето</small><b>'+esc(worn?worn.name:'Пусто')+'</b></div><div>'+window.CryptArt.item(slot,candidate?candidate.rarity:0)+
- '<small>Выбрано</small><b>'+esc(candidate?candidate.name:'Нет предмета')+'</b></div></div>'+
+ dialog('<div class="panel-heading"><div><small class="sheet-kicker">ЭКИПИРОВКА · '+esc(SLOT[slot])+'</small><h2>Сравнение вещей</h2></div><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div><div class="comparison-sheet">'+
+ '<div class="gear-two-columns gear-compact-head"><div>'+gearArt(worn,slot)+
+ '<small class="comparison-caption">Надето</small><b>'+esc(worn?worn.name:'Пусто')+'</b></div><div>'+gearArt(candidate,slot)+
+ '<small class="comparison-caption">Выбрано</small><b>'+esc(candidate?candidate.name:'Нет предмета')+'</b></div></div>'+
  '<div class="gear-compact-stats">'+rows+'</div>'+setInfo+
  '<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Надеть</button>'+
  '<button class="btn alt small" data-action="modal-upgrade" '+(candidate&&r.gold>=cost&&candidate.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
  '<button class="btn dark small" data-action="modal-scrap" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Разобрать</button></div>'+
  '<div class="frame-title">Подходящие предметы · '+available.length+'</div><div class="gear-picker">'+(list||'<p>В этом слоте пусто.</p>')+'</div>'+
- '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
+ '</div><button class="btn alt wide space-top" data-action="ui-panel" data-id="bag">В рюкзак</button>');
 }
 
-function magicDialog(){
- var spellGrid=shownSpells().map(function(sp){
-  var disabled=spellValid(sp);
-  return '<button class="spell-card" data-action="cast-modal" data-id="'+sp.id+'" '+(disabled?'disabled':'')+'>'+
-    '<span class="spell-icon">'+sp.icon+'</span><h4>'+sp.name+'</h4>'+
-    '<p>'+sp.description+'</p><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · свитков '+(r.scrolls[sp.id]||0)+'</small></button>';
- }).join('');
- dialog('<div class="subhead">КНИГА МАГИИ · НЕ ПОКИДАЯ ЭТАЖ</div><h2>ЗАКЛИНАНИЯ</h2>'+
-  '<p class="fine muted">Использование заклинания расходует один ход. 6★ — редчайшие изменяющие этаж чары.</p>'+spellTabs()+'<div class="spell-list scroll-spells">'+spellGrid+'</div>'+
-  '<button class="btn alt wide space-top" data-action="close">Назад к лабиринту</button>');
-}
+function magicDialog(){panelDialog('spells');}
 
 function itemGrid(items){
  return items.map(function(i){
-  return '<button class="item r'+i.rarity+(r.bagSelected===i.id?' selected':'')+'" data-action="item-select" data-id="'+i.id+'">'+
+  return '<button class="item r'+i.rarity+(r.bagSelected===i.id?' selected':'')+'" data-action="item-select" data-id="'+i.id+'" aria-label="'+esc(i.name)+'" title="'+esc(i.name)+'">'+
    (equipped(i.id)?'<span class="equipped-tag">НАДЕТО</span>':'')+
-    window.CryptArt.item(i.slot,i.rarity)+
+    gearArt(i)+
   '<span>'+esc(i.name)+(i.plus?' +'+i.plus:'')+'</span></button>';
  }).join('');
 }
@@ -793,51 +735,12 @@ function compareStat(it,other,key){
  '<span>'+(other?a:'—')+'</span><b>'+v+'</b><em class="'+(d>0?'up':d<0?'down':'even')+'">'+(d>0?'+':'')+d+'</em></div>';
 }
 function renderBag(){
- var categories=['all'].concat(Object.keys(SLOT)),filter=r.bagFilter||'all';
- var filtered=r.items.filter(function(i){return filter==='all'||i.slot===filter;})
-  .slice().sort(function(a,b){return Number(equipped(b.id))-Number(equipped(a.id))||b.rarity-a.rarity||b.floor-a.floor;});
- var selected=item(r.bagSelected);
- if(selected&&filter!=='all'&&selected.slot!==filter)selected=null;
- if(!selected&&filtered.length){selected=filtered[0];r.bagSelected=selected.id;}
- var quick=categories.map(function(key){return '<button data-action="bag-filter" data-id="'+key+'" class="bag-filter '+(filter===key?'active':'')+'">'+(key==='all'?'ВСЕ':SLOT[key])+'</button>';}).join('');
- var comparison='';
- if(selected){
-  var current=equippedItem(selected.slot);
-  comparison='<div class="compare-layout"><div class="compare-visual">'+window.CryptArt.item(selected.slot,selected.rarity)+'</div>'+
-   '<div class="compare-text"><h3 class="c'+selected.rarity+'">'+esc(selected.name)+(selected.plus?' +'+selected.plus:'')+'</h3>'+
-   '<div class="fine muted">'+RARITY[selected.rarity]+' · '+SLOT[selected.slot]+
-   (equipped(selected.id)?' · НАДЕТО':'')+'</div></div></div>'+
-   '<div class="compare-head"><span>ПАРАМЕТР</span><span>НАДЕТО</span><span>НОВОЕ</span><span>РАЗНИЦА</span></div>'+
-   ['atk','def','hp','mp','pow','crit'].filter(function(k){return (selected[k]||0)!==(current&&current[k]||0);}).map(function(k){return compareStat(selected,current,k);}).join('')+
-   '<div class="btnrow space-top"><button class="btn" data-action="equip" data-id="'+selected.id+'" '+(equipped(selected.id)?'disabled':'')+'>Надеть</button>'+
-   '<button class="btn alt" data-action="upgrade" data-id="'+selected.id+'" '+(r.gold<upgradeCost(selected)||selected.plus>=9?'disabled':'')+'>Заточить '+upgradeCost(selected)+' ◈</button>'+
-   '<button class="btn dark" data-action="scrap" data-id="'+selected.id+'" '+(equipped(selected.id)?'disabled':'')+'>Разобрать</button></div>';
- }
-  var quests=(r.questItems||[]).map(function(q){return '<div class="reward-entry">✥ '+esc(q)+'</div>';}).join('');
- var souls=(r.soulBag||[]).map(function(sp){return '<div class="row space-bottom"><b>'+esc(sp.name)+'</b>'+
- '<button class="btn small" data-action="consume-soul" data-id="'+sp.id+'">Использовать · 1 ход</button></div>';}).join('');
- var notes=(r.journalNotes||[]).slice(-8).map(function(x){return '<div class="reward-entry">'+esc(x)+'</div>';}).join('');
- return section('Инвентарь',r.items.length+'/30')+
- '<div class="bag-filter-scroll">'+quick+'</div>'+
- frame('СНАРЯЖЕНИЕ ДЛЯ ВЫБОРА',filtered.length?'<div class="grid4">'+itemGrid(filtered)+'</div>':'<div class="empty">Предметов в этом слоте пока нет.</div>')+
- frame('СРАВНЕНИЕ СНАРЯЖЕНИЯ',comparison||'<div class="empty">Выберите предмет в сумке.</div>')+
- frame('ПОДГОТОВЛЕННЫЕ ЗЕЛЬЯ','<div class="prepared-potions">'+[0,1].map(function(i){
- var p=SYS.byPotion[r.preparedPotions&&r.preparedPotions[i]];
- return '<button class="btn small" data-action="use-prepared" data-id="'+i+'"'+(p?'':' disabled')+'>'+esc(p?p.name:'Пустой слот '+(i+1))+'</button>';
- }).join('')+'</div>')+
- frame('ПРИПАСЫ','<div class="kpis"><div><b>'+r.potions+'</b><small>Эликсиров</small></div>'+
- '<div><b>'+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</b><small>Свитков</small></div>'+
- '<div><b>'+r.gold+'</b><small>Монет</small></div></div>'+
- '<button class="btn alt wide space-top" data-action="potion" '+(r.potions?'':'disabled')+'>Выпить эликсир (+45% HP)</button>')+
- frame('ДОБЫЧА ЭКСПЕДИЦИИ',Object.keys(r.materials||{}).some(function(k){return r.materials[k]>0;})?
-    '<div class="crypt-material-grid">'+Object.entries(r.materials).filter(function(e){return e[1]>0;}).sort(function(a,b){return a[0].localeCompare(b[0],'ru');}).map(function(e){return '<span class="crypt-material-chip">'+SP.materialIcon(e[0])+'<i>'+esc(e[0])+'</i><b>×'+e[1]+'</b></span>';}).join('')+'</div>':
-    '<p class="fine muted">Материалы появятся после сбора трофеев с клеток.</p>')+
-  frame('ОСОБЫЕ ПРЕДМЕТЫ',HB.owned(s.meta)?'<div class="hb-special-item">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Постоянный предмет · Пограничные земли · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов изучено</small></span><button class="btn small" data-action="hunter-book">Открыть</button></div>':'<p class="fine muted">Особые предметы ещё не найдены.</p>')+
- frame('КВЕСТОВЫЕ ПРЕДМЕТЫ',quests||'<p class="fine muted">Печати локаций ещё не найдены.</p>')+
- frame('СОБРАННЫЕ ДУШИ',souls||'<p class="fine muted">Пока нет душ.</p>')+
- frame('НАЙДЕННЫЕ ЗАПИСКИ',notes||'<p class="fine muted">Пока нет записей.</p>');
+ var materials=Object.entries(r.materials||{}).filter(function(x){return x[1]>0;});
+ var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>'],['СОБРАННЫЕ ДУШИ',(r.soulBag||[]).map(function(x){return '<div class="supply-soul"><span>'+esc(x.name)+'</span><button class="btn small" data-action="consume-soul" data-id="'+x.id+'">Применить</button></div>';}).join('')||'<p>Души пока не найдены.</p>'],['Записи и находки',(r.questItems||[]).concat(r.journalNotes||[]).map(function(x){return '<p>'+esc(x)+'</p>';}).join('')||'<p>Записей пока нет.</p>']];
+ return '<div class="supply-ledger"><div class="supply-totals"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('scroll')+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</span><span>'+uiIcon('potion')+r.potions+'</span></div>'+sections.map(function(x){return '<section><h3>'+x[0]+'</h3>'+x[1]+'</section>';}).join('')+'</div>';
 }
 function renderMenu(){
+ if(!r)return '<h2>Пограничный привал</h2><button class="btn gold wide space-top" data-action="choose">В поход</button><button class="btn alt wide space-top" data-action="camp">Герои и развитие</button><button class="btn alt wide space-top" data-action="chronicles">Хроники и реликвии</button><button class="btn dark wide space-top" data-action="close">Вернуться в деревню</button>';
  return '<div class="emblem">✥</div><div class="subhead">ПРИВАЛ МЕЖДУ ТЕНЯМИ</div><h2>ЭКСПЕДИЦИЯ</h2>'+
  '<p>Игра работает без интернета. Автосохранение остаётся на этом устройстве.</p>'+
  '<button class="btn wide space-top" data-action="close">Продолжить спуск</button>'+
@@ -1088,52 +991,55 @@ function equipCosmetic(id){
  s.meta.fairyCosmetic=id;save();draw();diamondShop();
 }
 
+function storedGearDialog(){
+ var exp=s.meta.activeExpedition;if(!exp)return;
+ var items=exp.items.filter(function(it){return !Object.values(exp.equip).includes(it.id);});
+ dialog('<div class="panel-heading"><h2>Запас экспедиции</h2><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div><p>Ненадетые вещи можно разобрать перед продолжением. Надетое снаряжение сохраняется.</p>'+items.map(function(it){return '<div class="row space-bottom"><span>'+esc(it.name)+'</span><button class="btn small" data-action="scrap-stored-item" data-id="'+it.id+'">Разобрать</button></div>';}).join('')+(items.length?'':'<p class="muted">Ненадетых вещей нет.</p>'));
+}
 function renderBase(){
  var exp=s.meta.activeExpedition;
- var acts=DN.acts.map(function(a,i){
-  var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0;
-  var current=exp&&exp.actIndex===i,profile=BAL.actProfile(i);
-  return '<div class="meta-upgrade"><div><strong>'+(done?'✓ ':'')+(i+1)+'. '+esc(a.name)+'</strong>'+
-   '<small>Опасность '+(i+1)+'/10 · '+esc(profile.threat)+' · враги: ♥ '+profile.normalHp+' / ⚔ '+profile.normalAtk+'</small>'+'<small>'+a.locations.map(function(l){return esc(l.name);}).join(' · ')+'</small><small>'+esc(a.story||'')+'</small></div>'+
-   '<button class="btn small" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+
-   (current?'Продолжить':unlocked?'Войти':'Закрыто')+'</button></div>';
- }).join('');
- var salvage=exp?exp.items.filter(function(i){return !Object.values(exp.equip).includes(i.id);}).slice(0,24).map(function(i){
-  return '<div class="row space-bottom"><span>'+esc(i.name)+'</span><button class="btn small" data-action="scrap-stored-item" data-id="'+i.id+'">Разобрать</button></div>';
- }).join(''):'';
- var pending=exp?frame('ОТДЫХ МЕЖДУ ЛОКАЦИЯМИ','<p><b>'+esc(DN.acts[exp.actIndex].name)+'</b> · следующая локация '+(exp.locationIndex+1)+'/3 — '+esc(DN.location(exp.actIndex,exp.locationIndex).name)+'</p>'+
- '<p>Сохранены временные вещи, таланты, золото и свитки. Найденные ресурсы уже на складе.</p>'+
- '<button class="btn gold wide" data-action="resume-expedition">Продолжить после отдыха</button>'+
- (salvage?'<div class="frame-title space-top">Разобрать ненужные вещи</div>'+salvage:'')+
- '<button class="btn dark wide space-top" data-action="discard-expedition">Завершить текущую экспедицию</button>'):'';
- return section('Деревня и экспедиции','10 подземелий · 30 локаций')+
- '<div class="scene">'+window.CryptArt.room(0,1)+'<div class="banner-label">Место отдыха между походами.</div></div>'+
- pending+frame('ПОДЗЕМЕЛЬЯ',acts)+
- frame('ПОСТОЯННЫЕ НАКОПЛЕНИЯ','<div class="kpis"><div><b>'+(s.meta.diamonds||0)+'</b><small>Алмазы</small></div>'+
- '<div><b>'+(s.meta.rainbowDiamonds||0)+'</b><small>Радужные</small></div>'+
- '<div><b>'+materialCount()+'</b><small>Материалы</small></div></div>'+
- '<button class="btn gold wide space-top" data-action="quest-board">Совет деревни · общие задания</button><button class="btn alt wide space-top" data-action="bestiary">Бестиарий и изображения монстров</button><button class="btn alt wide space-top" data-action="town">Деревня и склад</button><button class="btn alt wide space-top" data-action="diamond-shop">Алмазная лавка</button><button class="btn alt wide space-top" data-action="alchemy">Алхимик · 2 зелья</button><button class="btn alt wide space-top" data-action="dungeon-achievements">Достижения 30 локаций</button>')+
- '<button class="btn alt wide space-top" data-action="fairy-toggle">'+(s.meta.fairyMuted?'Включить комментарии светлячка':'Скрыть комментарии светлячка')+'</button>'+frame('ХРОНИКИ', '<div class="kpis"><div><b>'+s.meta.runs+'</b><small>Экспедиций</small></div><div><b>'+s.meta.best+'</b><small>Рекордный этаж</small></div>'+
- '<div><b>'+s.meta.souls+'</b><small>Память</small></div></div><button class="btn alt wide space-top" data-action="camp">Улучшения героев</button>');
+ var pending=exp?'<div class="base-resume"><div><small>ЭКСПЕДИЦИЯ СОХРАНЕНА</small><b>'+esc(DN.acts[exp.actIndex].name)+'</b><span>Следующая локация '+(exp.locationIndex+1)+'/3</span></div><button class="btn gold" data-action="resume-expedition">Продолжить</button><button class="stored-gear-button" data-action="stored-gear" aria-label="Снаряжение сохранённой экспедиции">'+uiIcon('bag')+'</button></div>':'';
+ var services=[['quest-board','journal','Совет деревни','Задания и история'],['bestiary','shield','Бестиарий','Открытые существа'],['town','home','Поселение','Здания и склад'],['diamond-shop','gem','Лавка','Улучшения и облики'],['alchemy','potion','Алхимик','Подготовить зелья'],['dungeon-achievements','talent','Достижения','Награды путешествия']];
+ var acts=DN.acts.map(function(a,i){var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0,profile=BAL.actProfile(i);return '<details class="act-entry '+(unlocked?'unlocked':'')+'"><summary><span class="act-number">'+(i+1)+'</span><div><b>'+esc(a.name)+'</b><small>'+(done?'Пройдено · ':!unlocked?'Пока закрыто · ':'')+'Опасность '+(i+1)+'/10</small></div><span class="act-expand">+</span></summary><div class="act-details"><p>'+esc(a.story||'')+'</p><ol>'+a.locations.map(function(l){return '<li>'+esc(l.name)+'</li>';}).join('')+'</ol><small>'+esc(profile.threat)+' · ♥ '+profile.normalHp+' · ⚔ '+profile.normalAtk+'</small><button class="btn gold wide space-top" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+(exp&&exp.actIndex===i?'Продолжить экспедицию':'Выбрать подземелье')+'</button></div></details>';}).join('');
+ return '<div class="village-hub"><div class="village-scene"><div class="village-label"><small>МЕЖДУ ПОХОДАМИ</small><h2>Пограничный привал</h2><p>Последний огонь перед глубиной</p></div></div><div class="village-wealth"><span>'+uiIcon('gem')+(s.meta.diamonds||0)+'<small>Алмазы</small></span><span>'+uiIcon('sun')+(s.meta.rainbowDiamonds||0)+'<small>Радужные</small></span><span>'+uiIcon('bag')+materialCount()+'<small>Материалы</small></span><span>'+uiIcon('talent')+s.meta.souls+'<small>Память</small></span></div>'+pending+'<div class="village-services">'+services.map(function(x){return '<button data-action="'+x[0]+'">'+uiIcon(x[1])+'<span><b>'+x[2]+'</b><small>'+x[3]+'</small></span></button>';}).join('')+'</div><div class="hub-section"><h3>Пути в глубину</h3><span>10 актов · 30 локаций</span></div><div class="act-list">'+acts+'</div><div class="village-record"><span>Походов <b>'+s.meta.runs+'</b></span><span>Лучший этаж <b>'+s.meta.best+'</b></span><button data-action="fairy-toggle">'+(s.meta.fairyMuted?'Светлячок: выкл.':'Светлячок: вкл.')+'</button></div>'+(exp?'<button class="btn dark wide space-top" data-action="discard-expedition">Завершить сохранённую экспедицию</button>':'')+'</div>';
 }
-function draw(){
+function draw(visualOnly){
  if(!s)return;
- hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=renderBase();return;}
- $('content').classList.toggle('dungeon-mode',r.tab==='maze');
- $('content').innerHTML=r.tab==='maze'?renderMaze():r.tab==='hero'?renderHero():r.tab==='spells'?renderSpells():r.tab==='talents'?renderTalents():renderBag();
+ $('app').classList.toggle('in-expedition',!!r);
+ hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=renderBase();if(FD)FD.paint();return;}
+ r.tab='maze';$('content').classList.toggle('dungeon-mode',true);
+ $('content').innerHTML=renderMaze();
+ scheduleMazeFit();if(FD){FD.paint();FD.schedule();}
+ if(uiPanel&&!visualOnly)panelDialog(uiPanel);
 }
+var mazeResizeObserver=null;
+function fitMaze(){
+ if(document.documentElement)document.documentElement.style.setProperty('--viewport-height',window.innerHeight+'px');
+ var board=document.querySelector('.dungeon-board'),border=document.querySelector('.dungeon-border');
+ if(!board||!border||!board.getBoundingClientRect)return;
+ var box=board.getBoundingClientRect(),size=Math.max(0,Math.floor(Math.min(box.width,box.height)-4));
+ border.style.width=size+'px';border.style.height=size+'px';border.style.setProperty('--cave-rim',Math.max(10,Math.floor(size*.08))+'px');
+}
+function scheduleMazeFit(){
+ if(!window.requestAnimationFrame)return;
+ window.requestAnimationFrame(fitMaze);
+ if(mazeResizeObserver)mazeResizeObserver.disconnect();
+ if(window.ResizeObserver){mazeResizeObserver=new window.ResizeObserver(fitMaze);var board=document.querySelector('.dungeon-board');if(board)mazeResizeObserver.observe(board);}
+}
+window.addEventListener('resize',fitMaze);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',fitMaze);
 function toast(msg){
  var el=$('toast');el.textContent=msg;el.classList.add('shown');
  clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('shown');},2400);
 }
-function dialog(content){$('overlay').innerHTML='<div class="veil"><div class="dialog">'+content+'</div></div>';}
-function close(){$('overlay').innerHTML='';if(r)r.chamberActive=null;}
+function dialog(content){if(FD)FD.hide();uiPanel=null;var kind=/data-action="(?:puzzle-answer|story-choice|event-yes)"/.test(content)?' dialog-event':/reward-rows/.test(content)?' dialog-loot':'';$('overlay').innerHTML='<div class="veil"><div class="dialog'+kind+'" role="dialog" aria-modal="true">'+content+'</div></div>';}
+function close(){uiPanel=null;$('overlay').innerHTML='';}
 function choose(){
  var opts=Object.keys(C).map(function(k){
   var c=C[k];return '<button class="class-option" data-action="begin" data-id="'+k+'">'+window.CryptArt.hero(k)+
  '<span><strong>'+c.icon+' '+c.name+'</strong><small>'+c.description+'</small></span></button>';
  }).join('');
- dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ · 0.7.3</div><h2>ВЫБОР ПУТИ</h2>'+
+ dialog('<div class="emblem">✥</div><div class="subhead">ПЕПЕЛЬНЫЙ ЛАБИРИНТ</div><h2>ВЫБОР ПУТИ</h2>'+
  '<p>Выбранное подземелье: <b>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</b>. Опасность '+((s.meta.selectedAct||0)+1)+'/10 — '+esc(BAL.actProfile(s.meta.selectedAct||0).threat)+'. Начните первую локацию экспедиции.</p>'+opts+
  '<p class="fine muted">Скрытые клетки · Пошаговый бой · Магия · Призыв · Древа титулов</p>'+
  '<button class="btn dark wide" data-action="close">Закрыть</button>');
@@ -1276,6 +1182,7 @@ function consumeTurn(){
  if(r.barrierTurns>0)r.barrierTurns--;
  if(r.armorBreakTurns>0){r.armorBreakTurns--;if(!r.armorBreakTurns)r.armorBreakPower=0;}
  if(r.regenTurns>0){r.regenTurns--;r.hp=Math.min(stats().hp,r.hp+Math.max(1,Math.ceil(stats().hp*.05)));}
+ if(FD)FD.capture();
  if(r.burnWardTurns>0)r.burnWardTurns--;
  var frozen=!!(r.timeStopTurns>0);
  if(r.timeStopTurns>0)r.timeStopTurns--;
@@ -1284,6 +1191,7 @@ function consumeTurn(){
   var victim=alive[0],hit=Math.max(1,r.summon.atk-victim.foe.def-Math.max(0,victim.foe.guard||0));
   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);
   if(r.summon.specialCooldown===0){hit+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;log('Скелет применяет «Гробовой раскол».');}
+  if(FD)FD.actor(r.summon,r.summon.specialCooldown===4?'skill':'attack',r.summon.specialCooldown===4?'Гробовой раскол':'Костяной удар');
   victim.foe.hp-=hit;log('Скелет наносит '+hit+' урона: '+victim.foe.name+'.');
   if(victim.foe.hp<=0)kill(victim);
  }
@@ -1291,6 +1199,9 @@ function consumeTurn(){
   var roomTarget=livingRoomGuards()[0];
   if(roomTarget){
    var strikePower=Math.max(1,r.summon.atk-(roomTarget.def||0));
+   r.summon.specialCooldown=Math.max(0,(r.summon.specialCooldown||4)-1);var summonSpecial=r.summon.specialCooldown===0;
+   if(summonSpecial){strikePower+=Math.max(3,Math.floor(r.summon.atk*.45));r.summon.specialCooldown=4;}
+   if(FD)FD.actor(r.summon,summonSpecial?'skill':'attack',summonSpecial?'Гробовой раскол':'Костяной удар');
    roomTarget.hp=Math.max(0,roomTarget.hp-strikePower);
    var roomState=activeRoom().room;
    roomState.guardHp=roomState.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
@@ -1301,10 +1212,10 @@ function consumeTurn(){
   r.ghost.cooldown=Math.max(0,(r.ghost.cooldown||3)-1);
   if(r.ghost.cooldown===0){r.ghost.cooldown=3;var targetGhost=enemies()[0];
    if(activeRoom()){
-    var roomGuard=livingRoomGuards()[0];if(roomGuard){roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
+    var roomGuard=livingRoomGuards()[0];if(roomGuard){if(FD)FD.actor(r.ghost,'attack','Призрачный удар');roomGuard.hp=Math.max(0,roomGuard.hp-r.ghost.atk);
      var room=activeRoom().room;room.guardHp=room.guards.reduce(function(n,g){return n+g.hp;},0);
      log('Призрачный страж бьёт стража комнаты: '+r.ghost.atk+'.');}
-   }else if(targetGhost){targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
+   }else if(targetGhost){if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
  if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
@@ -1350,10 +1261,10 @@ function consumeTurn(){
   }
   var effectiveDefense=Math.max(0,stats().def-(r.armorBreakPower||0));
   var amount=Math.max(1,e.atk+rand(-2,2)-effectiveDefense-bonus('damageFlat')-Math.floor(r.blessed));
-   e.spriteFx=ready?'skill':'attack';e.spriteFxUntil=Date.now()+430;
   if(e.boss){
    amount=bossAttack(t,e,amount,ready);if(amount==null)return;
   }else if(ready){amount=monsterSpecial(e,amount,false);}
+  if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
    if(Math.random()*100<r.ghost.dodge){log('Призрак увернулся от удара '+e.name+'.');return;}
@@ -1387,6 +1298,7 @@ function consumeTurn(){
  return true;
 }
 function kill(t){
+ if(FD)FD.capture();
  var e=t.foe;if(!e||e.hp>0)return;
  e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep;
  if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');localAchievement('elite',1,'Опасная добыча');fairyRemark('elite');}
@@ -1421,7 +1333,7 @@ function kill(t){
  if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
  if(!r.floorCleared&&hiddenEnemies().length===0){
-  r.floorCleared=true;
+  r.floorCleared=true;r.clearAnimationStarted=Date.now();
   var opened=0;
   r.tiles.forEach(function(t){
    if(!t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'){
@@ -1433,8 +1345,8 @@ function kill(t){
  }
 }
 function strike(tid){
- if(r){r.fx='attack';r.fxUntil=Date.now()+420;}
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
+ setHeroPose('attack');
  if(t.foe.evadeCharges>0){
   t.foe.evadeCharges--;if(Math.random()<.45){
    log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
@@ -1457,9 +1369,8 @@ function strike(tid){
  if(t.foe.hp<=0)kill(t);
  finishAction();
 }
-function finishAction(){if(!r)return;consumeTurn();if(r){draw();save();
-  if(r.fx&&r.fxUntil>Date.now()){setTimeout(function(){if(r&&Date.now()>=r.fxUntil){r.fx=null;draw();}},460);}
- }}
+function finishAction(){if(!r)return;if(FD)FD.commit();consumeTurn();if(FD)FD.capture();if(r){draw();save();}}
+function setHeroPose(pose){if(!r)return;r.fx=pose;r.fxUntil=Date.now()+1000;r.poseToken=(r.poseToken||0)+1;}
 var SKILLS={
  necromancer:{name:'Призвать скелета',icon:'☠',cost:8,turns:5},
  executioner:{name:'Казнящий удар',icon:'⚔',cost:4,turns:4},
@@ -1473,7 +1384,10 @@ function useSkill(){
  var skill=SKILLS[r.class];
  if(r.turn-r.skillUsed<skill.turns){toast('Умение восстанавливается.');return;}
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
- var t=target(),st=stats(),damage=0;
+ var cave=activeRoom();if(cave&&r.class==='scout'){toast('Разведка применяется в основном лабиринте.');return;}
+ var caveGuards=cave?livingRoomGuards():null;
+ var t=cave?(caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):target(),st=stats(),damage=0;
+ function skillKill(target){if(target.roomGuard){target.foe.hp=Math.max(0,target.foe.hp);cave.room.guardHp=cave.room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);}else kill(target);}
  if(r.class==='necromancer'){
   var creature={name:'Костяной страж',def:2,specialCooldown:4,
    maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
@@ -1488,23 +1402,23 @@ function useSkill(){
   damage=Math.max(3,Math.floor(st.atk*2.1)-t.foe.def);
   t.foe.hp-=damage;r.shield+=Math.floor(st.def*1.8)+7;
   log('Казнь: '+damage+' урона и защитная стойка.');
-  if(t.foe.hp<=0)kill(t);
+  if(t.foe.hp<=0)skillKill(t);
  }else if(r.class==='guardian'){
   r.shield+=12+Math.floor(st.def*2.2);
   if(t){damage=Math.max(3,Math.floor(st.atk*1.65)-t.foe.def);t.foe.hp-=damage;
-   if(t.foe.hp<=0)kill(t);}
+   if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
  }else if(r.class==='sorceress'){
-  var targets=enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
+  var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
   targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
-   enemy.foe.hp-=val;if(enemy.foe.hp<=0)kill(enemy);});
+   enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
  }else if(r.class==='assassin'){
   if(!t){toast('Нужен открытый враг.');return;}
   damage=Math.max(3,Math.floor(st.atk*1.35)-t.foe.def);
   t.foe.hp-=damage;t.foe.poison=3;
   log('Ядовитый клинок: '+damage+' урона, яд на три хода.');
-  if(t.foe.hp<=0)kill(t);
+  if(t.foe.hp<=0)skillKill(t);
  }else{
   var count=0;
   for(var i=0;i<3;i++){var candidates=r.tiles.filter(function(tile){return CR.exploreStatus(tile,r.tiles).ok;});
@@ -1513,7 +1427,7 @@ function useSkill(){
   addGold(4+r.floor*2);
   log('Лучник разведывает '+count+' доступных клеток.');
  }
- r.mp-=skill.cost;r.skillUsed=r.turn;r.fx='skill';r.fxUntil=Date.now()+440;
+ r.mp-=skill.cost;r.skillUsed=r.turn;setHeroPose('skill');
  finishAction();
 }
 function potion(){
@@ -1618,9 +1532,9 @@ function advancedCast(sp){
 }
 
 function cast(id){
- if(r){r.fx='skill';r.fxUntil=Date.now()+420;}
  var sp=SPELLS.find(function(x){return x.id===id;});if(!sp)return;
  var error=spellValid(sp);if(error){toast(error);return;}
+ setHeroPose('skill');
  r.scrolls[id]--;r.mp-=manaCost(sp);
  if(sp.rank!==6&&sp.id!=='earthgate'){
   if(!Array.isArray(r.spellHistory))r.spellHistory=[];
@@ -1721,7 +1635,7 @@ function claimTile(t){
    var sp=SPELLS.find(function(x){return x.id===pending.scroll;});
    lines.push('<strong>✣ Свиток «'+esc(sp.name)+'»</strong>');labels.push('✣ '+sp.name+' ×1');}
   if(pending.gear){var loot=addItem(pending.gear.slot,pending.gear.rarity);
-   if(loot){lines.push('<div class="loot-gear">'+window.CryptArt.item(loot.slot,loot.rarity)+
+   if(loot){lines.push('<div class="loot-gear">'+gearArt(loot)+
      '<span><strong>'+esc(loot.name)+'</strong><small>'+RARITY[loot.rarity]+' · '+SLOT[loot.slot]+'</small></span></div>');
     labels.push('▣ '+loot.name+' ×1');}}
   if(pending.relic){
@@ -1739,7 +1653,7 @@ function claimTile(t){
   lines.push('<strong>◈ '+money+' монет</strong>');labels.push('◈ +'+money);
   if(Math.random()<.8){
    var i=addItem(pick(Object.keys(SLOT)),null);
-   if(i){lines.push('<div class="loot-gear">'+window.CryptArt.item(i.slot,i.rarity)+
+   if(i){lines.push('<div class="loot-gear">'+gearArt(i)+
     '<span><strong>'+esc(i.name)+'</strong><small>'+RARITY[i.rarity]+' · '+SLOT[i.slot]+'</small></span></div>');
     labels.push(i.name+' ×1');}
   }else{r.potions++;lines.push('<strong>✚ Эликсир ×1</strong>');labels.push('✚ Эликсир ×1');}
@@ -1903,6 +1817,7 @@ function newSideRoom(){
 }
 function openChamber(t){
  if(!t||t.kind!=='chamber'||!t.revealed||t.cleared)return;
+ close();
  var first=!t.entered;
  if(!t.room||!Array.isArray(t.room.guards)){
   var replaceRoom=newSideRoom();
@@ -1915,35 +1830,24 @@ function openChamber(t){
 }
 function showChamber(t){
  if(!r||!t||!t.room||t.kind!=='chamber')return;
- var room=t.room,secret=roomSecretAvailable(room);
- var board='';
+ r.chamberActive=t.id;draw();
+}
+function renderChamberTiles(t){
+ var room=t.room,known=roomSecretAvailable(room),html='';
  for(var k=0;k<9;k++){
-  var guard=room.guards.find(function(g){return g.slot===k;});
-  if(k===4){
-   board+='<div class="chamber-cell chamber-center">'+(room.guardHp>0?'▣':'◈')+'<span>Сокровище</span></div>';continue;
+  var g=room.guards.find(function(x){return x.slot===k&&x.hp>0;});
+  if(k===0){html+='<button class="tile cave-exit" data-action="chamber-exit" aria-label="Выйти в основной лабиринт">'+icon('chamber')+'<span class="cave-label">Выход</span></button>';continue;}
+  if(k===4){html+='<button class="tile cave-loot '+(room.rewardTaken?'taken':'')+'" data-action="chamber-reward" data-id="'+t.id+'" '+(room.guardHp>0||room.rewardTaken?'disabled':'')+' aria-label="'+(room.rewardTaken?'Сокровище собрано':room.guardHp>0?'Сокровище охраняется':'Забрать сокровище')+'">'+(room.rewardTaken?'':icon('chest'))+'<span class="cave-label">'+(room.rewardTaken?'Собрано':room.guardHp>0?'Под охраной':'Забрать')+'</span></button>';continue;}
+  if(k===7){html+='<div class="tile cave-player"><span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span></div>';continue;}
+  if(g){html+='<button class="tile tile-danger cave-enemy" data-action="chamber-fight" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span><span class="unit-corner unit-atk">⚔'+g.atk+'</span></button>';continue;}
+  if(k===6&&r.summon&&r.summon.hp>0){html+='<button class="tile tile-summon" data-unit="summon" data-action="inspect-summon" aria-label="Костяной страж">'+summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span></button>';continue;}
+  if(k===8&&(room.secret||known)&&!room.secretTaken){
+   var ready=known&&room.guardHp<=0&&room.rewardTaken;
+   html+='<button class="tile cave-secret '+(known?'secret-known':'secret-unknown')+'" data-action="chamber-secret" data-id="'+t.id+'" '+(ready?'':'disabled')+' aria-label="'+(known?'Секретная находка':'Для тайника нужен поиск секретов')+'">'+icon('secret')+'<span class="cave-label">'+(known?'Тайник':'Не изучено')+'</span></button>';continue;
   }
-  if(k===7){board+='<div class="chamber-cell chamber-player">'+window.CryptArt.miniHero(r.class,'idle')+'<span>Герой</span></div>';continue;}
-  if(guard&&guard.hp>0){
-   board+='<button class="chamber-cell chamber-enemy" data-action="chamber-fight" data-id="'+t.id+':'+k+'" aria-label="'+esc(guard.name)+'">'+
-    monsterVisual(guard)+'<span>♥ '+guard.hp+'/'+guard.maxHp+'</span></button>';continue;
-  }
-  if(k===8&&secret&&room.guardHp===0&&room.rewardTaken&&!room.secretTaken){
-   board+='<button class="chamber-cell chamber-hidden" data-action="chamber-secret" data-id="'+t.id+'" aria-label="Секретная ниша">✦<span>Тайник</span></button>';continue;
-  }
-  board+='<div class="chamber-cell chamber-stone">·</div>';
+  html+='<div class="tile tile-bare cave-stone" aria-hidden="true"></div>';
  }
- var html='<div class="subhead">ПОБОЧНАЯ КОМНАТА · '+esc(currentRegion().name)+'</div>'+
- '<h2>Заброшенное убежище</h2><p>Врагов: '+room.guards.filter(function(x){return x.hp>0;}).length+
- ' · Центральная награда охраняется, пока жив хотя бы один враг.</p>'+
- '<div class="chamber-board">'+board+'</div>'+
- (lvl('stealth')>0?(room.secret?'<p class="golden">Следопыт замечает необычную кладку у края комнаты.</p>':'<p class="fine muted">Следопыт не обнаружил скрытого прохода.</p>'):'');
- if(room.guardHp>0)html+='<button class="btn wide space-top" data-action="chamber-fight" data-id="'+t.id+'">⚔ Удар по ближайшему врагу · 1 ход</button>';
- else if(!room.rewardTaken)html+='<button class="btn wide space-top" data-action="chamber-reward" data-id="'+t.id+'">Забрать награду в центре · 1 ход</button>';
- else html+='<p class="golden">Центральная награда собрана.</p>';
- if(room.guardHp===0&&room.rewardTaken&&secret&&!room.secretTaken)
-  html+='<button class="btn gold wide space-top" data-action="chamber-secret" data-id="'+t.id+'">✦ Исследовать тайник у края · 1 ход</button>';
- html+='<button class="btn dark wide space-top" data-action="close">Выйти в основной лабиринт</button>';
- dialog(html);
+ return html;
 }
 function chamberEnemyPhase(frozen){
  if(!r||r.chamberActive==null)return;
@@ -1960,6 +1864,7 @@ function chamberEnemyPhase(frozen){
   g.cooldown=Math.max(0,(g.cooldown||3)-1);
   if(g.cooldown>0)return;
   g.cooldown=3;
+  if(FD)FD.actor(g,'skill',g.abilityName||g.skill.name);
   var damage=Math.max(1,g.atk+rand(-1,1)-Math.max(0,stats().def-(r.armorBreakPower||0)));
   damage=monsterSpecial(g,damage,room);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
@@ -1988,7 +1893,7 @@ function fightChamber(id){
  var slot=parts.length>1?Number(parts[1]):null;
  var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
  if(!g)return;
- r.chamberActive=t.id;r.fx='attack';r.fxUntil=Date.now()+420;
+ r.chamberActive=t.id;setHeroPose('attack');
  if(g.evadeCharges>0){g.evadeCharges--;
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
  var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
@@ -2006,18 +1911,18 @@ function chamberReward(id){
  if(Math.random()<.6)addItem(pick(Object.keys(SLOT)),1);
  log('Центральная награда: '+coins+' монет.');
  var secret=roomSecretAvailable(room);
- if(!secret){t.cleared=true;t.kind='empty';}
- finishAction();if(r&&secret)showChamber(t);else close();
+ if(!secret&&!room.secret)t.cleared=true;
+ finishAction();if(r)showChamber(t);
 }
 function chamberSecret(id){
  var t=tile(id);
  if(!r||!t||t.kind!=='chamber'||!t.room||t.room.guardHp>0||!t.room.rewardTaken||t.room.secretTaken||!roomSecretAvailable(t.room))return;
- t.room.secretTaken=true;t.cleared=true;t.kind='empty';r.secrets++;r.ep+=4;
+ t.room.secretTaken=true;t.cleared=true;r.secrets++;r.ep+=4;
  localAchievement('secret-room',2,'Тайна за стеной');
  if(lvl('phantom'))addItem('amulet',2);
  else r.scrolls.heal=(r.scrolls.heal||0)+1;
  log('В боковой стене найдена тайная ниша.');fairyRemark('secret');
- finishAction();close();
+ finishAction();if(r)showChamber(t);
 }
 function gainSecret(e){
  r.secrets++;r.ep+=bonus('secretEp');
@@ -2461,7 +2366,7 @@ function chronicles(){
  }).join('');
  var collection=EX.relics.map(function(x){
   var n=m.relics[x.id]||0;
-  return '<div class="meta-relic '+(n?'found':'')+'"><span>'+x.icon+'</span>'+
+  return '<div class="meta-relic '+(n?'found':'')+'"><span><img class="painted-relic" src="ui/relics/'+x.id+'.png" alt=""/></span>'+
     '<strong>'+x.name+'</strong><small>'+(n?'Собрано ×'+n+' · '+x.bonus:'Не обнаружено · '+x.desc)+'</small></div>';
  }).join('');
  var beasts=Object.keys(m.bestiary).filter(function(k){return m.bestiary[k]>0;}).sort().map(function(id){
@@ -2494,10 +2399,12 @@ function permanent(id){
  save();camp();draw();
 }
 function action(name,id){
+ if(FD){var label=name==='skill'&&r?SKILLS[r.class].name:['strike','chamber-fight'].includes(name)?'Удар':['cast','cast-modal'].includes(name)?(SPELLS.find(function(sp){return sp.id===id;})||{}).name:name==='potion'?'Лечение':name==='use-prepared'?'Зелье':null;FD.begin(label,name);}
  if(name!=='move-hero'&&name!=='close')heroMoveToken++;
- if(name==='close'){if(r){r.chamberActive=null;r.pendingStory=null;}close();return;}
+ if(name==='close'){if(r)r.pendingStory=null;close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
- if(name==='choose'){choose();return;}
+ if(name==='stored-gear'){storedGearDialog();return;}
+ if(name==='choose'){if(s.meta.activeExpedition&&!r)resumeExpedition();else choose();return;}
  if(name==='dungeon-achievements'){dungeonAchievements();return;}
   if(name==='bestiary'){bestiary();return;}
  if(name==='quest-board'){questBoard();return;}
@@ -2508,7 +2415,7 @@ function action(name,id){
  if(name==='select-act'){selectAct(id);return;}
  if(name==='resume-expedition'){resumeExpedition();return;}
  if(name==='safe-portal'){safePortal();return;}
- if(name==='scrap-stored-item'){scrapStoredItem(id);return;}
+ if(name==='scrap-stored-item'){scrapStoredItem(id);storedGearDialog();return;}
  if(name==='discard-expedition'){dialog('<h2>Завершить экспедицию?</h2><p>Всё временное снаряжение будет разобрано на металлолом, остальное временное содержимое сброшено.</p><button class="btn wide" data-action="confirm-discard-expedition">Подтвердить разбор</button><button class="btn alt wide" data-action="close">Отмена</button>');return;}
  if(name==='confirm-discard-expedition'){endStoredExpedition();return;}
  if(name==='confirm-switch-act'){var act=s.meta.pendingActChoice;endStoredExpedition();s.meta.selectedAct=act;choose();return;}
@@ -2532,6 +2439,18 @@ function action(name,id){
  if(name==='hero-rank'){rankHero(id);return;}
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
+ if(name==='ui-panel'){panelDialog(['bag','hero','spells','talents'].includes(id)?id:'bag');return;}
+ if(name==='gear-sets'){dialog('<div class="panel-heading"><h2>Комплекты и развитие</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div>'+renderHero());return;}
+ if(name==='bag-details'){dialog('<div class="panel-heading"><h2>Припасы и записи</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="Назад в рюкзак">←</button></div>'+renderBag());return;}
+ if(name==='effect-info'){var effect=effectList().find(function(x){return x[0]===id;});if(effect)dialog('<h2>'+effect[1]+'</h2><p>'+effect[2]+'</p><p>Осталось: '+r[id]+'</p><button class="btn wide" data-action="close">Понятно</button>');return;}
+ if(name==='ghost-info'){dialog('<h2>Призрачный страж</h2><p>Здоровье '+(r.ghost?r.ghost.hp:0)+'. Атакует раз в три хода и сопровождает героя до гибели.</p><button class="btn wide" data-action="close">Понятно</button>');return;}
+ if(name==='key-info'){toast('Ключ найден. Спуститесь по лестнице на следующий этаж.');return;}
+ if(name==='skill-info'){dialog('<h2>'+esc(SKILLS[r.class].name)+'</h2><p>'+esc(SKILLS[r.class].cost+' маны · '+SKILLS[r.class].turns+' ходов восстановления')+'</p><p>Восстановление: '+Math.min(SKILLS[r.class].turns,Math.max(0,r.turn-r.skillUsed))+'/'+SKILLS[r.class].turns+' ходов.</p><button class="btn wide" data-action="close">Вернуться</button>');return;}
+ if(name==='spell-page'){r.spellPage=id==='special'?'special':'rank';panelDialog('spells');save();return;}
+ if(name==='spell-rank'){r.spellRank=clamp(Number(id)||0,0,5);panelDialog('spells');save();return;}
+ if(name==='title-detail'){selectedTitle=id;panelDialog('talents');return;}
+ if(name==='spell-detail'){var detail=SPELLS.find(function(x){return x.id===id;});if(!detail)return;var err=spellValid(detail);dialog('<div class="panel-heading"><h2>Книга заклинаний</h2><button class="panel-close" data-action="ui-panel" data-id="spells" aria-label="Назад в книгу">←</button></div><article class="spell-detail-page"><div class="spell-detail-seal">'+uiIcon(schoolIcon(detail.school))+'</div><div class="sheet-kicker">'+esc((SYS.schools.find(function(x){return x.id===detail.school;})||{}).name||'')+' · '+detail.rank+'★</div><h2>'+esc(detail.name)+'</h2><p>'+esc(detail.description)+'</p><div class="spell-detail-cost"><span>'+manaCost(detail)+'<small>маны</small></span><span>'+(r.scrolls[id]||0)+'<small>свитков</small></span><span>1<small>ход</small></span></div><div class="spell-detail-note">'+esc(err||'Готово к применению')+'</div></article><button class="btn wide space-top" data-action="cast-modal" data-id="'+id+'" '+(err?'disabled':'')+'>Применить · 1 ход</button>');return;}
+ if(name==='pin-spell'){r.quickSpells=[id].concat((r.quickSpells||[]).filter(function(x){return x!==id;})).slice(0,3);save();draw();panelDialog('spells');toast('Заклинание добавлено в быстрый доступ');return;}
  if(name==='hunter-book'){hunterBookDialog();return;}
  if(name==='hunter-tab'){if(['beasts','trophies','bonuses'].indexOf(id)>=0){r.hunterBookTab=id;hunterBookDialog();}return;}
  if(name==='hunter-select'){if(HB.beasts.some(function(x){return x.id===id;})){r.hunterBookSelected=id;hunterBookDialog();}return;}
@@ -2540,6 +2459,8 @@ function action(name,id){
  if(name==='move-hero'){moveHeroTo(id);return;}
  if(name==='pickup'){claimTile(tile(id));return;}
  if(name==='consume-soul'){consumeSpiritSoul(id);return;}
+ if(name==='chamber-exit'){if(r)r.chamberActive=null;close();draw();save();return;}
+ if(name==='inspect-chamber-enemy'){inspectUnit('chamber-enemy',id);return;}
  if(name==='chamber-fight'){fightChamber(id);return;}
  if(name==='chamber-reward'){chamberReward(id);return;}
  if(name==='chamber-secret'){chamberSecret(id);return;}
@@ -2556,7 +2477,7 @@ function action(name,id){
  if(name==='cast'){cast(id);return;}
  if(name==='talent'){gainTalent(id);return;}
  if(name==='tree'){r.treeView=clamp(Number(id)||0,0,2);draw();save();return;}
- if(name==='spell-school'){r.spellSchool=SYS.schools.some(function(x){return x.id===id;})?id:'all';save();draw();if($('overlay').innerHTML)magicDialog();return;}
+ if(name==='spell-school'){r.spellSchool=SYS.schools.some(function(x){return x.id===id;})?id:'all';save();draw();if($('overlay').innerHTML)panelDialog('spells');return;}
  if(name==='bag-filter'){r.bagFilter=id||'all';r.bagSelected=null;draw();save();return;}
  if(name==='item-select'){var itm=item(id);if(itm)gearComparison(itm.slot,itm.id);return;}
  if(name==='inspect-slot'){if(SLOT[id])gearComparison(id,r.equip[id]);return;}
@@ -2586,7 +2507,7 @@ document.addEventListener('change',function(e){
 document.addEventListener('click',function(e){
  if(Date.now()<suppressClickUntil && e.target.closest('[data-hold]')){e.preventDefault();return;}
  var b=e.target.closest('[data-action],[data-tab]');if(!b)return;e.preventDefault();
- if(b.dataset.tab){if(r){r.tab=b.dataset.tab;$('content').scrollTop=0;draw();save();}return;}
+ if(b.dataset.tab){if(r)panelDialog(b.dataset.tab);return;}
  action(b.dataset.action,b.dataset.id);
 });
 var holdStart=null;
@@ -2617,6 +2538,7 @@ document.addEventListener('contextmenu',function(e){
 });
 window.Crypt={save:save,back:function(){
  if($('overlay').innerHTML){close();return;}
+ if(activeRoom()){r.chamberActive=null;draw();save();return;}
  if(r&&r.tab!=='maze'){r.tab='maze';draw();return;}
  toast('Лабиринт хранит ваши следы.');
  },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction}};
@@ -2624,7 +2546,7 @@ s=load();
 if(!s)fresh();r=s.run;
 if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();
-if(!r)choose();
+// The village is the entry screen. Hero selection opens from «В поход».
 window.addEventListener('pagehide',save);
 document.addEventListener('visibilitychange',function(){if(document.hidden)save();});
 setInterval(save,7000);
