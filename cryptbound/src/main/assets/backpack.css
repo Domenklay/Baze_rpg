@@ -1,0 +1,47 @@
+/* All non-material and non-scroll finds use the same five-column inventory grid.
+   Equipped items live only on the paper doll, and inventory itself has no cap. */
+#overlay .panel-bag .inventory-grid,
+#overlay .panel-hero .inventory-grid {
+ grid-template-columns:repeat(5,minmax(0,1fr));
+ max-height:44dvh;
+ min-height:155px;
+ overflow-y:auto;
+ align-content:start;
+}
+#overlay .inventory-grid .bag-extra-item {
+ position:relative;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ flex-direction:column;
+ padding:5px;
+}
+#overlay .inventory-grid .bag-extra-item > svg {
+ display:block;
+ max-width:78%;
+ max-height:75%;
+ width:38px;
+ height:38px;
+}
+#overlay .inventory-grid .bag-extra-item > .bag-item-image,
+#overlay .inventory-grid .bag-extra-item > .hb-book-icon {
+ display:block;
+ width:82%;
+ height:82%;
+ max-width:62px;
+ max-height:62px;
+ object-fit:contain;
+ image-rendering:auto;
+}
+#overlay .inventory-grid .bag-extra-item > .hb-book-icon {width:67%;height:75%;}
+#overlay .inventory-grid .bag-extra-item .bag-item-count {
+ display:block;
+ position:absolute;
+ bottom:3px;
+ right:5px;
+ color:#f0d3a2;
+ font:700 12px/1 Georgia,serif;
+ text-shadow:0 1px 3px #000,1px 1px #000;
+ pointer-events:none;
+}
+#overlay .inventory-grid .bag-extra-item > span {display:none;}
