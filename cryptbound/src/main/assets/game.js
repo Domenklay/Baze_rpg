@@ -715,7 +715,7 @@ function grantScroll(id,count,source){
   if(r.sixStarFound)return 0;
   r.sixStarFound=true;count=1;
  }
- r.scrolls[id]=(r.scrolls[id]||0)+count;return count;
+ count=TR.scrollCount(r,sp,count,source);r.scrolls[id]=(r.scrolls[id]||0)+count;return count;
 }
 
 function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
@@ -760,7 +760,7 @@ function castInSideRoom(sp,chosenTarget){
 }
 
 function spellValid(sp){
- if(r.silenceTurns>0)return 'Магия заглушена боссом';
+ if(r.silenceTurns>0)return 'Магия заглушена боссом';var allowed=TR.canCast(r,sp);if(allowed)return allowed;
  if(activeRoom()&&(sp.rank===6||['earthgate','reveal','earthquake'].includes(sp.kind)))return 'Для изменения этажей выйдите из побочной комнаты';
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
@@ -1291,6 +1291,7 @@ function monsterSpecial(e,damage,room){
 function consumeTurn(){
  if(!r)return false;
  r.turn++;
+ TR.onTurn(r,titleHelpers());
  if(r.blessed>0)r.blessed--;
  if(r.setShieldTurns>0){r.setShieldTurns--;if(!r.setShieldTurns)r.setShieldRemaining=0;}
  if(r.sunBurnTurns>0)r.sunBurnTurns--;
@@ -1402,7 +1403,7 @@ function consumeTurn(){
     if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,Math.ceil(amount)));if(!r.ghost.hp){r.ghost=null;log('Призрачный страж развеялся.');}}
     return;
    }
-   amount=incomingDamage(amount); // Player defense only applies to attacks targeting the hero.
+   amount=incomingDamage(amount,e); // Player defense only applies to attacks targeting the hero.
    if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -1478,6 +1479,7 @@ function kill(t){
    if(Math.random()<gearChance){drop.gear={slot:pick(Object.keys(SLOT)),rarity:rarityRoll()};}
    else if(Math.random()<(e.elite ? .30 : .20)){drop.scroll=rollSpell(e.elite?5:4).id;}
  }
+ if(!r.titleProcGuard){r.titleProcGuard=true;try{TR.onKill(r,e,drop,titleHelpers());}finally{r.titleProcGuard=false;}}
  t.drops=drop;
  if(drop.key)log('Ключник повержен! На полу лежит ключ от лестницы.');
  log('Победа: '+e.name+' · +'+e.ep+(e.boss?' (+4)':'')+' ✧. Награды остались на клетке.');
@@ -1505,7 +1507,7 @@ function counterBeforeHero(enemy,mainTile,room){
  if(ready)enemy.cooldown=interval+1;
  if(enemy.boss&&mainTile){raw=bossAttack(mainTile,enemy,raw,ready);if(raw==null)return true;}
  else if(ready)raw=monsterSpecial(enemy,raw,room||false);
- var damage=incomingDamage(raw);
+ var damage=incomingDamage(raw,enemy);
  if(FD)FD.actor(enemy,ready?'skill':'attack',ready?(enemy.abilityName||'Особый приём'):'Ответный удар');
  if(Math.random()*100<stats().dodge){log('Уклонение от '+enemy.name+'.');return true;}
  if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -1537,7 +1539,7 @@ function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
  if(!reachableEnemy(t)){toast('Нет прохода к врагу. Сначала исследуйте путь к нему.');return;}
  setHeroPose('attack');
- if(!counterBeforeHero(t.foe,t,null)||!r)return;
+ if(TR.beforeAttack(r)||TR.counterImmune(r)){t.foe.counteredAt=r.turn+1;t.foe.provoked=false;}else if(!counterBeforeHero(t.foe,t,null)||!r)return;
  if(t.foe.hp<=0){finishAction();return;}
   provoke(t.foe);
   if(t.foe.evadeCharges>0){
@@ -1550,6 +1552,7 @@ function strike(tid){
  t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
  if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
+ amount=TR.attack(r,t.foe,amount,titleHelpers());
  t.foe.hp-=amount;
  if(t.foe.hp>0&&Math.random()*100<hunterStat('poisonChance')){t.foe.poison=Math.max(t.foe.poison||0,2);log('Книга: отравление цели.');}
  var glove=equippedItem('gloves');
@@ -2261,7 +2264,7 @@ function chamberEnemyPhase(frozen){
     if(r.ghost&&r.ghost.hp>0){r.ghost.hp=Math.max(0,r.ghost.hp-Math.max(1,damage));if(!r.ghost.hp)r.ghost=null;}
     return;
    }
-   damage=incomingDamage(damage);
+   damage=incomingDamage(damage,g);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -2289,13 +2292,13 @@ function fightChamber(id){
  var g=(slot!=null?room.guards.find(function(x){return x.slot===slot&&x.hp>0;}):null)||room.guards.find(function(x){return x.hp>0;});
  if(!g)return;
  r.chamberActive=t.id;setHeroPose('attack');
- if(!counterBeforeHero(g,null,room)||!r)return;
+ if(TR.beforeAttack(r)||TR.counterImmune(r)){g.counteredAt=r.turn+1;g.provoked=false;}else if(!counterBeforeHero(g,null,room)||!r)return;
  if(g.hp<=0){room.guardHp=room.guards.reduce(function(n,x){return n+Math.max(0,x.hp);},0);finishAction();return;}
  provoke(g);
   if(g.evadeCharges>0){g.evadeCharges--;
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
  var dmg=Math.max(1,stats().atk+(r.rageTurns>0?Math.ceil(stats().atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
- g.guard=0;g.hp=Math.max(0,g.hp-dmg);
+ dmg=TR.attack(r,g,dmg,titleHelpers());g.guard=0;g.hp=Math.max(0,g.hp-dmg);
  room.guardHp=room.guards.reduce(function(sum,x){return sum+x.hp;},0);
  if(room.guardHp===0)log('Все стражи побочной комнаты побеждены.');
  else log('Удар по '+g.name+': '+dmg+' урона.');
