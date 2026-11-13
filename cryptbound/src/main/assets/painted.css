@@ -35,3 +35,17 @@ body,button,input,select,textarea{font-family:var(--ui-font)}#app,#overlay{font-
 .tile .stairs-locked{position:absolute;z-index:13;left:50%;top:48%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:2px;pointer-events:none;color:#f0a49c;background:#220f10df;border:1px solid #b6655a;border-radius:5px;padding:4px 6px;font:900 14px Georgia,serif;text-shadow:0 1px 2px #000}
 .tile .stairs-locked .ui-icon{width:18px;height:18px}
 .tile .tile-loot>.ui-icon,.tile-loot>.ui-icon{width:53%;height:53%;color:#c9a475;filter:drop-shadow(0 2px 3px #000)}
+
+/* Mixed backpack: gear remains in the paper doll, consumables are real bag items. */
+.backpack-supplies{margin-top:10px;padding:3px 1px}
+.backpack-section-title{margin:10px 2px 6px;color:#d5b688;font:700 12px Georgia,serif;border-bottom:1px solid #6f5338;padding-bottom:4px}
+.backpack-supply-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.backpack-consumable{border:6px solid transparent;border-image:var(--ui-neutral) 60 fill stretch;background:transparent;color:#e4d2b4;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:4px;text-align:left;padding:4px 5px;min-height:47px;font:12px Georgia,serif}
+.backpack-consumable>.ui-icon{width:22px;height:22px;color:#c9955e;grid-row:span 2}
+.backpack-consumable b{font-size:11px;font-weight:normal;min-width:0;overflow-wrap:anywhere}
+.backpack-consumable small{color:#cda873;font-size:10px}
+.backpack-consumable.junk>.ui-icon{color:#8f8b84}
+.backpack-consumable:disabled{opacity:.65}
+.backpack-forest>.forest-pocket-row{min-height:42px}
+.backpack-forest>.forest-pocket-row>.ui-icon{height:32px;width:32px;color:#c4a17e;flex:none}
+@media(max-width:355px){.backpack-supply-grid{gap:3px}.backpack-consumable{padding:3px;font-size:10px}}
