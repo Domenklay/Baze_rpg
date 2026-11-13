@@ -825,14 +825,14 @@ function castInSideRoom(sp,chosenTarget){
   if(g.hp>0&&sp.kind==='weakness')g.atk=Math.max(1,g.atk-Math.ceil(st.pow*.3));
  }
  if(sp.kind==='blessing'){
-  var bonusAtk=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)));
+  var bonusAtk=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)*TR.spellMultiplier(r,sp)));
   r.titleBlessAtk=Math.max(r.titleBlessAtk||0,bonusAtk);
   r.titleBlessTurns=Math.max(r.titleBlessTurns||0,5+TR.rank5(r,'mag_legendary','mp'));
  }
  if(['heal','healshield','lastlight'].includes(sp.kind))r.hp=Math.min(st.hp,r.hp+power);
  if(['shield','healshield','lastlight'].includes(sp.kind))r.shield+=sp.kind==='shield'?power:Math.ceil(power*.7);
  if(sp.kind==='lastlight')r.resurrection=(r.resurrection||0)+1;
- if(sp.kind==='timestop')r.timeStopTurns=Math.max(r.timeStopTurns||0,5);
+ if(sp.kind==='timestop')r.timeStopTurns=Math.max(r.timeStopTurns||0,5+TR.rank5(r,'mag_legendary','mp'));
  if(['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].includes(sp.kind)){
   targets.forEach(hit);
   if(['drain','drainall'].includes(sp.kind))r.hp=Math.min(st.hp,r.hp+Math.ceil(total*.45));
@@ -1821,7 +1821,7 @@ function advancedCast(sp,chosenTarget){
   return count;
  }
  if(key==='blessing'){
-  var base=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)));
+  var base=Math.max(1,Math.floor(st.atk*(sp.id==='electrostatic'?.3:.2)*TR.spellMultiplier(r,sp)));
   r.titleBlessAtk=Math.max(r.titleBlessAtk||0,base);
   r.titleBlessTurns=Math.max(r.titleBlessTurns||0,5+TR.rank5(r,'mag_legendary','mp'));
   if(sp.id==='electrostatic')r.shield+=Math.ceil(st.pow*.8);
@@ -1848,7 +1848,7 @@ function advancedCast(sp,chosenTarget){
   var t=chosenTarget!=null?tile(chosenTarget):target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
    if(key==='weakness'&&t.foe.hp>0)t.foe.guard=-Math.min(12,Math.floor(st.pow*.5));}
  }else if(key==='lastlight'){heal(magic);r.shield+=Math.floor(magic*.65);r.resurrection=(r.resurrection||0)+1;
- }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus'));
+ }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus')+TR.rank5(r,'mag_legendary','mp'));
  }else if(key==='sunfall'){
   foes.slice().forEach(function(t){
    if(t.foe.boss){/* Spell effects do not provoke retaliation. */t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
