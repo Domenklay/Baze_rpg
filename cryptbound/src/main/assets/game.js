@@ -1755,7 +1755,7 @@ function forestUse(id,chosenTarget){
 function forestWellDialog(id){
  var t=tile(id);if(!t||!t.revealed||t.cleared||t.kind!=='forest-well')return;
  var cost=15+5*(r.forestWellUses||0),hasCoin=(FE.ensure(r).items.forest_coin||0)>0;
- dialog('<div class="forest-event-dialog"><div class="sheet-kicker">НАХОДКА 02/50 · КОЛОДЕЦ</div><h2>Колодец желаний</h2>'+
+ dialog('<div class="forest-event-dialog"><div class="sheet-kicker">НАХОДКА 02/50 · КОЛОДЕЦ</div><h2>Лесной колодец желаний</h2>'+
   '<div class="forest-event-picture">'+FE.image('F01_018')+'</div>'+
   '<p>Из глубины тянет холодом. На каменном бортике выбиты два знака: обычные монеты и редкий дар леса.</p>'+
   '<button class="btn wide space-top" data-action="forest-well-offer" data-id="'+id+'" '+(r.gold<cost?'disabled':'')+'>Бросить '+cost+' золота · случайный параметр +1</button>'+
