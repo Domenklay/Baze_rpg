@@ -2481,22 +2481,42 @@ function puzzleAnswer(id){
  }
  close();finishAction();
 }
+function titleHelpers(){
+ return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,
+ targets:function(){return enemies();},reachable:reachableEnemy,kill:kill,
+ hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
+ flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
+  if(t.foe.hp<=0)return;var hit=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=hit;if(t.foe.hp<=0)kill(t);});},
+ cross:function(source,amount){
+  var origin=r.tiles.find(function(t){return t.foe===source;});if(!origin)return;
+  var row=Math.floor(origin.id/5),col=origin.id%5;
+  enemies().filter(function(t){return t.foe!==source&&(Math.floor(t.id/5)===row||t.id%5===col)&&reachableEnemy(t);}).slice().forEach(function(t){var damage=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=damage;if(t.foe.hp<=0)kill(t);});
+ }};
+}
 function gainTalent(id){
  var t=TALENTS.find(function(x){return x.id===id;});if(!t)return;
- var n=lvl(id),cost=levelCost(t);
- if(n>=3||r.ep<cost||!talentUnlocked(t))return;
- r.ep-=cost;r.talents[id]=n+1;
- if(t.effect==='hp')r.hp+=t.amount;
- if(t.effect==='mp')r.mp+=t.amount;
- if(t.effect==='summonBase'&&r.summon){r.summon.hp+=14;r.summon.maxHp+=14;r.summon.atk+=4;}
- if(t.effect==='summonHp'&&r.summon){r.summon.hp+=t.amount;r.summon.maxHp+=t.amount;}
- if(t.effect==='summonAtk'&&r.summon)r.summon.atk+=t.amount;
- if(t.id==='sage'&&!r.earthGateTitleGranted){
-  r.earthGateTitleGranted=true;r.scrolls.earthgate=(r.scrolls.earthgate||0)+1;
-  log('Планарный пророк получает дополнительные Врата Земли.');
- }
- log('Принят титул «'+t.name+'»: '+(n+1)+'/3.');
+ var price=levelCost(t);
+ if(lvl(id)>=t.max_level||r.ep<price||!talentUnlocked(t))return;
+ r.ep-=price;var n=TR.upgraded(r,t,titleHelpers());
+ log('Принято звание «'+t.name+'»: '+n+'/'+t.max_level+'.');
  toast('Развитие: '+t.name);draw();save();
+}
+function gainTitleMastery(id){
+ var x=String(id).split(':'),t=TALENTS.find(function(z){return z.id===x[0];});if(!t||!TR.masteryUpgrade(r,t,x[1],titleHelpers()))return;
+ toast('Улучшение звания: '+t.name);draw();save();
+}
+function titleToolDialog(){
+ var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
+ var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Тигель для свитков':'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
+ dialog('<h2>'+esc(title)+'</h2><p>'+esc(t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Работает со свитками магии.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.')+'</p><p>'+esc(counts)+'</p>'+
+ (t?'<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>':'')+
+ '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
+}
+function titleToolUse(){
+ var message=TR.useTool(r,titleHelpers());
+ if(!message)return;
+ if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых/.test(message)){toast(message);return;}
+ log(message);close();finishAction();
 }
 function equip(id){
  var i=item(id);if(!i)return;
