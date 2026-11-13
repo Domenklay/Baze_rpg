@@ -22,7 +22,7 @@ function materialIcon(name){
  var stem=materialStem(name);
  if(!stem){
   var concept=(window.CryptConceptMaterials||{})[name];
-  if(concept&&/^t\\d+_concept_[a-z0-9_]+$/.test(concept))
+  if(concept&&/^t[0-9]+_concept_[a-z0-9_]+$/.test(concept))
    return '<img class="crypt-resource-icon" src="imported/concepts/'+concept+'.svg" alt="" loading="lazy" draggable="false"/>';
   return '<span class="crypt-resource-fallback" aria-hidden="true">◆</span>';
  }
