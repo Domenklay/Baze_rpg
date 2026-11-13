@@ -318,6 +318,7 @@ function fairyRemark(kind){
 function startFloor(){
  heroMoveToken++;
  r.pendingSpell=null;
+ r.pendingSkill=null;
  r.pendingForestUse=null;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
@@ -348,7 +349,7 @@ function begin(hero){
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
-    potions:3,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
+    potions:3,lootBag:[],pendingSkill:null,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
@@ -428,6 +429,8 @@ function load(){
   if(v.run.ghost===undefined)v.run.ghost=null;
   if(v.run.resurrection==null)v.run.resurrection=0;
   if(v.run.burnTurns==null)v.run.burnTurns=0;
+   if(!Array.isArray(v.run.lootBag))v.run.lootBag=[];
+   v.run.pendingSkill=null;
   if(v.run.bleedTurns==null)v.run.bleedTurns=0;
   if(v.run.silenceTurns==null)v.run.silenceTurns=0;
   if(v.run.timeStopTurns==null)v.run.timeStopTurns=0;
@@ -515,7 +518,7 @@ function activeTileView(t){
  var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
- var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
+ var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown==null?EX.monster(t.foe.visual||t.foe.id).every:t.foe.cooldown)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   damageBadge(t.foe):'';
@@ -1291,6 +1294,9 @@ function consumeTurn(){
  alive.sort(function(a,b){return Number(!!b.foe.boss)-Number(!!a.foe.boss);}).forEach(function(t){
   var e=t.foe,special=e.skill||EX.monster(e.visual||e.id);
    var provoked=!!e.provoked;e.provoked=false;
+   var interval=Math.max(1,(special&&special.every)||3);
+   e.cooldown=Math.max(0,(e.cooldown==null?interval:e.cooldown)-1);
+   var alreadyCountered=e.counteredAt===r.turn;
    if(e.elite&&!e.enraged&&e.hp<=e.maxHp*.50){
    e.enraged=true;e.atk=Math.ceil(e.atk*1.20);
    e.cooldown=Math.min(e.cooldown||3,2);e.guard=Math.max(e.guard||0,1+Math.floor((r.actIndex||0)/3));
@@ -1318,11 +1324,9 @@ function consumeTurn(){
     if(shotClock===0){attacks=true;e.attackCooldown=2;}
     else e.attackCooldown=shotClock;
    }
-   if(!attacks)return;
-   var interval=Math.max(1,(special&&special.every)||3);
-   var remainingSpecial=e.cooldown==null?interval:e.cooldown;
-   var ready=remainingSpecial<=1;
-   e.cooldown=ready?interval:remainingSpecial-1;
+   if(!attacks||alreadyCountered)return;
+   var ready=e.cooldown===0;
+   if(ready)e.cooldown=interval;
    var amount=Math.max(1,e.atk);
    if(e.boss){
     amount=bossAttack(t,e,amount,ready);if(amount==null)return;
@@ -2049,7 +2053,7 @@ function renderChamberTiles(t){
   if(k===0){html+='<button class="tile cave-exit" data-action="chamber-exit" aria-label="Выйти в основной лабиринт">'+icon('chamber')+'<span class="cave-label">Выход</span></button>';continue;}
   if(k===4){html+='<button class="tile cave-loot '+(room.rewardTaken?'taken':'')+'" data-action="chamber-reward" data-id="'+t.id+'" '+(room.guardHp>0||room.rewardTaken?'disabled':'')+' aria-label="'+(room.rewardTaken?'Сокровище собрано':room.guardHp>0?'Сокровище охраняется':'Забрать сокровище')+'">'+(room.rewardTaken?'':icon('chest'))+'<span class="cave-label">'+(room.rewardTaken?'Собрано':room.guardHp>0?'Под охраной':'Забрать')+'</span></button>';continue;}
   if(k===7){html+='<div class="tile cave-player"><span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span></div>';continue;}
-  if(g){html+='<button class="tile tile-danger cave-enemy'+(r.pendingSpell?' spell-target-valid':'')+'" data-action="'+(r.pendingSpell?'cast-target':'chamber-fight')+'" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span>'+damageBadge(g)+'</button>';continue;}
+  if(g){html+='<button class="tile tile-danger cave-enemy'+(r.pendingSpell?' spell-target-valid':'')+'" data-action="'+(r.pendingSpell?'cast-target':'chamber-fight')+'" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown==null?3:g.cooldown)+'</span>'+damageBadge(g)+'</button>';continue;}
   if(k===6&&r.summon&&r.summon.hp>0){html+='<button class="tile tile-summon" data-unit="summon" data-action="inspect-summon" aria-label="Костяной страж">'+summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span></button>';continue;}
   if(k===8&&(room.secret||known)&&!room.secretTaken){
    var ready=known&&room.guardHp<=0&&room.rewardTaken;
@@ -2070,6 +2074,9 @@ function chamberEnemyPhase(frozen){
   if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
   if(g.hp<=0){g.provoked=false;return;}
    var provoked=!!g.provoked;g.provoked=false;
+   var interval=Math.max(1,(g.skill&&g.skill.every)||3);
+   g.cooldown=Math.max(0,(g.cooldown==null?interval:g.cooldown)-1);
+   var alreadyCountered=g.counteredAt===r.turn;
    if(g.stun>0){g.stun--;return;}
    if(frozen)return;
    var attacks=provoked;
@@ -2079,10 +2086,9 @@ function chamberEnemyPhase(frozen){
     if(clock===0){attacks=true;g.attackCooldown=2;}
     else g.attackCooldown=clock;
    }
-   if(!attacks)return;
-   var interval=Math.max(1,(g.skill&&g.skill.every)||3);
-   var remaining=g.cooldown==null?interval:g.cooldown;
-   var ready=remaining<=1;g.cooldown=ready?interval:remaining-1;
+   if(!attacks||alreadyCountered)return;
+   var ready=g.cooldown===0;
+   if(ready)g.cooldown=interval;
    if(FD)FD.actor(g,ready?'skill':'attack',ready?(g.abilityName||g.skill.name):'Удар');
    var damage=Math.max(1,g.atk);
    if(ready)damage=monsterSpecial(g,damage,room);
