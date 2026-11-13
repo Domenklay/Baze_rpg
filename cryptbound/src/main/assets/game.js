@@ -297,6 +297,7 @@ function fairyRemark(kind){
 
 function startFloor(){
  heroMoveToken++;
+ r.pendingSpell=null;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
  r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
@@ -475,12 +476,12 @@ function activeTileView(t){
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
  var graphic=marker==='key'||marker==='loot'?window.CryptArt.tileBase(marker):alive?monsterVisual(t.foe):marker==='hunter-corpse'?'<span class="hb-corpse-art">☠'+HB.bookIcon()+'</span>':marker==='forest-well'?'<span class="hb-corpse-art">♜</span>':icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Трофеи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната'})[t.kind]||'Находка';
- var action=alive?'strike':t.kind==='exit'?'descend':'pickup';
+ var action=alive?(r.pendingSpell?'cast-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown||EX.monster(t.foe.visual||t.foe.id).every)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
   '<span class="unit-corner unit-atk">⚔'+t.foe.atk+'</span>':'';
- return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
+ return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(alive&&r.pendingSpell?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
   ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+unit+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+'</button>';
@@ -546,6 +547,10 @@ function renderMaze(){
  var focus=room?null:target(),foe=focus&&focus.foe;
  var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+foe.atk+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
  if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
+ if(r.pendingSpell){
+  var spellTarget=SPELLS.find(function(x){return x.id===r.pendingSpell;});
+  encounter='<div class="spell-target-banner"><span><b>Выбор цели</b> · '+esc(spellTarget?spellTarget.name:'Заклинание')+'</span><button data-action="cancel-target">Отмена</button></div>';
+ }
  return '<div class="dungeon-root theme-'+(r.actIndex||0)+'" data-location="'+((r.actIndex||0)*3+(r.locationIndex||0))+'" style="--floor-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-floor.svg);--cover-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-cover.svg);--floor-art:url(ui/atlas-'+String(artPair).padStart(2,'0')+'.png);--cover-art:url(ui/atlas-'+String(artPair+1).padStart(2,'0')+'.png)">'+
  '<div class="expedition-top"><div class="dungeon-name"><small>АКТ '+((r.actIndex||0)+1)+' · '+(r.locationIndex+1)+'/3</small><h1>'+esc(room?'Заброшенное убежище':region.name)+'</h1></div><button class="floor-seal" data-action="battle-log" aria-label="Журнал этажа">'+r.floor+'<small>ЭТАЖ</small></button><div class="expedition-money"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('gem')+(r.diamonds||0)+'</span></div><button class="hud-menu" data-action="menu" aria-label="Меню">'+uiIcon('menu')+'</button></div>'+
  '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip"><button data-action="skill-info" aria-label="Восстановление особого навыка">'+uiIcon('hourglass')+'<span>'+ready+'/'+skill.turns+'</span></button><button data-action="ui-panel" data-id="talents" aria-label="Очки исследования">'+uiIcon('talent')+'<span>'+r.ep+'</span></button>'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+'</div></div>'+
@@ -569,7 +574,12 @@ function inventoryPanel(){
  (HB.owned(s.meta)?'<div class="hb-inventory-access"><button class="hb-special-item" data-action="hunter-book">'+HB.bookIcon()+'<span><b>Охотничий бестиарий</b><small>Особый предмет · постоянный · '+HB.beasts.filter(function(b){return HB.score(s.meta,b.id)>0;}).length+'/10 видов</small></span><strong>Открыть</strong></button></div>':'')+
  '<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы, души и записи</button>';
 }
-function gearArt(it,slot){return SP.gearIcon&&SP.gearIcon(it)||window.CryptArt.item(slot||(it&&it.slot)||'weapon',it?it.rarity:0);}
+function gearArt(it,slot){
+ var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
+ var type=slot||(it&&it.slot)||'weapon';
+ if(type==='boots'||type==='ring')return '<img class="painted-gear illustrated-gear illustrated-'+type+'" src="'+(type==='boots'?'gear_boots_hunter.svg':'gear_ring_hunter.svg')+'" alt="" draggable="false"/>';
+ return window.CryptArt.item(type,it?it.rarity:0);
+}
 function gearSlotButton(slot){
  var it=equippedItem(slot);
  return '<button class="gear-slot '+(it?'r'+it.rarity:'empty-slot')+'" data-action="inspect-slot" data-id="'+slot+'" aria-label="'+esc(SLOT[slot])+'">'+
@@ -618,12 +628,14 @@ function activeRoom(){
 function livingRoomGuards(){
  var t=activeRoom();return t?t.room.guards.filter(function(g){return g.hp>0;}):[];
 }
-function castInSideRoom(sp){
+function castInSideRoom(sp,chosenTarget){
  var t=activeRoom();if(!t)return false;
  var guards=livingRoomGuards(),st=stats(),power=spellPower(sp,st);
  var affected=0,total=0;
+ var preferred=chosenTarget!=null?guards.find(function(g){return g.slot===Number(String(chosenTarget).split(':')[1]);}):guards[0];
  var targets=['aoe','burnall','freezeall','drainall'].includes(sp.kind)?guards:
-  ['chain'].includes(sp.kind)?guards.slice(0,Math.max(1,3+bonus('chainTargets'))):guards.slice(0,1);
+  ['chain'].includes(sp.kind)?[preferred].concat(guards.filter(function(g){return g!==preferred;})).filter(Boolean).slice(0,Math.max(1,3+bonus('chainTargets'))):
+  preferred?[preferred]:[];
  function hit(g){
   var damage=Math.max(1,Math.ceil(power-(g.def||0)));
   g.hp=Math.max(0,g.hp-damage);total+=damage;affected++;
@@ -1449,7 +1461,7 @@ function spellPower(sp,st){
  return amount;
 }
 
-function advancedCast(sp){
+function advancedCast(sp,chosenTarget){
  var st=stats(),magic=spellPower(sp,st);
  var foes=enemies(),key=sp.kind;
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
@@ -1482,7 +1494,7 @@ function advancedCast(sp){
   if(key==='earthquake')log('Землетрясение открыло '+revealConnected(3)+' соседних клеток.');
  }else if(key==='healshield'){heal(magic);r.shield+=Math.ceil(magic*.7*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.poisonTurns=0;
  }else if(key==='holy'||key==='weakness'){
-  var t=target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
+  var t=chosenTarget!=null?tile(chosenTarget):target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
    if(key==='weakness'&&t.foe.hp>0)t.foe.guard=-Math.min(12,Math.floor(st.pow*.5));}
  }else if(key==='lastlight'){heal(magic);r.shield+=Math.floor(magic*.65);r.resurrection=(r.resurrection||0)+1;
  }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus'));
@@ -1531,18 +1543,29 @@ function advancedCast(sp){
  finishAction();return true;
 }
 
-function cast(id){
+function spellNeedsTarget(sp){return !!sp&&['attack','burn','stun','drain','holy','weakness','chain'].indexOf(sp.kind)>=0;}
+function cast(id,chosenTarget){
  var sp=SPELLS.find(function(x){return x.id===id;});if(!sp)return;
  var error=spellValid(sp);if(error){toast(error);return;}
+ if(spellNeedsTarget(sp)){
+  if(chosenTarget==null){
+   r.pendingSpell=id;close();draw();save();toast('Выберите цель для «'+sp.name+'» на поле.');return;
+  }
+  var room=activeRoom(),parts=String(chosenTarget).split(':'),valid=room?
+   Number(parts[0])===room.id&&livingRoomGuards().some(function(g){return g.slot===Number(parts[1]);}):
+   parts.length===1&&!!tile(parts[0])&&tile(parts[0]).revealed&&!!tile(parts[0]).foe&&tile(parts[0]).foe.hp>0;
+  if(!valid){toast('Выберите живого обнаруженного противника.');return;}
+ }
+ r.pendingSpell=null;
  setHeroPose('skill');
  r.scrolls[id]--;r.mp-=manaCost(sp);
  if(sp.rank!==6&&sp.id!=='earthgate'){
   if(!Array.isArray(r.spellHistory))r.spellHistory=[];
   r.spellHistory.push(id);r.spellHistory=r.spellHistory.slice(-40);
  }
- if(activeRoom()){castInSideRoom(sp);return;}
- if(advancedCast(sp))return;
- var tar=target(),st=stats();
+ if(activeRoom()){castInSideRoom(sp,chosenTarget);return;}
+ if(advancedCast(sp,chosenTarget))return;
+ var tar=chosenTarget!=null?tile(chosenTarget):target(),st=stats();
  var magic=spellPower(sp,st);
  if(sp.kind==='heal'){magic=Math.ceil(magic*(1+bonus('healPower')*.01));r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
  else if(sp.kind==='shield'){magic=Math.ceil(magic*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.shield+=magic;log('Магическая защита: '+magic+' щита.');}
@@ -1555,7 +1578,8 @@ function cast(id){
   }
   log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
-  var victims=enemies().slice(0,3+bonus('chainTargets'));
+  var first=chosenTarget!=null?tile(chosenTarget):target();
+   var victims=[first].concat(enemies().filter(function(t){return t!==first;})).filter(Boolean).slice(0,3+bonus('chainTargets'));
   victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
    t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
@@ -1839,7 +1863,7 @@ function renderChamberTiles(t){
   if(k===0){html+='<button class="tile cave-exit" data-action="chamber-exit" aria-label="Выйти в основной лабиринт">'+icon('chamber')+'<span class="cave-label">Выход</span></button>';continue;}
   if(k===4){html+='<button class="tile cave-loot '+(room.rewardTaken?'taken':'')+'" data-action="chamber-reward" data-id="'+t.id+'" '+(room.guardHp>0||room.rewardTaken?'disabled':'')+' aria-label="'+(room.rewardTaken?'Сокровище собрано':room.guardHp>0?'Сокровище охраняется':'Забрать сокровище')+'">'+(room.rewardTaken?'':icon('chest'))+'<span class="cave-label">'+(room.rewardTaken?'Собрано':room.guardHp>0?'Под охраной':'Забрать')+'</span></button>';continue;}
   if(k===7){html+='<div class="tile cave-player"><span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span></div>';continue;}
-  if(g){html+='<button class="tile tile-danger cave-enemy" data-action="chamber-fight" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span><span class="unit-corner unit-atk">⚔'+g.atk+'</span></button>';continue;}
+  if(g){html+='<button class="tile tile-danger cave-enemy'+(r.pendingSpell?' spell-target-valid':'')+'" data-action="'+(r.pendingSpell?'cast-target':'chamber-fight')+'" data-id="'+t.id+':'+k+'" data-unit="guard:'+t.id+':'+k+'" data-hold="chamber-enemy" aria-label="'+esc(g.name)+'">'+monsterVisual(g)+'<span class="unit-corner unit-hp">♥'+g.hp+'</span><span class="unit-corner unit-cd">◷'+(g.cooldown||3)+'</span><span class="unit-corner unit-atk">⚔'+g.atk+'</span></button>';continue;}
   if(k===6&&r.summon&&r.summon.hp>0){html+='<button class="tile tile-summon" data-unit="summon" data-action="inspect-summon" aria-label="Костяной страж">'+summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span></button>';continue;}
   if(k===8&&(room.secret||known)&&!room.secretTaken){
    var ready=known&&room.guardHp<=0&&room.rewardTaken;
@@ -2439,6 +2463,9 @@ function action(name,id){
  if(name==='hero-rank'){rankHero(id);return;}
  if(name==='hero-stats'){heroProgressDialog(id);return;}
  if(!r)return;
+ if(name==='cancel-target'){r.pendingSpell=null;draw();save();return;}
+ if(name==='cast-target'){if(r.pendingSpell)cast(r.pendingSpell,id);return;}
+ if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
  if(name==='ui-panel'){panelDialog(['bag','hero','spells','talents'].includes(id)?id:'bag');return;}
  if(name==='gear-sets'){dialog('<div class="panel-heading"><h2>Комплекты и развитие</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div>'+renderHero());return;}
  if(name==='bag-details'){dialog('<div class="panel-heading"><h2>Припасы и записи</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="Назад в рюкзак">←</button></div>'+renderBag());return;}
