@@ -325,6 +325,7 @@ function startFloor(){
  r.pendingSpell=null;
  r.pendingSkill=null;
  r.pendingForestUse=null;
+ r.trappedTile=null;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
  r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
@@ -354,7 +355,7 @@ function begin(hero){
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
-    potions:3,lootBag:[],pendingSkill:null,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
+    potions:3,lootBag:[],pendingSkill:null,trappedTile:null,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
@@ -434,6 +435,7 @@ function load(){
   if(v.run.ghost===undefined)v.run.ghost=null;
   if(v.run.resurrection==null)v.run.resurrection=0;
   if(v.run.burnTurns==null)v.run.burnTurns=0;
+   if(v.run.trappedTile===undefined)v.run.trappedTile=null;
    if(!Array.isArray(v.run.lootBag))v.run.lootBag=[];
    v.run.pendingSkill=null;
   if(v.run.bleedTurns==null)v.run.bleedTurns=0;
@@ -1287,6 +1289,7 @@ function consumeTurn(){
    }else if(targetGhost){provoke(targetGhost.foe);if(FD)FD.actor(r.ghost,'attack','Призрачный удар');targetGhost.foe.hp-=r.ghost.atk;log('Призрачный страж наносит '+r.ghost.atk+' урона.');
     if(targetGhost.foe.hp<=0)kill(targetGhost);}}
  }
+ if(r.trappedTile!=null)r.bleedTurns=Math.max(1,r.bleedTurns||0);
  if(r.bleedTurns>0){r.bleedTurns--;var bleed=Math.max(2,Math.ceil(stats().hp*.025));
   r.hp=Math.max(0,r.hp-bleed);log('Кровотечение: −'+bleed+' чистого урона.');}
  if(r.burnTurns>0&&r.burnWardTurns>0){r.burnTurns--;log('Печать пепельного легиона поглощает горение.');}
@@ -1948,21 +1951,11 @@ function claimTile(t){
   finishAction();if(r)floatLoot(t.id,['✚ Эликсир ×1']);return;
  }
  if(kind==='trap'){
-  t.cleared=true;var hazard=BAL.hazard(r.actIndex||0),reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce'))*.01,0,.95);
-  var dmg=Math.max(0,Math.floor((7+r.floor*1.3+(r.actIndex||0)*10)*reduction*(r.class==='scout'?.55:1)));
-  r.hp=Math.max(0,r.hp-dmg);
-  if(dmg>0){
-   if(hazard.kind==='bleed')r.bleedTurns=Math.max(r.bleedTurns||0,2);
-   if(hazard.kind==='poison')hunterPoison(2);
-   if(hazard.kind==='burn')r.burnTurns=Math.max(r.burnTurns||0,2);
-   if(hazard.kind==='silence')r.silenceTurns=Math.max(r.silenceTurns||0,2);
-   if(hazard.kind==='corrode'){r.armorBreakTurns=3;r.armorBreakPower=Math.max(2,r.armorBreakPower||0);}
-   if(hazard.kind==='mana')r.mp=Math.max(0,r.mp-Math.ceil(dmg*.45));
-   if(hazard.kind==='shatter'){r.shield=Math.max(0,r.shield-dmg);r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-dmg);}
-   if(hazard.kind==='all'){r.mp=Math.max(0,r.mp-Math.ceil(dmg*.40));r.burnTurns=Math.max(r.burnTurns||0,2);}
-  }
-  log(hazard.name+': −'+dmg+' HP; угроза акта '+(r.actIndex+1)+'.');
-  finishAction();if(r)floatLoot(t.id,['−'+dmg+' HP · '+hazard.name]);return;
+  // A triggered trap cannot be ignored: removing it requires a separate turn.
+  t.cleared=true;t.trapSpent=true;
+  if(r.trappedTile===t.id){r.trappedTile=null;log('Капкан обезврежен, кровотечение от него прекращено.');}
+  else log('Разряженный капкан разобран.');
+  finishAction();if(r)floatLoot(t.id,['Капкан обезврежен']);return;
  }
  if(kind==='corpse'){discoverCorpse(t);return;}
  if(kind==='chamber'){openChamber(t);return;}
@@ -1972,13 +1965,23 @@ function claimTile(t){
  if(kind==='puzzle'){t.cleared=true;showPuzzle();finishAction();return;}
  if(kind==='event'){t.cleared=true;eventRandom();finishAction();return;}
 }
-function reveal(id){
+function triggerTrap(t){
+ if(!t||t.kind!=='trap'||t.trapSpent||t.trapActive)return;
+ t.trapActive=true;r.trappedTile=t.id;r.heroTile=t.id;
+ var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce'))*.01,0,.95);
+ var dmg=Math.max(1,Math.floor((6+r.floor*.65+(r.actIndex||0)*5)*reduction*(r.class==='scout'?.55:1)));
+ r.hp=Math.max(0,r.hp-dmg);
+ r.bleedTurns=Math.max(1,r.bleedTurns||0);
+ log('Капкан захлопнулся! −'+dmg+' HP, кровотечение до обезвреживания.');
+ }
+ function reveal(id){
  var t=tile(id);if(!t||t.revealed)return;
  var access=CR.exploreStatus(t,r.tiles);
  if(!access.ok){toast(access.reason);return;}
  t.revealed=true;
  var k=t.kind;
- if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
+ if(k==='trap'){triggerTrap(t);log('Герой угодил в капкан. Нажмите на него, чтобы обезвредить.');}
+ else if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
  else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
   else if(k==='forest-event'){log('Найдено в лесу: '+(FE.scene(t.forestId)||{}).title+'.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
@@ -1989,6 +1992,7 @@ function reveal(id){
 
 /* Cosmetic walking: only adjacent revealed empty/safe cells. No turns, no enemy attacks. */
 function moveHeroTo(id){
+ if(r.trappedTile!=null){toast('Вы в капкане! Сначала обезвредьте его.');return;}
  var dest=tile(id);if(!dest||!dest.revealed||!dest.cleared||dest.drops||(dest.foe&&dest.foe.hp>0)||dest.summon)return;
  var path=CR.walkPath(r.tiles,r.heroTile,dest.id);
  if(!path){toast('Нет безопасного пути по исследованным клеткам.');return;}
