@@ -678,7 +678,8 @@ function castInSideRoom(sp,chosenTarget){
   ['chain'].includes(sp.kind)?[preferred].concat(guards.filter(function(g){return g!==preferred;})).filter(Boolean).slice(0,Math.max(1,3+bonus('chainTargets'))):
   preferred?[preferred]:[];
  function hit(g){
-  var damage=Math.max(1,Math.ceil(power-(g.def||0)));
+   provoke(g);
+   var damage=Math.max(1,Math.ceil(power-(g.def||0)));
   g.hp=Math.max(0,g.hp-damage);total+=damage;affected++;
   if(g.hp>0&&['burn','burnall'].includes(sp.kind))g.burn=Math.max(g.burn||0,3);
   if(g.hp>0&&['stun','freezeall'].includes(sp.kind))g.stun=Math.max(g.stun||0,2);
@@ -1473,23 +1474,23 @@ function useSkill(){
  }else if(r.class==='executioner'){
   if(!t){toast('Нужен открытый враг.');return;}
   damage=Math.max(3,Math.floor(st.atk*2.1)-t.foe.def);
-  t.foe.hp-=damage;r.shield+=Math.floor(st.def*1.8)+7;
+   provoke(t.foe);t.foe.hp-=damage;r.shield+=Math.floor(st.def*1.8)+7;
   log('Казнь: '+damage+' урона и защитная стойка.');
   if(t.foe.hp<=0)skillKill(t);
  }else if(r.class==='guardian'){
   r.shield+=12+Math.floor(st.def*2.2);
-  if(t){damage=Math.max(3,Math.floor(st.atk*1.65)-t.foe.def);t.foe.hp-=damage;
+  if(t){damage=Math.max(3,Math.floor(st.atk*1.65)-t.foe.def);provoke(t.foe);t.foe.hp-=damage;
    if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
  }else if(r.class==='sorceress'){
   var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
   targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
-   enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
+    provoke(enemy.foe);enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
  }else if(r.class==='assassin'){
   if(!t){toast('Нужен открытый враг.');return;}
   damage=Math.max(3,Math.floor(st.atk*1.35)-t.foe.def);
-  t.foe.hp-=damage;t.foe.poison=3;
+   provoke(t.foe);t.foe.hp-=damage;t.foe.poison=3;
   log('Ядовитый клинок: '+damage+' урона, яд на три хода.');
   if(t.foe.hp<=0)skillKill(t);
  }else{
@@ -1527,8 +1528,9 @@ function advancedCast(sp,chosenTarget){
  var foes=enemies(),key=sp.kind;
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
-  if(!t||!t.foe||t.foe.hp<=0)return;
-  var n=Math.max(1,dmg-(t.foe.def||0));
+   if(!t||!t.foe||t.foe.hp<=0)return;
+   provoke(t.foe);
+   var n=Math.max(1,dmg-(t.foe.def||0));
   t.foe.hp=Math.max(capBoss&&t.foe.boss?1:0,t.foe.hp-n);
   if(t.foe.hp<=0)kill(t);
  };
@@ -1561,7 +1563,7 @@ function advancedCast(sp,chosenTarget){
  }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus'));
  }else if(key==='sunfall'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss){t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
+   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.60));t.foe.burn=8;}
    else{t.foe.hp=0;kill(t);}
   });
   r.sunBurnTurns=10;
@@ -1577,7 +1579,7 @@ function advancedCast(sp,chosenTarget){
   log('Первозданная вода вернула '+returned+' ранее использованных свитков.');
  }else if(key==='worldrewrite'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss)t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.65));
+   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.65));}
    else{t.foe.hp=0;kill(t);}
   });
   r.tiles.forEach(function(t){
@@ -1594,7 +1596,7 @@ function advancedCast(sp,chosenTarget){
   log('Первый рассвет полностью очищает героя, даёт пять отражений удара и два спасения от смерти.');
  }else if(key==='soulcovenant'){
   foes.slice().forEach(function(t){
-   if(t.foe.boss){t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.55));t.foe.stun=Math.max(t.foe.stun||0,1);}
+   if(t.foe.boss){provoke(t.foe);t.foe.hp=Math.max(1,t.foe.hp-Math.ceil(t.foe.maxHp*.55));t.foe.stun=Math.max(t.foe.stun||0,1);}
    else{var n=t.foe.name;t.foe.hp=0;kill(t);addSpiritSoul({kind:'common',name:'Отголосок '+n});}
   });
   r.shield+=Math.floor(st.hp*.8);log('Заключён пакт Бездны: души противников переходят к герою.');
@@ -1642,11 +1644,11 @@ function cast(id,chosenTarget){
   var first=chosenTarget!=null?tile(chosenTarget):target();
    var victims=[first].concat(enemies().filter(function(t){return t!==first;})).filter(Boolean).slice(0,3+bonus('chainTargets'));
   victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
-   t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
+    provoke(t.foe);t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
  }else if(tar){
   var dmg2=Math.max(1,magic-tar.foe.def);
-  tar.foe.hp-=dmg2;
+   provoke(tar.foe);tar.foe.hp-=dmg2;
   if(sp.kind==='burn')tar.foe.burn=3;
   if(sp.kind==='stun')tar.foe.stun=1;
   if(sp.kind==='drain')r.hp=Math.min(st.hp,r.hp+Math.floor(dmg2*.65));
