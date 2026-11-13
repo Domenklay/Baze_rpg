@@ -247,5 +247,14 @@ window.CryptConceptMaterials={
  "Накидка Проводника вечной ночи": "t10_concept_nakidka_provodnika_vechnoi_nochi",
  "Осколок матрицы Архитектора": "t10_concept_oskolok_matritsy_arkhitektora",
  "Осколок метеоритного голема": "t10_concept_oskolok_meteoritnogo_golema",
- "Осколок руки Титана Перехода": "t10_concept_oskolok_ruki_titana_perekhoda"
+ "Осколок руки Титана Перехода": "t10_concept_oskolok_ruki_titana_perekhoda",
+ "Осколок угасшей звезды Астрагора": "t10_concept_oskolok_ugasshei_zvezdy_astragora",
+ "Печать Маршала Короны": "t10_concept_pechat_marshala_korony",
+ "Перо крылатого архонта": "t10_concept_pero_krylatogo_arkhonta",
+ "Первая формула хранителя": "t10_concept_pervaia_formula_khranitelia",
+ "Первоцвет мироздания": "t10_concept_pervotsvet_mirozdaniia",
+ "Последний приказ Архитектора": "t10_concept_poslednii_prikaz_arkhitektora",
+ "Сияющий хондрит": "t10_concept_siiaiushchii_khondrit",
+ "Знак Первородного Змея": "t10_concept_znak_pervorodnogo_zmeia",
+ "Звёздная астра": "t10_concept_zviozdnaia_astra"
 };
