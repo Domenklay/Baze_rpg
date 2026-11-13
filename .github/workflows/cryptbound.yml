@@ -50,6 +50,8 @@ jobs:
           node --check cryptbound/src/main/assets/art.js
           node --check cryptbound/src/main/assets/equipment_art.js
           node --check cryptbound/src/main/assets/titles.js
+          node --check cryptbound/src/main/assets/gumballs_titles_reference.js
+          node --check cryptbound/src/main/assets/titles_runtime.js
           node --check cryptbound/src/main/assets/sprite_catalog.js
           node --check cryptbound/src/main/assets/imported_art.js
           node --check cryptbound/src/main/assets/combat_feedback.js
@@ -63,6 +65,7 @@ jobs:
           node --check cryptbound/src/main/assets/story_events.js
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/smoke.cjs
+          node cryptbound/tests/titles_v2.cjs
           node cryptbound/tests/hunter_book.cjs
           node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
