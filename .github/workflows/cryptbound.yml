@@ -67,8 +67,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.7.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.7.1-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.7.1-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -81,7 +81,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.7.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.7.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.0 — новый интерфейс" --notes "Компактный интерфейс похода, всплывающий инвентарь, книга магии, дерево титулов, новый экран деревни и рисованные текстуры. Старый модуль Baze RPG удалён. Офлайн debug-сборка."
+          if ! gh release view cryptbound-v0.7.1 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.7.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.7.1 — пещеры, спрайты и компактный экран" --notes "Исправлена повторная анимация зачистки, экран подогнан под WebView без прокрутки, пещеры 3×3 встроены в основной интерфейс. Подключены готовые спрайты монстров и снаряжения; доработаны окна героя, монстра, свитка и припасов. Офлайн debug-сборка."
           fi
-          gh release upload cryptbound-v0.7.0 dist/Cryptbound-v0.7.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.7.1 dist/Cryptbound-v0.7.1-offline-Android.apk dist/SHA256SUMS.txt --clobber

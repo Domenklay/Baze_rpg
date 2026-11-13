@@ -95,7 +95,8 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  room.kind='chamber';room.revealed=true;room.cleared=false;
  A('pickup',room.id);assert.ok(room.room);
  room.room.secret=true;
- assert.match(el('overlay').innerHTML,/ПОБОЧНАЯ КОМНАТА/);
+ assert.match(el('content').innerHTML,/chamber-maze/);
+ assert.equal(el('overlay').innerHTML,'');
  let attempts=0;r.hp=5000;
  while(room.room.guardHp>0&&attempts++<60)A('chamber-fight',room.id);
  assert.equal(room.room.guardHp,0);
@@ -103,9 +104,9 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  assert.equal(room.cleared,false);
  const prev=r.secrets;
  A('chamber-secret',room.id);assert.equal(room.cleared,true);
- assert.equal(room.kind,'empty');assert.equal(r.secrets,prev+1);
+ assert.equal(room.kind,'chamber');assert.equal(r.secrets,prev+1);
  A('chamber-secret',room.id);assert.equal(r.secrets,prev+1);
- r.tiles=originalTiles;r.talents=old;api.debug.draw();
+ A('chamber-exit');r.tiles=originalTiles;r.talents=old;api.debug.draw();
 });
 
 test('Random hero origin with connected orthogonal exploration',()=>{
@@ -508,7 +509,7 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  run.guardCharges=3;
  A('wait');
  assert.equal(run.guardCharges,0,'All three incoming attacks are blocked');
- assert.equal(run.hp,hp);
+ assert.equal(run.hp,hp);A('chamber-exit');
 });
 
 
@@ -735,6 +736,29 @@ test('Disk-save roundtrip keeps expedition, quests, prepared loadout and new slo
  assert.ok('bracer' in restored.run.equip);
  assert.equal(restored.run.eliteSchedule[0],7);
  assert.equal(restored.run.eliteSchedule[1],18);
+});
+
+test('Full-clear animation expires, keeps its original timeline on redraw and never replays after reload',()=>{
+ const live=win.Crypt;live.state().meta.selectedAct=0;live.debug.action('begin','executioner');
+ const run=live.state().run;run.hp=9999;run.mp=9999;
+ const foeTile=run.tiles.find(t=>t.foe);assert.ok(foeTile);
+ run.tiles.forEach(t=>{if(t.foe)t.foe.hp=0;});
+ foeTile.foe.hp=1;foeTile.foe.def=0;foeTile.foe.guard=0;foeTile.foe.evadeCharges=0;foeTile.foe.boss=false;foeTile.revealed=true;
+ run.tiles.filter(t=>t.id!==foeTile.id).slice(0,3).forEach(t=>{t.kind='empty';t.foe=null;t.revealed=false;t.cleared=false;});
+ run.floorCleared=false;
+ const RealDate=ctx.Date;let clock=Date.now();ctx.Date=class extends Date{static now(){return clock;}};
+ try{
+  live.debug.action('strike',foeTile.id);
+  assert.equal(run.floorCleared,true);assert.match(el('content').innerHTML,/tile-auto-open/);
+  const afterClearGold=run.gold;
+  clock+=100;live.debug.draw();assert.match(el('content').innerHTML,/animation-delay:-100ms/,'Redraw continues the same animation instead of restarting it');
+  clock+=2000;live.debug.action('wait');live.debug.action('wait');
+  assert.doesNotMatch(el('content').innerHTML,/tile-auto-open/);assert.equal(run.gold,afterClearGold);
+  assert.equal(run.log.filter(x=>x.includes('Полная зачистка:')).length,1);
+  run.clearAnimationStarted=clock;live.save();
+  vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'clear-animation-reload',timeout:12000});
+  assert.doesNotMatch(el('content').innerHTML,/tile-auto-open/,'Saved animation markers are not replayed on load');
+ }finally{ctx.Date=RealDate;}
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
