@@ -200,3 +200,15 @@
 }
 @media(max-width:365px){.hb-hero-portrait{height:100px}.hb-head{height:89px;min-height:89px;padding-top:39px}.hb-small-portrait{width:30px;height:32px}.hb-beast{min-height:48px}.hb-count{font-size:8px}.hb-description{font-size:10px}.hb-tabs{height:36px}.hb-tabs button{height:35px}.hb-milestones>div{min-height:48px}.hb-milestones strong{font-size:9px}.hb-milestones span:last-child{font-size:9px}}
 @media(max-height:620px){.hb-window{height:96dvh}.hb-head{height:72px;min-height:72px;padding-top:26px}.hb-tabs{height:34px}.hb-tabs button{height:33px}.hb-hero-portrait{height:84px}.hb-beast{min-height:45px}.hb-footer{height:25px;min-height:25px;padding:4px 17px}}
+
+/* Target-selecting mode for single-target scrolls: the board remains visible. */
+.spell-target-banner{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-width:0;padding:4px 9px;background:linear-gradient(100deg,#3c2d21,#171b15);border:3px solid #b99459;box-shadow:inset 0 0 0 1px #312518,0 1px 10px #03070299;color:#eee0b9;font:12px/1.3 Georgia}
+.spell-target-banner span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spell-target-banner b{color:#bfda86}
+.spell-target-banner button{flex:none;min-height:27px;padding:2px 9px;border:2px solid #c29964;background:linear-gradient(#8f3123,#541d19);color:#f2deb0;font:700 11px Georgia;cursor:pointer}
+.dungeon-board .tile.spell-target-valid{outline:3px solid #c7d56c;outline-offset:-2px;box-shadow:inset 0 0 10px #b0df5277,0 0 9px #a1c85e88!important;cursor:crosshair}
+.dungeon-board .tile.spell-target-valid:after{content:"✧";position:absolute;top:0;right:3px;font:14px Georgia;color:#def5a3;text-shadow:0 1px 4px #162009}
+.dungeon-board .tile.spell-target-valid:focus-visible{outline:4px solid #eddfa5;outline-offset:0}
+.illustrated-gear{width:100%;height:100%;min-width:0;object-fit:contain;filter:drop-shadow(1px 2px 1px #0007)}
+.gear-slot .illustrated-gear{width:89%;height:88%;margin:auto}
+.gear-compact-head .illustrated-gear{width:88%;height:88%}
