@@ -37,7 +37,7 @@ var ITEM_NAMES={
 };
 var RARITY=['Неизвестный','Обычный','Необычный','Редкий','Эпический','Легендарный','Уникальный'];
 var SPELLS=SYS.spells;
-var TALENTS=window.CryptTitles||[];
+var TALENTS=window.CryptTitles||[],TR=window.CryptTitlesRuntime;
 
 var CORPSE_STORIES=[
  {id:'storm-smith',name:'Павший механик',note:'«Катушка искрила. Если найдёте мою кирасу — берегите левую перчатку».',slot:'armor',gear:'Кираса павшего механика',soul:'Душа механика',prize:'Грозовая перчатка'},
@@ -66,24 +66,13 @@ function levelTheme(){return ((r.actIndex||0)*3+(r.locationIndex||0))%6;}
 function maxFloorLabel(){return currentRegion().name;}
 function isBossFloor(){return DN.bossFloor(r.floor);}
 function depthMultiplier(){return DN.rewardMultiplier(r.floor);}
-function lvl(n){return (r.talents[n]||0);}
+function lvl(n){return TR.level(r,n);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
 function hunterStat(k){return r&&r.actIndex===0?HB.bonus(s.meta,k):0;}
 function hunterPoison(turns){if(Math.random()*100<hunterStat('poisonResist')){log('Бестиарий: отравление предотвращено.');return;}r.poisonTurns=Math.max(r.poisonTurns||0,turns);}
-function levelCost(t){var main=C[r.class].type==='Магия'?1:C[r.class].type==='Битва'?0:2;
- var base=2+t.rank*3+lvl(t.id)*3;
- return t.tree===main?base:Math.ceil(base*1.25);
-}
-/* Reject sibling specializations at every ancestor branch, not only at the current rank. */
-function talentPathConflict(t){
- var node=t;
- while(node&&node.parent){
-  if(TALENTS.some(function(other){return other.tree===node.tree&&other.parent===node.parent&&other.id!==node.id&&lvl(other.id)>0;}))return true;
-  node=TALENTS.find(function(p){return p.id===node.parent;});
- }
- return false;
-}
-function talentUnlocked(t){return (!t.parent||lvl(t.parent)>0)&&!talentPathConflict(t);}
+function levelCost(t){return TR.cost(r,t);}
+function talentPathConflict(t){return TR.pathConflict(r,t);}
+function talentUnlocked(t){return TR.unlocked(r,t);}
 function talentsByTree(tree){return TALENTS.filter(function(x){return x.tree===tree;});}
 function equipped(id){return Object.values(r.equip).some(function(v){return v===Number(id);});}
 function item(id){return r.items.find(function(x){return x.id===Number(id);})||null;}
@@ -97,6 +86,7 @@ function stats(){
  var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
  var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
+ var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -107,13 +97,16 @@ function stats(){
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
- a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01));
+ a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)+(r.titleSageBonus||0)));
+ hp=Math.round(hp*(1+(lvl('war_knight')*.10)+(lvl('war_paladin')>0?.10:0)));
+ mp=Math.round(mp*(1+lvl('mag_white')*.10));
+ pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp(bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
  }
- function incomingDamage(rawAttack){return Math.max(1,Math.ceil(rawAttack)-flatDefense());}
+ function incomingDamage(rawAttack,enemy){return TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));}
  function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
  function enemyDebuffs(enemy){
   var effects=[['poison','☠','Яд'],['bleed','✣','Кровотечение'],['burn','♨','Горение'],['stun','✸','Оглушение']];
@@ -121,7 +114,7 @@ function flatDefense(){
   return active.length?'<span class="enemy-debuff-strip">'+active.map(function(x){return '<span title="'+x[2]+' · '+enemy[x[0]]+' ход.">'+x[1]+' '+enemy[x[0]]+'</span>';}).join('')+'</span>':'';
  }
  function damageBadge(enemy){
-  var value=incomingDamage(enemy.atk),base=enemy.baseAtk==null?enemy.atk:enemy.baseAtk;
+  var value=incomingDamage(enemy.atk,enemy),base=enemy.baseAtk==null?enemy.atk:enemy.baseAtk;
   var tone=value>base?'boosted':value<base?'reduced':'normal';
   return '<span class="unit-corner unit-atk damage-'+tone+'" title="Урон после защиты: '+value+' · исходный: '+base+'">⚔'+value+'</span>';
  }
@@ -336,10 +329,6 @@ function startFloor(){
  r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
- if(lvl('seeker')>0&&Math.random()<Math.min(.6,.15*lvl('seeker'))){
-  var hintTile=r.tiles.find(function(t){return t.kind==='secret';});
-  if(hintTile)hintTile.hinted=true;
- }
  var st=stats();
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
@@ -350,6 +339,7 @@ function startFloor(){
   if(!available.length)break;
   var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='trap')triggerTrap(chosen);if(chosen.kind==='empty')chosen.cleared=true;
  }
+ TR.onFloor(r,titleHelpers());
  log('Этаж '+r.floor+' · '+maxFloorLabel()+'. Герой начинает исследование со случайной клетки.');
  fairyRemark('floor');
 }
@@ -362,6 +352,7 @@ function begin(hero){
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
     potions:3,lootBag:[],pendingSkill:null,trappedTile:null,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
+ TR.init(r);
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
  fillPreparedPotions(r);
@@ -477,7 +468,9 @@ function load(){
     else v.run.key=true;
   }
  }
- return v;}catch(e){return null;}
+ if(v.run)TR.init(v.run);
+  if(meta.activeExpedition)TR.init(meta.activeExpedition);
+  return v;}catch(e){return null;}
 }
 function save(){try{if(!s)return;localStorage.setItem(KEY,JSON.stringify(s));}catch(e){console.warn('Save unavailable',e);}}
 function enemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.hp>0&&t.revealed;});}
@@ -1008,7 +1001,7 @@ function resumeExpedition(){
  var carry=s.meta.activeExpedition;
  if(r||!carry)return;
  if(!DN.location(carry.actIndex,carry.locationIndex)){toast('Ошибка следующей локации.');return;}
- r=s.run=carry;s.meta.activeExpedition=null;
+ r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
  r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
