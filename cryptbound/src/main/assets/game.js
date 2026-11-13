@@ -1694,7 +1694,7 @@ function advancedCast(sp,chosenTarget){
  if(key==='earthgate'){
   var enhanced=lvl('mag_planar')>0;
   var mastery=TR.rank5(r,'mag_planar','pow')+TR.rank5(r,'mag_planar','hp')+TR.rank5(r,'mag_planar','mp');
-   var distance=Math.max(10,10+Math.floor(st.pow/8)+(enhanced?2*mastery:0));
+   var distance=enhanced?Math.min(50,30+2*mastery+Math.floor(st.pow/12)):Math.max(10,10+Math.floor(st.pow/8));
   var old=r.floor;r.floor=Math.max(1,r.floor-distance);
   r.key=false;r.portalReady=false;r.shield=0;r.turn++;
   startFloor();log('Врата Земли возвращают на '+(old-r.floor)+' этажей назад. Побеждённые боссы не возрождаются.');
