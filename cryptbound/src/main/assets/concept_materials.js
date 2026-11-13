@@ -160,5 +160,18 @@ window.CryptConceptMaterials={
  "Перстень Старшего взыскателя": "t7_concept_persten_starshego_vzyskatelia",
  "Плач Сонма скорбящих": "t7_concept_plach_sonma_skorbiashchikh",
  "Плач-трава": "t7_concept_plach_trava",
- "Режущий осколок косы жнеца": "t7_concept_rezhushchii_oskolok_kosy_zhnetsa"
+ "Режущий осколок косы жнеца": "t7_concept_rezhushchii_oskolok_kosy_zhnetsa",
+ "Серая рыба переправы": "t7_concept_seraia_ryba_perepravy",
+ "Слеза скорбящей тени": "t7_concept_sleza_skorbiashchei_teni",
+ "Страница подлинного имени Морхейна": "t7_concept_stranitsa_podlinnogo_imeni_morkheina",
+ "Стройная костяная заклёпка": "t7_concept_stroinaia_kostianaia_zakliopka",
+ "Сумеречный звериный коготь": "t7_concept_sumerechnyi_zverinyi_kogot",
+ "Том Главного библиотекаря": "t7_concept_tom_glavnogo_bibliotekaria",
+ "Цепь душехранилища": "t7_concept_tsep_dushekhranilishcha",
+ "Цепное весло переправы": "t7_concept_tsepnoe_veslo_perepravy",
+ "Венец Архилича трона": "t7_concept_venets_arkhilicha_trona",
+ "Забрало рыцаря покоя": "t7_concept_zabralo_rytsaria_pokoia",
+ "Знамя костяного генерала": "t7_concept_znamia_kostianogo_generala",
+ "Знамя Маршала забвения": "t7_concept_znamia_marshala_zabveniia",
+ "Белый рог хозяина зеркал": "t8_concept_belyi_rog_khoziaina_zerkal"
 };
