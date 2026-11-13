@@ -242,8 +242,8 @@ function onKill(r,e,drop,h){
  if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&!/голем|элементал|механи|автомат|скелет|мертвец|нежить|призрак|костяк|лич/i.test(e.name)&&Math.random()<.05)drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
  if(titleSetEquipped(r,'hunter')===3)r.ep+=2;
  if(has(r,'war_dragon')&&Math.random()<(0.1+.1*level(r,'war_dragon')))h.cross(e,Math.ceil(h.stats().atk*.65));
- if(has(r,'war_duke')&&Math.random()<.1)h.cross(e,Math.ceil(h.stats().atk*.7));
- if(has(r,'war_light_arbiter')&&Math.random()<.1)h.flash(Math.max(8,h.stats().pow*2));
+ if(has(r,'war_duke')&&Math.random()<.1){var m=rank5(r,'war_duke','atk')+rank5(r,'war_duke','pow')+rank5(r,'war_duke','hp');h.cross(e,Math.ceil(h.stats().atk*(.7+.1*m)));h.log('Герцог разрушения: Клинок разрушения.');}
+ if(has(r,'war_light_arbiter')&&Math.random()<.1){var m=rank5(r,'war_light_arbiter','atk')+rank5(r,'war_light_arbiter','pow')+rank5(r,'war_light_arbiter','hp');h.flash(Math.max(8,Math.ceil(h.stats().pow*(2+.1*m))));h.log('Судья света: Святой луч.');}
 }
 /* One Echo charge empowers one normal hero attack. It never creates an actor or a
    separate turn. Game combat performs the follow-up after its single counterattack. */
@@ -259,9 +259,9 @@ function attack(r,e,dmg,h){
  if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*(1.5+.15*(rank5(r,'war_warrior','atk')+rank5(r,'war_warrior','mp')+rank5(r,'war_warrior','hp'))));
  if(has(r,'war_magic')&&Math.random()<.05+.05*level(r,'war_magic'))dmg+=h.stats().pow;
  if(has(r,'war_dancer')&&curSup(r,'sword_scroll')>0&&Math.random()<.08){supply(r,'sword_scroll',-1);dmg=Math.ceil(dmg*1.45);h.log('Техника мастера меча усилила удар.');}
- if(has(r,'war_dark_arbiter')&&Math.random()<.05)h.flash(Math.max(6,h.stats().pow*1.2));
- if(has(r,'war_hell')&&Math.random()<.05)h.flash(Math.max(12,h.stats().pow*2));
- if(has(r,'war_titan')&&Math.random()<.05)e.stun=Math.max(e.stun||0,1);
+ if(has(r,'war_dark_arbiter')&&Math.random()<.05){var m=rank5(r,'war_dark_arbiter','pow')+rank5(r,'war_dark_arbiter','atk')+rank5(r,'war_dark_arbiter','hp');h.flash(Math.max(6,Math.ceil(h.stats().pow*(1.2+.15*m))));h.log('Тёмный судья: Волна смерти.');}
+ if(has(r,'war_hell')&&Math.random()<.05){var m=rank5(r,'war_hell','pow')+rank5(r,'war_hell','atk')+rank5(r,'war_hell','hp');h.flash(Math.max(12,Math.ceil(h.stats().pow*(2+.2*m))));h.log('Бог войны преисподней: Метеоритный дождь.');}
+ if(has(r,'war_titan')&&Math.random()<.05){var m=rank5(r,'war_titan','atk')+rank5(r,'war_titan','pow')+rank5(r,'war_titan','hp');e.stun=Math.max(e.stun||0,1);dmg+=Math.max(4,Math.ceil(h.stats().pow*(.5+.1*m)));h.log('Рыцарь титанов: Земляной шип — урон и оглушение.');}
  if(has(r,'adv_great_enchanter')&&has(r,'adv_rune_master'))dmg+=Math.max(1,Math.round(h.stats().pow*.35));
  return dmg;
 }
@@ -311,7 +311,7 @@ function canCast(r,sp){
  if(sp.rank<=2||sp.rank===6)return null;
  if(level(r,'mag_apprentice')>0&&sp.rank<=2+level(r,'mag_apprentice'))return null;
  var caster=has(r,'war_magic')?['earth','fire','dark']:has(r,'war_dancer')?['fire','air','dark']:has(r,'war_silver')?['earth','water','light']:has(r,'war_faith')?['water','air','light']:[];
- if(has(r,'war_faith')&&sp.rank===3&&['water','air','light'].includes(sp.school))return null;
+ if(has(r,'war_faith')&&sp.rank<=2+level(r,'war_faith')&&['water','air','light'].includes(sp.school))return null;
  if(caster.indexOf(sp.school)>=0&&sp.rank<=2+Math.max(level(r,'war_magic'),level(r,'war_dancer'),level(r,'war_silver')))return null;
  return 'Для свитка '+sp.rank+'★ нужно магическое или воинское звание';
 }
