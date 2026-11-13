@@ -12,11 +12,11 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','hunter_bestiary.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','game.js'];
 for(const file of sources)vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});
 const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
-/* Legacy smoke cases fast-forward the forest without exploring it. Satisfy the new
-   mandatory book precondition at run start; hunter_book.cjs verifies the gate itself. */
+/* Existing v0.7.2 tests skip directly to distant floors. Claim the newly required book
+   before those test shortcuts; hunter_book.cjs tests the actual locked descent. */
 function A(name,id){
  rawAction(name,id);
  if(name==='begin'){
@@ -29,6 +29,7 @@ function A(name,id){
 }
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS '+name);}
+A('choose');
 test('Six selectable classes and 18 authentic offline sprite frames',()=>{
  assert.equal((el('overlay').innerHTML.match(/class-option/g)||[]).length,6);
  for(const key of ['strength_m','strength_f','rogue_m','rogue_f','mage_m','mage_f']){
@@ -89,8 +90,8 @@ test('Adventure remains, soul use and one-time treasure',()=>{
  assert.equal(r.items.length,n+1);
  assert.ok(r.journalNotes.some(x=>x.includes('Павший механик')));
  const soul=r.soulBag.find(x=>x.storyId==='storm-smith');assert.ok(soul);
- A('close');r.tab='bag';api.debug.draw();
- assert.match(el('content').innerHTML,/СОБРАННЫЕ ДУШИ/);
+ A('close');A('bag-details');
+ assert.match(el('overlay').innerHTML,/СОБРАННЫЕ ДУШИ/);
  A('consume-soul',soul.id);assert.equal(r.soulBag.some(x=>x.id===soul.id),false);
  assert.ok(r.items.some(x=>x.name==='Грозовая перчатка'&&x.stormCharge));
  A('pickup',corpse.id);assert.equal(state.seq,before+3);
@@ -106,7 +107,8 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  room.kind='chamber';room.revealed=true;room.cleared=false;
  A('pickup',room.id);assert.ok(room.room);
  room.room.secret=true;
- assert.match(el('overlay').innerHTML,/ПОБОЧНАЯ КОМНАТА/);
+ assert.match(el('content').innerHTML,/chamber-maze/);
+ assert.equal(el('overlay').innerHTML,'');
  let attempts=0;r.hp=5000;
  while(room.room.guardHp>0&&attempts++<60)A('chamber-fight',room.id);
  assert.equal(room.room.guardHp,0);
@@ -114,9 +116,9 @@ test('Side chamber guard, central loot and talent-gated secret',()=>{
  assert.equal(room.cleared,false);
  const prev=r.secrets;
  A('chamber-secret',room.id);assert.equal(room.cleared,true);
- assert.equal(room.kind,'empty');assert.equal(r.secrets,prev+1);
+ assert.equal(room.kind,'chamber');assert.equal(r.secrets,prev+1);
  A('chamber-secret',room.id);assert.equal(r.secrets,prev+1);
- r.tiles=originalTiles;r.talents=old;api.debug.draw();
+ A('chamber-exit');r.tiles=originalTiles;r.talents=old;api.debug.draw();
 });
 
 test('Random hero origin with connected orthogonal exploration',()=>{
@@ -214,13 +216,13 @@ test('3/4-piece sets use real slots and situational effects instead of Clicker b
  assert.deepEqual(Array.from(CR.thresholds('stone_oath')),[2,4]);
  assert.ok(CR.bonuses(r.equip,r.items).entryShield>0);
  assert.ok(api.debug.stats().def>previous);
- r.tab='hero';api.debug.draw();
- assert.match(el('content').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
- assert.match(el('content').innerHTML,/4 предмета/);
+ A('gear-sets');
+ assert.match(el('overlay').innerHTML,/АКТИВНЫЕ КОМПЛЕКТЫ/);
+ assert.match(el('overlay').innerHTML,/4 предмета/);
 });
 test('Compact modal compares fixed equipment with set bonuses',()=>{
  A('inspect-slot','helm');
- assert.equal(r.tab,'hero');
+ assert.equal(r.tab,'maze');
  assert.match(el('overlay').innerHTML,/gear-two-columns/);
  assert.match(el('overlay').innerHTML,/compact-set-help/);
  assert.match(el('overlay').innerHTML,/2 предмета/);
@@ -235,16 +237,29 @@ test('Village permanently consumes material quantities for upgrades',()=>{
  A('town');assert.match(el('overlay').innerHTML,/ПОГРАНИЧНЫЙ ПРИВАЛ/);
  assert.match(el('overlay').innerHTML,/СКЛАД/);A('close');
 });
-test('Original animation frame appears when attacking and spellcasting',()=>{
- r.tab='hero';r.mp=1000;
- const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);
- if(target){target.revealed=true;target.foe.hp=100;A('strike',target.id);}
- assert.match(el('portrait').innerHTML,/mage_m_attack.png/);
- assert.match(el('portrait').innerHTML,/mage_m_attack_2.png/);
- assert.match(el('portrait').innerHTML,/mage_m_attack_3.png/);
- A('skill');assert.match(el('portrait').innerHTML,/mage_m_skill.png/);
- assert.match(el('portrait').innerHTML,/mage_m_skill_2.png/);
- assert.match(el('portrait').innerHTML,/mage_m_skill_3.png/);
+test('Hero actions choose one original frame, retain it on redraw and never repeat the previous variant',()=>{
+ r.tab='maze';r.mp=10000;r.hp=10000;
+ const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);assert.ok(target);
+ target.revealed=true;target.foe.hp=100000;target.foe.maxHp=100000;
+ let previous=null;
+ for(let i=0;i<5;i++){
+  A('strike',target.id);const html=el('portrait').innerHTML;
+  assert.equal((html.match(/<img /g)||[]).length,1);
+  const src=html.match(/src="([^"]+)"/)[1];assert.match(src,/mage_m_attack(?:_[23])?\.png$/);
+  if(previous)assert.notEqual(src,previous);
+  api.debug.draw();assert.ok(el('portrait').innerHTML.includes(src),'Redraw keeps this action frame');previous=src;
+ }
+ previous=null;
+ for(let i=0;i<4;i++){
+  r.skillUsed=r.turn-10;A('skill');const html=el('portrait').innerHTML;
+  assert.equal((html.match(/<img /g)||[]).length,1);
+  const src=html.match(/src="([^"]+)"/)[1];assert.match(src,/mage_m_skill(?:_[23])?\.png$/);
+  if(previous)assert.notEqual(src,previous);previous=src;
+ }
+ assert.ok(r.fxUntil>Date.now()+800,'Pose lasts about one second');
+ const effects=win.CryptFeedback.events();
+ assert.ok(effects.some(x=>x.kind==='damage'&&x.actor.startsWith('enemy:')));
+ assert.ok(effects.some(x=>x.kind==='action'&&x.actor==='summon'));
 });
 test('Saves remain local and APK has no Internet permission',()=>{
  api.save();
@@ -519,11 +534,11 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  run.guardCharges=3;
  A('wait');
  assert.equal(run.guardCharges,0,'All three incoming attacks are blocked');
- assert.equal(run.hp,hp);
+ assert.equal(run.hp,hp);A('chamber-exit');
 });
 
 
-test('Exactly three compact consumable controls remain visible above the maze',()=>{
+test('Exactly three compact consumables sit above the backpack, beside the hero',()=>{
  if(!state.run)A('begin','necromancer');
  const run=state.run;
  A('close');run.tab='maze';
@@ -534,7 +549,8 @@ test('Exactly three compact consumable controls remain visible above the maze',(
  assert.equal((html.match(/class="dungeon-potion-slot/g)||[]).length,3);
  assert.equal((html.match(/data-action="potion"/g)||[]).length,1,'Only one dedicated HP elixir button');
  assert.equal((html.match(/data-action="use-prepared"/g)||[]).length,2);
- assert.ok(html.indexOf('dungeon-potion-bar')<html.indexOf('dungeon-board'),'Potions must be above the maze');
+ assert.ok(html.indexOf('dungeon-potion-bar')>html.indexOf('dungeon-board'),'Potions belong to the bottom battle dock');
+ assert.ok(html.indexOf('dungeon-potion-bar')<html.indexOf('data-id="bag"'),'Potions must precede the backpack button');
  const before=run.potions;
  run.hp=Math.max(1,api.debug.stats().hp-70);api.debug.draw();
  A('potion');
@@ -745,6 +761,46 @@ test('Disk-save roundtrip keeps expedition, quests, prepared loadout and new slo
  assert.ok('bracer' in restored.run.equip);
  assert.equal(restored.run.eliteSchedule[0],7);
  assert.equal(restored.run.eliteSchedule[1],18);
+});
+
+test('Full-clear animation expires, keeps its original timeline on redraw and never replays after reload',()=>{
+ const live=win.Crypt;live.state().meta.selectedAct=0;live.debug.action('begin','executioner');
+ const run=live.state().run;run.hp=9999;run.mp=9999;
+ const foeTile=run.tiles.find(t=>t.foe);assert.ok(foeTile);
+ run.tiles.forEach(t=>{if(t.foe)t.foe.hp=0;});
+ foeTile.foe.hp=1;foeTile.foe.def=0;foeTile.foe.guard=0;foeTile.foe.evadeCharges=0;foeTile.foe.boss=false;foeTile.revealed=true;
+ run.tiles.filter(t=>t.id!==foeTile.id).slice(0,3).forEach(t=>{t.kind='empty';t.foe=null;t.revealed=false;t.cleared=false;});
+ run.floorCleared=false;
+ const RealDate=ctx.Date;let clock=Date.now();ctx.Date=class extends Date{static now(){return clock;}};
+ try{
+  live.debug.action('strike',foeTile.id);
+  assert.equal(run.floorCleared,true);assert.match(el('content').innerHTML,/tile-auto-open/);
+  const afterClearGold=run.gold;
+  clock+=100;live.debug.draw();assert.match(el('content').innerHTML,/animation-delay:-100ms/,'Redraw continues the same animation instead of restarting it');
+  clock+=2000;live.debug.action('wait');live.debug.action('wait');
+  assert.doesNotMatch(el('content').innerHTML,/tile-auto-open/);assert.equal(run.gold,afterClearGold);
+  assert.equal(run.log.filter(x=>x.includes('Полная зачистка:')).length,1);
+  run.clearAnimationStarted=clock;live.save();
+  vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'clear-animation-reload',timeout:12000});
+  assert.doesNotMatch(el('content').innerHTML,/tile-auto-open/,'Saved animation markers are not replayed on load');
+ }finally{ctx.Date=RealDate;}
+});
+
+test('Combat feedback separates healing from retaliation and does not damage units when changing maps',()=>{
+ const live=win.Crypt;live.state().meta.selectedAct=0;live.debug.action('begin','necromancer');
+ const run=live.state().run,st=live.debug.stats();run.hp=st.hp-20;run.mp=st.mp;run.scrolls.heal=1;run.shield=0;run.setShieldRemaining=0;run.guardCharges=0;run.summon=null;
+ run.tiles.forEach(t=>{if(t.foe)t.revealed=false;});
+ const foe=run.tiles.find(t=>t.foe);foe.revealed=true;Object.assign(foe.foe,{hp:500,maxHp:500,atk:st.def+5,cooldown:99,guard:0,stun:0,burn:0,poison:0});
+ const mark=win.CryptFeedback.events().at(-1)?.id||0;
+ live.debug.action('cast','heal');
+ const emitted=win.CryptFeedback.events().filter(x=>x.id>mark&&x.actor==='hero');
+ assert.ok(emitted.some(x=>x.kind==='heal'&&x.text==='+20'),'Heal is reported before the enemy turn');
+ assert.ok(emitted.some(x=>x.kind==='damage'),'Retaliation is reported independently of the positive net HP change');
+ const chamber=run.tiles.find(t=>t.kind==='empty'&&!t.foe);chamber.kind='chamber';chamber.revealed=true;chamber.cleared=false;
+ const before=win.CryptFeedback.events().at(-1)?.id||0;live.debug.action('pickup',chamber.id);
+ assert.equal(run.chamberActive,chamber.id);
+ assert.ok(!win.CryptFeedback.events().some(x=>x.id>before&&x.kind==='damage'&&x.actor.startsWith('enemy:')),'Hidden main-map units do not take fictitious damage on cave entry');
+ live.debug.action('chamber-exit');
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
