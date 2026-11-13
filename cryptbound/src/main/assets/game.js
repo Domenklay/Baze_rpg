@@ -607,7 +607,7 @@ function renderMaze(){
  var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
  var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+'" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small>'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
  var adventurerTool=TR.toolOf(r);
- quick+='<button class="quick-spell adventurer-tool '+(adventurerTool?'':'ability-empty')+'" data-action="title-tool" aria-label="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста — не открыт')+'" title="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста')+'">'+(adventurerTool?uiIcon(adventurerTool.icon):'<span>+</span>')+'<small>'+(adventurerTool?(TR.curSup(r,adventurerTool.kind==='lantern'?'wick':adventurerTool.kind==='bow'?'arrow':'quench')||''):'')+'</small></button>';
+ quick+='<button class="quick-spell adventurer-tool '+(adventurerTool?'':'ability-empty')+'" data-action="title-tool" aria-label="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста — не открыт')+'" title="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста')+'">'+(adventurerTool?uiIcon(adventurerTool.icon):'<span>+</span>')+'<small>'+(adventurerTool?(TR.curSup(r,adventurerTool.kind==='lantern'?'wick':adventurerTool.kind==='bow'?'arrow':adventurerTool.kind==='compass'?'compass':adventurerTool.kind==='rune'?'rune':'quench')||''):'')+'</small></button>';
  var focus=room?null:target(),foe=focus&&focus.foe;
  var encounter=foe?'<button class="encounter-target" data-action="inspect-enemy" data-id="'+focus.id+'"><b>'+esc(foe.name)+'</b><span>♥ '+foe.hp+'/'+foe.maxHp+' · ⚔ '+incomingDamage(foe.atk)+' · ◷ '+(foe.attackCooldown||foe.cooldown||1)+'</span></button>':'<button class="encounter-target quiet" data-action="battle-log"><span>'+esc(r.log[0]||'Откройте соседнюю плиту')+'</span></button>';
  if(room)encounter='<button class="encounter-target cave-caption" data-action="chamber-exit"><b>Стражей: '+livingRoomGuards().length+' · '+(room.room.rewardTaken?'Сокровище собрано':room.room.guardHp>0?'Сокровище под защитой':'Сокровище доступно')+'</b><span>← Выйти в лабиринт</span></button>';
@@ -2486,7 +2486,7 @@ function puzzleAnswer(id){
  close();finishAction();
 }
 function titleHelpers(){
- return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,
+ return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,addMaterial:function(name,qty){r.materials[name]=(r.materials[name]||0)+qty;},
  targets:function(){return enemies();},hiddenTargets:function(){return hiddenEnemies();},reachable:reachableEnemy,kill:kill,
  hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
  flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
@@ -2511,8 +2511,8 @@ function gainTitleMastery(id){
 }
 function titleToolDialog(){
  var t=TR.toolOf(r),title=t?t.name:'Предмет авантюриста';
- var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Магические руны: '+TR.curSup(r,'rune'):'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
- var description=t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Разбирает свитки или объединяет два одинаковых в заклинание более высокого ранга.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.';
+ var counts=t?(t.kind==='lantern'?'Фитили: '+TR.curSup(r,'wick'):t.kind==='bow'?'Стрелы: '+TR.curSup(r,'arrow'):t.kind==='rune'?'Магические руны: '+TR.curSup(r,'rune'):t.kind==='compass'?'Применений: '+TR.curSup(r,'compass'):'Закалочные эссенции: '+TR.curSup(r,'quench')):'Пока пусто';
+ var description=t?t.kind==='lantern'?'Обнаруживает ключи и скрытые комнаты.':t.kind==='bow'?'Дальний выстрел и эффекты охотничьих званий.':t.kind==='rune'?'Разбирает свитки или объединяет два одинаковых в заклинание более высокого ранга.':t.kind==='compass'?'Позволяет получить ресурсы во время экспедиции.':'Разбирает и создаёт сокровища.':'Получите звание III ранга по ветке авантюриста.';
  var controls=t&&t.kind==='rune'?(function(){
    var holy=TR.has(r,'adv_holy_rune'),eligible=SPELLS.filter(function(sp){return sp.rank<5&&(r.scrolls[sp.id]||0)>=(holy?2:1);});
    return '<div class="title-rune-list"><strong>'+(holy?'Объединить два одинаковых свитка':'Разобрать один свиток')+'</strong>'+
@@ -2524,7 +2524,7 @@ function titleToolDialog(){
 function titleToolUse(selected){
  var message=TR.useTool(r,titleHelpers(),selected);
  if(!message)return;
- if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Выберите|Нужно надетое/.test(message)){toast(message);return;}
+ if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Выберите|Нужно надетое|уже использован/.test(message)){toast(message);return;}
  log(message);close();finishAction();
 }
 
