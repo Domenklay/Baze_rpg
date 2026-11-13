@@ -111,7 +111,7 @@ function curSup(r,key){return (r.titleSupplies&&r.titleSupplies[key])||0;}
 function reward(r,t,levelNum,h){
  var got=spellRewards[t.id];if(got)h.grant(got[0],got[1],'title');
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
- if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',1);
+ if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',3);
  grantTitlePiece(r,t,levelNum,h);
  if(t.id==='adv_weapon_master'){supply(r,'license',1);}
  if(t.id==='adv_elven_ranger')supply(r,'leopard',1);
@@ -272,52 +272,79 @@ function onScrap(r,it,h){
  if(titleSetEquipped(r,'rune')>0)r.mp=Math.min(h.stats().mp,r.mp+3*titleSetEquipped(r,'rune'));
 }
 function useTool(r,h,selected){
- var tool=toolOf(r);if(!tool)return 'Сначала изучите звание III ранга авантюриста.';
+ var tool=toolOf(r);
+ function ok(message){return {ok:true,message:message};}
+ function no(message){return {ok:false,message:message};}
+ if(!tool)return no('Сначала изучите звание авантюриста, выдающее инструмент.');
  if(tool.kind==='compass'){
-  if(curSup(r,'compass')<=0)return 'Компас уже использован.';
+  if(curSup(r,'compass')<=0)return no('Компас уже использован.');
+  var last=r.titleFlags&&r.titleFlags.compassLastFloor;
+  if(Number.isInteger(last)&&r.floor<last+2)return no('Компас можно использовать снова через '+(last+2-r.floor)+' этаж(а).');
   supply(r,'compass',-1);
-  if(has(r,'adv_explorationist')){var money=25+10*level(r,'adv_explorationist');r.gold=(r.gold||0)+money;h.addMaterial('древесина',1+level(r,'adv_explorationist'));return 'Компас помог найти '+money+' монет и древесину.';}
-  var amount=2+level(r,'adv_explorer');h.addMaterial('древесина',amount);h.addMaterial('камень',amount);return 'Компас указал на древесину и камень: ×'+amount+'.';
+  r.titleFlags=r.titleFlags||{};r.titleFlags.compassLastFloor=r.floor;
+  var qty=Math.max(1,1+Math.floor(level(r,'adv_explorer')/2));
+  if(Math.random()<.5){
+   var money=15+5*Math.max(1,level(r,'adv_explorer')||level(r,'adv_explorationist'));
+   r.gold=(r.gold||0)+money;
+   return ok('Компас обнаружил тайник с '+money+' золотыми монетами.');
+  }
+  if(h.addFood){h.addFood(Math.random()<.5?'mushroom':'honey',qty);}
+  else if(h.addMaterial)h.addMaterial('Лесные грибы',qty);
+  return ok('Компас обнаружил скрытые припасы ×'+qty+'.');
  }
  if(tool.kind==='lantern'){
-  if(curSup(r,'wick')<=0)return 'Нужен фитиль фонаря.';
-  var t=r.tiles.find(function(t){return !t.revealed&&(t.kind==='secret'||t.kind==='chamber'||t.hasKey);});
-  if(!t)return 'Скрытых особых плит не осталось.';
-  supply(r,'wick',-1);t.hinted=true;return 'Фонарь отметил необычную плиту.';
+  if(curSup(r,'wick')<=0)return no('Нужен фитиль фонаря.');
+  var t=r.tiles.find(function(t){return !t.revealed&&!t.hinted&&(t.kind==='secret'||t.kind==='chamber'||t.hasKey);});
+  if(!t)return no('Скрытых особых плит не осталось.');
+  supply(r,'wick',-1);t.hinted=true;return ok('Фонарь отметил необычную плиту.');
  }
  if(tool.kind==='bow'){
-  if(curSup(r,'arrow')<=0)return 'Не хватает стрел.';
-  var target=h.targets().find(function(t){return t.foe&&t.foe.hp>0&&h.reachable(t);});
-  if(!target)return 'Нет доступной цели.';
-  supply(r,'arrow',-1);h.hit(target,Math.round(h.stats().atk*(has(r,'adv_legendary_hunter')?1.4:1)));return 'Арбалет выстрелил по '+target.foe.name+'.';
+  if(curSup(r,'arrow')<=0)return no('Не хватает стрел.');
+  var target=h.targets().find(function(t){return String(t.id)===String(selected)&&t.foe&&t.foe.hp>0&&h.reachable(t);});
+  if(!target)return no('Выберите доступную цель для арбалета.');
+  supply(r,'arrow',-1);
+  var base=Math.round(h.stats().atk*(has(r,'adv_legendary_hunter')?1.4:1));
+  h.hit(target,base);
+  if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&target.foe.hp<=0&&!undead(target.foe)&&Math.random()<.3)
+   h.addSoul({kind:'common',name:'Душа '+target.foe.name});
+  return ok('Арбалет поражает '+target.foe.name+'.');
  }
  if(tool.kind==='rune'){
-  var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=(has(r,'adv_holy_rune')?2:1);});}).filter(Boolean);
-  if(!candidates.length)return has(r,'adv_holy_rune')?'Нужно два одинаковых свитка ниже 5-го ранга.':'Нужен хотя бы один свиток ниже 5-го ранга.';
-  var sp=selected?candidates.find(function(x){return x.id===selected;}):null;if(!sp)return 'Выберите свиток для тигля.';var next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
-  if(!next.length)return 'Подходящий свиток для объединения не найден.';
-  if(!has(r,'adv_holy_rune')){
-   if(!has(r,'adv_royal_rune'))return 'Объединение свитков открывается Святым мастером рун.';
-   r.scrolls[sp.id]--;var recovered=3+3*curSup(r,'rune_piece');
-   r.mp=Math.min(h.stats().mp,r.mp+recovered+2*titleSetEquipped(r,'rune'));
-   return 'Тигель разобрал свиток: восстановлено '+recovered+' маны.';
+  var special=has(r,'adv_holy_rune'),need=special?2:1;
+  var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=need;});}).filter(Boolean);
+  if(!candidates.length)return no(special?'Нужно два одинаковых свитка ниже 5-го ранга.':'Нужен свиток ниже 5-го ранга.');
+  var sp=candidates.find(function(x){return x.id===selected;});
+  if(!sp)return no('Выберите свиток для тигля.');
+  if(!special){
+   r.scrolls[sp.id]--;
+   var recovered=3+3*titleSetEquipped(r,'rune');
+   r.mp=Math.min(h.stats().mp,r.mp+recovered);
+   return ok('Тигель разобрал свиток и восстановил до '+recovered+' маны.');
   }
-  if(curSup(r,'rune')<1)return 'Нужна магическая руна для объединения свитков.';
-  supply(r,'rune',-1);r.scrolls[sp.id]-=2;h.grant(next[0].id,1,'forge');return 'Два свитка и магическая руна преобразованы в '+next[0].name+'.';
+  var next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5&&x.school===sp.school;});
+  if(!next.length)next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
+  if(!next.length)return no('Подходящий свиток для объединения не найден.');
+  if(curSup(r,'rune')<1)return no('Нужна магическая руна для объединения свитков.');
+  supply(r,'rune',-1);r.scrolls[sp.id]-=2;
+  h.grant(next[0].id,1,'forge');return ok('Два свитка и магическая руна преобразованы в '+next[0].name+'.');
  }
  if(tool.kind==='forge'){
   if(has(r,'adv_great_enchanter')||has(r,'adv_great_swordsmith')){
-   var kind=has(r,'adv_great_enchanter')?'pow':'atk',target=(r.items||[]).find(function(it){return Object.keys(r.equip||{}).some(function(slot){return r.equip[slot]===it.id;})&&(it.plus||0)<9;});
-   if(!target)return 'Нужно надетое улучшаемое снаряжение.';
-   if(curSup(r,'quench')<2)return 'Нужно 2 закалочные эссенции.';
+   var kind=has(r,'adv_great_enchanter')?'pow':'atk';
+   var target=(r.items||[]).find(function(it){return String(it.id)===String(selected)&&
+    Object.keys(r.equip||{}).some(function(slot){return r.equip[slot]===it.id;})&&(it.plus||0)<9;});
+   if(!target)return no('Выберите надетое улучшаемое снаряжение.');
+   if(curSup(r,'quench')<2)return no('Нужно 2 закалочные эссенции.');
    supply(r,'quench',-2);target.plus=(target.plus||0)+1;target[kind]=(target[kind]||0)+2;
-   return 'Наковальня усилила «'+target.name+'» до +'+target.plus+'.';
+   return ok('Наковальня усилила «'+target.name+'» до +'+target.plus+'.');
   }
-  if(!has(r,'adv_holy_blacksmith'))return 'Создание реликвий открывается Святым кузнецом.';
-  if(curSup(r,'quench')<3)return 'Нужно 3 закалочные эссенции.';
-  supply(r,'quench',-3);h.addItem('amulet',6);return 'Наковальня создала редкую реликвию.';
+  if(!has(r,'adv_holy_blacksmith'))return no('Создание реликвий открывается Святым кузнецом.');
+  if(curSup(r,'quench')<3)return no('Нужно 3 закалочные эссенции.');
+  supply(r,'quench',-3);h.addItem('amulet',6);
+  return ok('Наковальня создала реликвию 6-го ранга.');
  }
- return 'Этот предмет работает автоматически.';
+ return no('Этот инструмент действует автоматически.');
 }
+
 window.CryptTitlesRuntime={data:data,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
