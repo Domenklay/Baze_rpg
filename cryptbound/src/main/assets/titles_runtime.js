@@ -176,6 +176,8 @@ function toolOf(r){
 function undead(e){return /нежит|скел|мертв|лич|зомб|труп|костян|призрак/i.test((e&&e.name)||'');}
 function floor(r,h){
  init(r);r.titleFloorAtk=0;r.titleHealAtk=0;
+ // Panther stays on this floor; statues remain in the backpack.
+ r.titlePanther=null;
  if(has(r,'adv_explorer'))r.ep+=10+5*(level(r,'adv_explorer')-1);
  if(has(r,'adv_explorationist'))r.hp=Math.min(h.stats().hp,r.hp+6+3*(level(r,'adv_explorationist')-1));
  if(has(r,'mag_priest')){var b=3*level(r,'mag_priest');r.hp=Math.min(h.stats().hp,r.hp+b);r.mp=Math.min(h.stats().mp,r.mp+b);}
@@ -203,10 +205,34 @@ function turn(r,h){
   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*.5)-v.foe.def);
   v.foe.hp-=amount;h.log('Тотем наносит '+amount+' урона.');if(v.foe.hp<=0)h.kill(v);
  }
- if(alive.length&&curSup(r,'leopard')>0&&r.titleTurnTick%(has(r,'adv_elf_king')&&has(r,'adv_night_walker')?2:3)===0){
-  var g=alive[0],hit=Math.max(1,Math.floor(h.stats().atk*.5)+curSup(r,'leopard')*2-g.foe.def);
-  g.foe.hp-=hit;h.log('Чёрная пантера наносит '+hit+' урона.');if(g.foe.hp<=0)h.kill(g);
+ var panther=r.titlePanther;
+ if(panther&&panther.hp>0){
+  var bonus=has(r,'adv_elf_king')&&has(r,'adv_night_walker')?Math.max(1,Math.floor(h.stats().atk*.2)):0;
+  var target=alive[0],roomTargets=h.roomTargets?h.roomTargets():[];
+  if(target&&target.foe.hp>0){
+   var damage=Math.max(1,panther.atk+bonus-(target.foe.def||0)-Math.max(0,target.foe.guard||0));
+   if(h.provoke)h.provoke(target.foe,'panther');
+   target.foe.hp=Math.max(0,target.foe.hp-damage);
+   h.log('Чёрная пантера атакует '+target.foe.name+': '+damage+' физического урона.');
+   if(target.foe.hp<=0)h.kill(target);
+  }else if(roomTargets.length){
+   var guard=roomTargets[0],damageRoom=Math.max(1,panther.atk+bonus-(guard.def||0));
+   if(h.provoke)h.provoke(guard,'panther');
+   if(h.hitRoom)h.hitRoom(guard,damageRoom);
+   h.log('Чёрная пантера атакует '+guard.name+' в побочной комнате: '+damageRoom+'.');
+  }
  }
+}
+function summonPanther(r,h){
+ if(!r||!has(r,'adv_elven_ranger'))return {ok:false,message:'Не изучено звание Эльфийского следопыта.'};
+ if(r.titlePanther&&r.titlePanther.hp>0)return {ok:false,message:'Чёрная пантера уже призвана.'};
+ if(curSup(r,'leopard')<1)return {ok:false,message:'Нет статуэток чёрной пантеры.'};
+ var st=h.stats(),boost=has(r,'adv_elf_king')&&has(r,'adv_night_walker');
+ var maxHp=Math.max(12,Math.ceil(st.hp*(boost?.52:.36)));
+ var atk=Math.max(4,Math.ceil(st.atk*(boost?.66:.46)));
+ r.titleSupplies.leopard--;
+ r.titlePanther={name:'Чёрная пантера',hp:maxHp,maxHp:maxHp,atk:atk,def:Math.max(1,Math.floor(st.def*.5))};
+ return {ok:true,message:'Статуэтка призвала чёрную пантеру (HP '+maxHp+', атака '+atk+').'};
 }
 function onKill(r,e,drop,h){
  if(has(r,'war_silver'))r.hp=Math.min(h.stats().hp,r.hp+level(r,'war_silver'));
@@ -375,5 +401,5 @@ function useTool(r,h,selected){
  return no('Этот инструмент действует автоматически.');
 }
 
-window.CryptTitlesRuntime={data:data,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={data:data,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
