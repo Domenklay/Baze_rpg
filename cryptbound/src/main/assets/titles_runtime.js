@@ -34,12 +34,30 @@ function grantTitlePiece(r,t,levelNum,h){
  h.log('Получена часть комплекта «'+piece[1]+'». Предмет помещён в рюкзак и не надет.');
 }
 function rank5(r,id,key){return Math.max(0,Math.min(3,Number(r.titleMastery&&r.titleMastery[id]&&r.titleMastery[id][key])||0));}
-function masterKeys(t){if(t.tree===1)return t.id==='mag_light_bishop'?['pow','atk','hp']:['pow','mp','hp'];if(t.tree===2)return t.id.indexOf('rune')>=0||t.id==='adv_great_enchanter'?['pow','hp','mp']:t.id.indexOf('blacksmith')>=0||t.id==='adv_great_swordsmith'?['atk','hp','mp']:['atk','pow','hp'];return t.id==='war_warrior'||t.id==='war_commander'?['atk','mp','hp']:['atk','pow','hp'];}
+function masterKeys(t){
+ if(t.tree===1)return t.id==='mag_light_bishop'?['pow','atk','hp']:['pow','mp','hp'];
+ if(t.tree===2){
+  if(t.id==='adv_holy_rune'||t.id==='adv_great_swordsmith'||t.id==='adv_holy_blacksmith')return ['atk','hp','mp'];
+  if(t.id==='adv_great_enchanter')return ['pow','hp','mp'];
+  return ['atk','pow','hp'];
+ }
+ return t.id==='war_warrior'||t.id==='war_commander'?['atk','mp','hp']:['atk','pow','hp'];
+}
+function masteryStatValues(t,k){
+ if(t.tree===0)return k==='hp'?[60,120,180]:k==='mp'?[40,80,120]:[3,6,9];
+ if(t.tree===1){
+  if(k==='pow'||k==='atk')return [3,6,9];
+  if(t.id==='mag_destruction'||t.id==='mag_elements')return k==='hp'?[40,80,120]:[60,120,180];
+  return k==='hp'?[60,120,180]:[40,80,120];
+ }
+ if(k==='atk'||k==='pow')return (t.id==='adv_farplane'||t.id==='adv_elf_king')?[2,3,4]:[2,4,6];
+ return [40,60,80];
+}
 function statBonuses(r){
  var st={atk:0,hp:0,mp:0,pow:0,def:0};
  data.forEach(function(t){
   var n=level(r,t.id);if(!n)return;
-  if(t.rank===5){masterKeys(t).forEach(function(k){var lv=rank5(r,t.id,k);if(lv)st[k]+=(k==='atk'||k==='pow'?[2,4,6][lv-1]:[40,60,80][lv-1]);});return;}
+  if(t.rank===5){masterKeys(t).forEach(function(k){var lv=rank5(r,t.id,k);if(lv)st[k]+=masteryStatValues(t,k)[lv-1];});return;}
   var re=/(Атака|магия|Магия|HP|MP|Броня)\s*\+(\d+(?:\/\d+)*)/gi;
   var m;while((m=re.exec(t.stats))!==null){
    var k=/^атака$/i.test(m[1])?'atk':/^магия$/i.test(m[1])?'pow':m[1].toLowerCase();
@@ -101,8 +119,8 @@ function reward(r,t,levelNum,h){
  if(t.id==='war_faith'){supply(r,'holy_badge',1);r.guardCharges=(r.guardCharges||0)+1;}
  if(t.id==='war_dancer'||t.id==='war_great_sword')supply(r,'sword_scroll',1);
  if(t.id==='war_commander'&&levelNum===1)h.addItem('amulet',6);
- if(t.id==='war_paladin'&&levelNum===1){r.hp=Math.ceil(h.stats().hp*1.1);r.titlePaladinBonus=.10;}
- if(t.id==='war_sword_sage'&&levelNum===1)r.titleSageBonus=.30;
+ if(t.id==='war_paladin'&&levelNum===1){r.hp=h.stats().hp;}
+ if(t.id==='war_sword_sage'&&levelNum===1)r.titleSageFlat=Math.max(1,Math.round(h.stats().atk*.30));
  if(t.rank===5&&t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
  if(t.id==='adv_farplane'&&levelNum===1)h.log('Особая специализация: '+(has(r,'adv_night_walker')?'извлечение душ из останков':'души павших врагов')+'.');
  if(t.id==='adv_legendary_hunter'&&levelNum===1)supply(r,'arrow',3);
@@ -188,7 +206,7 @@ function onKill(r,e,drop,h){
  if(has(r,'war_royal'))r.titleFloorAtk=(r.titleFloorAtk||0)+level(r,'war_royal');
  if(has(r,'war_shadow'))r.titleDarkSoulTurns=Math.max(r.titleDarkSoulTurns||0,1+level(r,'war_shadow'));
  if(has(r,'mag_conjuror'))r.titleTotemTurns=Math.max(r.titleTotemTurns||0,3*level(r,'mag_conjuror'));
- if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&Math.random()<.15+.10*rank5(r,'adv_farplane','atk'))drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
+ if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&!/голем|элементал|механи|автомат|скелет|мертвец|нежить|призрак|костяк|лич/i.test(e.name)&&Math.random()<.05)drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
  if(titleSetEquipped(r,'hunter')===3)r.ep+=2;
  if(has(r,'war_dragon')&&Math.random()<(0.1+.1*level(r,'war_dragon')))h.cross(e,Math.ceil(h.stats().atk*.65));
  if(has(r,'war_duke')&&Math.random()<.1)h.cross(e,Math.ceil(h.stats().atk*.7));
@@ -198,7 +216,7 @@ function beforeAttack(r){return has(r,'war_novice')&&Math.random()<.05+.05*level
 function attack(r,e,dmg,h){
  if(has(r,'adv_demon_hunter')&&undead(e))dmg=Math.ceil(dmg*(1+.05+.05*level(r,'adv_demon_hunter')));
  if(has(r,'war_templar')&&undead(e))dmg=Math.ceil(dmg*(1+.25+.25*level(r,'war_templar')));
- if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*1.5);
+ if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*(1.5+.15*(rank5(r,'war_warrior','atk')+rank5(r,'war_warrior','mp')+rank5(r,'war_warrior','hp'))));
  if(has(r,'war_magic')&&Math.random()<.05+.05*level(r,'war_magic'))dmg+=h.stats().pow;
  if(has(r,'war_dancer')&&curSup(r,'sword_scroll')>0&&Math.random()<.08){supply(r,'sword_scroll',-1);dmg=Math.ceil(dmg*1.45);h.log('Техника мастера меча усилила удар.');}
  if(has(r,'war_dark_arbiter')&&Math.random()<.05)h.flash(Math.max(6,h.stats().pow*1.2));
@@ -208,7 +226,6 @@ function attack(r,e,dmg,h){
  return dmg;
 }
 function incoming(r,e,damage){
- if(r.guardCharges>0){r.guardCharges--;damage=Math.max(1,damage-5);}
  if(e&&e.ranged&&has(r,'war_heavy'))damage*=1-(.1+.1*level(r,'war_heavy'));
  return Math.max(1,Math.ceil(damage));
 }
@@ -220,14 +237,14 @@ function spellMultiplier(r,sp){
  if(has(r,'mag_legendary')&&['heal','shield','healshield','lastlight','timestop','reveal'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_legendary','pow');
  if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)result+=.30;
  if(has(r,'mag_dark_priest')&&sp.school==='dark'&&Math.random()<.5)result*=2;
- if(has(r,'mag_pope')&&sp.school==='light'&&sp.kind==='holy')result*=2;
+ if(has(r,'mag_pope')&&sp.school==='light'&&['holy','attack','aoe'].indexOf(sp.kind)>=0)result*=2;
  return result;
 }
 function spellCast(r,sp,h){
  if(has(r,'mag_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)r.titleHealAtk=Math.max(r.titleHealAtk||0,5*level(r,'mag_bishop'));
  if(has(r,'mag_time')&&sp.school==='air'&&!h.targets().some(function(t){return t.foe&&t.foe.boss&&t.foe.hp>0;})&&Math.random()<.5)r.timeStopTurns=(r.timeStopTurns||0)+1;
  if(has(r,'mag_archbishop')&&(sp.kind==='shield'||sp.kind==='healshield')&&Math.random()<.15)r.shield+=Math.ceil(h.stats().pow*3);
- if(has(r,'mag_destruction')&&sp.id==='flame'&&Math.random()<(.12+.06*rank5(r,'mag_destruction','pow')))h.flash(Math.ceil(h.stats().pow*2));
+ if(has(r,'mag_destruction')&&sp.id==='flame'&&Math.random()<(.12+[0,.06,.09,.12][rank5(r,'mag_destruction','pow')]))h.flash(Math.ceil(h.stats().pow*(2+.25*rank5(r,'mag_destruction','mp'))));
  if(has(r,'mag_wizard')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].indexOf(sp.kind)>=0&&Math.random()<.1+.1*level(r,'mag_wizard'))h.flash(Math.ceil(h.stats().pow*.6));
  /* Light Bishop/Pope repeated hit is applied to the spell's original target in spellMultiplier. */
 }
@@ -302,5 +319,5 @@ function useTool(r,h,selected){
  }
  return 'Этот предмет работает автоматически.';
 }
-window.CryptTitlesRuntime={data:data,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={data:data,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
