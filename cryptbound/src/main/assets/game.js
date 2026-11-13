@@ -86,7 +86,7 @@ function stats(){
  var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
  var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
- var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
+ var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -97,7 +97,7 @@ function stats(){
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
- a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)+(r.titleSageBonus||0)));
+ a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)));
  hp=Math.round(hp*(1+(lvl('war_knight')*.10)+(lvl('war_paladin')>0?.10:0)));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
@@ -2210,7 +2210,7 @@ function descend(){
 /* Souls belong to the current run. Corpse stories are one-off per run. */
 function addSpiritSoul(entry){
  if(!r||!entry||!Array.isArray(r.soulBag))return null;
- if(r.soulBag.length>=24){log('Мешочек душ заполнен.');return null;}
+ // Souls share the unlimited expedition backpack.
  var v={id:++s.seq,kind:entry.kind||'common',name:entry.name||'Безымянная душа',storyId:entry.storyId||null};
  r.soulBag.push(v);log('Получена душа: '+v.name+'.');return v;
 }
