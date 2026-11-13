@@ -283,6 +283,8 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
  A('safe-portal');assert.equal(state.run,run);
  for(let stage=0;stage<3;stage++){
   run=state.run;assert.ok(run);
+  // Salvage uses actually found items; a new run starts with none.
+  if(stage===2)run.items.push(Object.assign({id:++state.seq,plus:0,floor:1,fixed:true,rarity:1},CR.gear('weapon',1,0)));
   assert.equal(run.locationIndex,stage);
   assert.equal(run.floor,1);
   run.floor=29;run.hp=5000;run.mp=5000;run.key=true;
