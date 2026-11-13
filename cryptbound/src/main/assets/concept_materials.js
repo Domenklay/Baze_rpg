@@ -21,5 +21,16 @@ window.CryptConceptMaterials={
  "Герб Первого Короля": "t3_concept_gerb_pervogo_korolia",
  "Горновой угорь": "t3_concept_gornovoi_ugor",
  "Изношенная медная оковка кирки": "t3_concept_iznoshennaia_mednaia_okovka_kirki",
- "Клеймо инквизитора Орда": "t3_concept_kleimo_inkvizitora_orda"
+ "Клеймо инквизитора Орда": "t3_concept_kleimo_inkvizitora_orda",
+ "Клёпаная медная пластина": "t3_concept_kliopanaia_mednaia_plastina",
+ "Ключ главного надсмотрщика": "t3_concept_kliuch_glavnogo_nadsmotrshchika",
+ "Клык сторожевого вожака": "t3_concept_klyk_storozhevogo_vozhaka",
+ "Коса Фармуна": "t3_concept_kosa_farmuna",
+ "Крепкая шкура сторожевого зверя": "t3_concept_krepkaia_shkura_storozhevogo_zveria",
+ "Медночешуйчатый окунь": "t3_concept_mednocheshuichatyi_okun",
+ "Осколок короны Дурмана": "t3_concept_oskolok_korony_durmana",
+ "Осколок молота Бродгара": "t3_concept_oskolok_molota_brodgara",
+ "Палаческое рунное клеймо": "t3_concept_palacheskoe_runnoe_kleimo",
+ "Печать расколотого клана": "t3_concept_pechat_raskolotogo_klana",
+ "Первый големий сердечник": "t3_concept_pervyi_golemii_serdechnik"
 };
