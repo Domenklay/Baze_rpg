@@ -56,5 +56,229 @@ D(48,'Сердце грибницы','F03_057',30,0,'Сине-зелёный с�
 D(49,'Камень Врат Земли','F03_030',32,0,'Между плитами проглядывают древние знаки перемещения. Их можно прочитать только один раз за путешествие.',['Снять оттиск рун|earthgate;ep:3','Получить обычное знание|scroll:4','Не трогать|leave']),
 D(50,'Сердце древнего дуба','F03_064',35,0,'Ветви расступаются перед теми, кто услышал стон дуба и снял боль с молодой рощи.',['Принять дар хранителя|flag:grove_heart;gear:amulet:4;stat:hp:10;ep:6|flag:young_treant_healed','Восстановить силы|heal:40;shield:30','Отойти|leave'])
 ];
-/*IMPLEMENTATION*/
+
+var itemDefs={
+ forest_coin:['Лесная монетка','F02_004'],map_scrap:['Обрывок карты','F02_003'],
+ ranger_badge:['Жетон лесничего','F02_006'],axe:['Топор лесоруба','F01_011'],
+ rope:['Прочная верёвка','F02_055'],guard_letter:['Письмо дозорного','F02_062'],
+ oak_rune:['Руна дуба','F02_040'],fox_charm:['Лисий талисман','F02_025'],
+ honey:['Лесной мёд','F02_031'],smoker:['Дымарь','F03_042'],
+ bleed_trap:['Капкан кровотечения','F02_010'],stun_trap:['Капкан оглушения','F02_011'],
+ mushroom:['Лекарственные грибы','F02_043'],spore:['Ядовитые споры','F02_034'],
+ acorn:['Желудь','F02_049'],water:['Родниковая вода','F02_051']
+};
+var trophyMap={wolf:'wolf',boar:'boar',beetle:'beetle',root:'root',grove:'grove'};
+function ensure(run){
+ if(!run.forest||typeof run.forest!=='object')run.forest={};
+ var f=run.forest;
+ if(!f.seen)f.seen={};if(!f.flags)f.flags={};if(!f.items)f.items={};
+ if(!f.battles)f.battles={};if(!f.hunts)f.hunts={};if(!f.pendingTrophies)f.pendingTrophies={};
+ if(!f.uses)f.uses={};
+ return f;
+}
+function has(run,key){
+ var f=ensure(run);
+ if(!key)return true;
+ if(key.indexOf('!')===0)return !has(run,key.slice(1));
+ var a=key.split(':');
+ if(a[0]==='item')return (f.items[a[1]]||0)>=Math.max(1,Number(a[2])||1);
+ if(a[0]==='flag')return !!f.flags[a[1]];
+ if(a[0]==='gold')return run.gold>=Number(a[1]);
+ if(a[0]==='floor')return run.floor>=Number(a[1]);
+ return true;
+}
+function scene(id){return scenes.find(function(x){return x.id===Number(id);})||null;}
+function pickScene(run){
+ var f=ensure(run);
+ var possible=scenes.filter(function(x){
+  if(x.id===2||run.floor<x.min)return false;
+  if(!x.repeat&&f.seen[x.id])return false;
+  if(x.id===1&&f.flags.squirrel_saved)return false;
+  if(x.id===25&&f.hunts.wolf&&f.hunts.wolf.attempts>=2)return false;
+  if(x.id===29&&f.hunts.boar&&f.hunts.boar.attempts>=2)return false;
+  if(x.id===37&&f.hunts.beetle&&f.hunts.beetle.attempts>=2)return false;
+  if(x.id===39&&f.hunts.root&&f.hunts.root.attempts>=2)return false;
+  return !x.need||has(run,x.need);
+ });
+ if(!possible.length)return null;
+ // Explore unfinished one-off discoveries before recurring harvests.
+ var first=possible.filter(function(x){return !x.repeat;});
+ var pool=first.length&&Math.random()<.87?first:possible;
+ return pool[Math.floor(Math.random()*pool.length)].id;
+}
+function image(id,cls){
+ if(!/^F0[1-3]_\d{3}$/.test(id))return '';
+ return '<img class="'+(cls||'forest-event-image')+'" src="forest_events/sprites/'+id+'.png" alt="" draggable="false"/>';
+}
+function e(s){return String(s==null?'':s).replace(/[&<>"']/g,function(a){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[a];});}
+function choicesFor(run,t){
+ var def=scene(t.forestId);if(!def)return [];
+ if(def.id===1){
+  if(t.forestPhase==='fight')return [['Волки ещё рядом — вернуться после победы','leave','']];
+  if(t.forestPhase==='reward')return [['Поговорить с Рыжухой','item:forest_coin:1;flag:squirrel_saved;gold:5','']];
+ }
+ return def.choices.map(function(s){return s.split('|');});
+}
+function render(run,t){
+ var def=scene(t.forestId);if(!def)return '';
+ var opts=choicesFor(run,t);
+ return '<div class="forest-event-dialog"><div class="sheet-kicker">ЛЕСНАЯ ОКРАИНА · НАХОДКА '+String(def.id).padStart(2,'0')+'/50</div>'+
+  '<h2>'+e(def.title)+'</h2><div class="forest-event-picture">'+image(def.art)+'</div><p>'+e(def.text)+'</p>'+
+  (def.id===1&&t.forestPhase==='reward'?'<p class="golden">Три волка побеждены. Рыжуха уже может спуститься с пня.</p>':'')+
+  opts.map(function(opt,i){
+   var can=!opt[2]||has(run,opt[2]),locked=opt[2]&&!can;
+   var title=locked?'Не выполнено условие: '+requirementText(opt[2]):'';
+   return '<button class="btn wide space-top'+(i?' alt':'')+'" data-action="forest-choice" data-id="'+t.id+':'+i+'" '+(locked?'disabled':'')+' title="'+e(title)+'">'+e(opt[0])+(locked?' · '+e(requirementText(opt[2])):'')+'</button>';
+  }).join('')+'<button class="btn dark wide space-top" data-action="close">Закрыть</button></div>';
+}
+function requirementText(s){
+ if(!s)return '';
+ var a=s.split(':');
+ if(a[0]==='item')return itemDefs[a[1]]?itemDefs[a[1]][0]:'Нужен предмет';
+ if(a[0]==='flag')return ({fox_freed:'сначала спасти лисицу',map_first:'нужна карта леса',wolf_tracks:'сначала изучить следы волков',boar_tracks:'сначала изучить следы секача',oak_voice:'сначала услышать старый дуб',grove_seal:'восстановить печать рощи',young_treant_healed:'сначала спасти молодого древа'})[a[1]]||'нужно связанное событие';
+ if(a[0]==='gold')return a[1]+' золота';
+ return 'сначала выполните условие';
+}
+function needsCheck(run,effects){
+ var f=ensure(run),gold=run.gold,stock=Object.assign({},f.items);
+ for(var effect of effects){
+  var parts=effect.split(':'),type=parts[0];
+  if(type==='gold'){gold+=Number(parts[1])||0;if(gold<0)return 'Не хватает золота';}
+  if(type==='take'){
+   var k=parts[1],n=Math.max(1,Number(parts[2])||1);
+   stock[k]=(stock[k]||0)-n;if(stock[k]<0)return 'Не хватает предмета: '+(itemDefs[k]?itemDefs[k][0]:k);
+  }
+ }
+ return '';
+}
+function apply(run,effects,api){
+ var f=ensure(run),messages=[];
+ for(var op of effects){
+  if(!op)continue;
+  var p=op.split(':'),kind=p[0],key=p[1],num=Number(p[2])||1;
+  if(kind==='gold'){var amount=Number(key)||0;run.gold+=amount;messages.push((amount>=0?'+':'')+amount+' золота');}
+  else if(kind==='ep'){run.ep+=Number(key)||0;messages.push('+'+key+' очков исследования');}
+  else if(kind==='heal'){var old=run.hp;run.hp=Math.min(api.stats().hp,run.hp+(Number(key)||0));messages.push('Восстановлено '+(run.hp-old)+' HP');}
+  else if(kind==='hp'){run.hp=Math.max(1,run.hp+(Number(key)||0));messages.push(key+' HP');}
+  else if(kind==='mana'){run.mp=Math.min(api.stats().mp,run.mp+(Number(key)||0));messages.push('Мана +'+key);}
+  else if(kind==='shield'){run.shield+=Number(key)||0;messages.push('Щит +'+key);}
+  else if(kind==='potion'){run.potions+=Number(key)||0;messages.push('Эликсиры ×'+key);}
+  else if(kind==='scroll'){
+   var sp=api.rollSpell(Math.max(1,Math.min(5,Number(key)||3)));
+   api.grantScroll(sp.id,1,'forest-event');messages.push('Свиток «'+sp.name+'»');
+  }else if(kind==='earthgate'){
+   if(!run.earthGateFound&&api.grantScroll('earthgate',1,'forest-event'))messages.push('Свиток Врат Земли');
+   else{var another=api.rollSpell(4);api.grantScroll(another.id,1,'forest-event');messages.push('Свиток «'+another.name+'»');}
+  }else if(kind==='item'){
+   f.items[key]=(f.items[key]||0)+num;messages.push((itemDefs[key]?itemDefs[key][0]:key)+' ×'+num);
+  }else if(kind==='take'){
+   f.items[key]=Math.max(0,(f.items[key]||0)-num);messages.push('Использовано: '+(itemDefs[key]?itemDefs[key][0]:key));
+  }else if(kind==='flag'){f.flags[key]=true;}
+  else if(kind==='material'){
+   var n=Number(p[p.length-1])||1,material=p.slice(1,-1).join(':');
+   run.materials[material]=(run.materials[material]||0)+n;messages.push(material+' ×'+n);
+  }else if(kind==='gear'){
+   var gear=api.addItem(key,Number(p[2])||2);
+   if(gear)messages.push('Снаряжение: '+gear.name);
+  }else if(kind==='reveal'){
+   var count=Math.max(1,Math.min(4,Number(key)||1)),opened=api.revealSafe(count);
+   messages.push('Открыто клеток: '+opened);
+  }else if(kind==='stat'){
+   var stat=key==='random'?['atk','def','hp','mp','pow'][Math.floor(Math.random()*5)]:key;
+   var amount=Number(p[2])||1;
+   if(!run.forestWellStats)run.forestWellStats={};
+   run.forestWellStats[stat]=(run.forestWellStats[stat]||0)+amount;
+   if(stat==='hp')run.hp+=amount;if(stat==='mp')run.mp+=amount;
+   messages.push('Постоянно до конца экспедиции: +'+amount+' '+({atk:'атаки',def:'защиты',hp:'HP',mp:'MP',pow:'магии'}[stat]||stat));
+  }else if(kind==='status'&&key==='clean'){run.poisonTurns=0;run.bleedTurns=0;messages.push('Яд и кровотечение сняты');}
+  else if(kind==='trophy'){
+   f.pendingTrophies[key]=true;messages.push('Трофей «'+key+'» сохранится после безопасного возвращения');
+  }
+ }
+ return messages;
+}
+function choose(run,meta,t,index,api){
+ var def=scene(t&&t.forestId);if(!def||!t.revealed||t.cleared)return {ok:false,message:'Находка уже исследована'};
+ var f=ensure(run),list=choicesFor(run,t),choice=list[index];
+ if(!choice)return {ok:false,message:'Неверный вариант'};
+ if(choice[2]&&!has(run,choice[2]))return {ok:false,message:requirementText(choice[2])};
+ if(choice[1]==='leave')return {ok:true,leave:true,turn:false,message:'Вы проходите мимо',finish:false};
+ var effects=choice[1].split(';'),err=needsCheck(run,effects);
+ if(err)return {ok:false,message:err};
+ var battle=effects.find(function(x){return x.indexOf('fight:')===0||x.indexOf('hunt:')===0;});
+ if(battle){
+  var parts=battle.split(':'),kind=parts[0]==='hunt'?'alpha':parts[1];
+  var creature=parts[0]==='hunt'?parts[1]:parts[1],n=parts[0]==='hunt'?1:Number(parts[2])||1,task=parts[0]==='hunt'?'hunt:'+creature:'encounter:'+t.id+':'+run.floor;
+  if(f.battles[task]&&f.battles[task].remaining>0)return {ok:false,message:'Сначала закончите начатый бой'};
+  if(parts[0]==='hunt'){
+   var hunt=f.hunts[creature]||(f.hunts[creature]={attempts:0,completed:false});
+   if(hunt.completed)return {ok:false,message:'Этот вожак уже побеждён'};
+   if(hunt.attempts>=2)return {ok:false,message:'След вожака потерян после двух попыток'};
+  }
+  var spawned=api.spawn(creature,n,task,kind==='alpha');
+  if(spawned!==n)return {ok:false,message:'Недостаточно места для засады; событие можно повторить'};
+  f.battles[task]={remaining:n,origin:t.id,scene:def.id,creature:creature,alpha:kind==='alpha',reward:parts[3]||'',finished:false};
+  if(kind==='alpha'){var h=f.hunts[creature]||(f.hunts[creature]={attempts:0,completed:false});h.attempts++;}
+  if(def.id===1){t.forestPhase='fight';}else{t.cleared=true;f.seen[def.id]=true;}
+  return {ok:true,turn:true,combat:true,message:'Охота началась: противников '+n+'. Победите их на поле'};
+ }
+ var messages=apply(run,effects,api);
+ t.cleared=true;f.seen[def.id]=true;f.uses[def.id]=(f.uses[def.id]||0)+1;
+ if(def.id===1)f.flags.squirrel_saved=true;
+ return {ok:true,turn:true,message:messages.join(' · ')||'Событие завершено',messages:messages};
+}
+function onKill(run,enemy,api){
+ if(!enemy||!enemy.forestTask)return null;
+ var f=ensure(run),task=f.battles[enemy.forestTask];
+ if(!task||task.finished)return null;
+ task.remaining=Math.max(0,task.remaining-1);
+ if(task.remaining)return 'Осталось противников: '+task.remaining;
+ task.finished=true;
+ var sceneId=task.scene,original=run.tiles.find(function(x){return x.id===task.origin;});
+ if(sceneId===1&&original){original.forestPhase='reward';return 'Три волка повержены. Вернитесь к Рыжухе за обещанной лесной монеткой.';}
+ if(task.alpha){
+  f.hunts[task.creature].completed=true;
+  f.pendingTrophies[task.creature]=true;
+  return 'Вожак побеждён! Трофей записан в книгу и закрепится при безопасном возвращении на базу.';
+ }
+ var reward={
+  trap:'gold:20;potion:1',tracks:'material:Волчья шкура:1',burrow:'gold:14;material:Дикий корень:1',
+  boar_path:'gold:24;material:Кабаний клык:1',cocoon:'item:spore:1;shield:7',fungal:'material:Грибная эссенция:2;scroll:3'
+ }[task.reward]||'gold:14';
+ var msgs=apply(run,reward.split(';'),api);
+ return 'Засада отбита: '+msgs.join(' · ');
+}
+function safeReturn(run,meta,book){
+ var f=ensure(run),count=0;
+ Object.keys(f.pendingTrophies).forEach(function(k){
+  if(trophyMap[k]&&book.grantTrophy(meta,trophyMap[k]))count++;
+ });
+ f.pendingTrophies={};
+ return count;
+}
+function inventory(run){
+ var f=ensure(run);
+ return Object.keys(f.items).filter(function(k){return f.items[k]>0;}).map(function(k){
+  var info=itemDefs[k]||[k,'F02_001'];
+  return '<div class="forest-pocket-row">'+image(info[1],'forest-pocket-icon')+'<span><b>'+e(info[0])+'</b><small>×'+f.items[k]+'</small></span>'+
+    (['bleed_trap','stun_trap','honey','mushroom','water'].indexOf(k)>=0?
+    '<button class="btn small" data-action="forest-use" data-id="'+e(k)+'">Использовать</button>':'')+'</div>';
+ }).join('')||'<p class="fine muted">Лесные находки ещё не собраны.</p>';
+}
+function use(run,id,api){
+ var f=ensure(run);if(!itemDefs[id]||!f.items[id])return {ok:false,message:'Предмет закончился'};
+ var foe=api.target();
+ if(id==='bleed_trap'||id==='stun_trap'){
+  if(!foe)return {ok:false,message:'Сначала обнаружьте врага'};
+  if(id==='bleed_trap'){foe.foe.bleed=Math.max(foe.foe.bleed||0,3);foe.foe.stun=Math.max(foe.foe.stun||0,1);}
+  else foe.foe.stun=Math.max(foe.foe.stun||0,3);
+ }else if(id==='honey')run.hp=Math.min(api.stats().hp,run.hp+24);
+ else if(id==='mushroom')run.hp=Math.min(api.stats().hp,run.hp+14);
+ else if(id==='water'){run.poisonTurns=0;run.bleedTurns=0;run.hp=Math.min(api.stats().hp,run.hp+8);}
+ else return {ok:false,message:'Этот предмет применяется в другом событии'};
+ f.items[id]--;
+ return {ok:true,message:itemDefs[id][0]+' использован',turn:true};
+}
+window.CryptForestEvents={scenes:scenes,scene:scene,ensure:ensure,has:has,pick:pickScene,image:image,render:render,choose:choose,onKill:onKill,safeReturn:safeReturn,inventory:inventory,use:use,itemDefs:itemDefs,requirementText:requirementText};
+
 })();
