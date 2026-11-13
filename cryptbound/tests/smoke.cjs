@@ -517,6 +517,12 @@ test('Pocket rooms accept combat spells, enforce world-magic limit and use prote
  run.scrolls.bolt=3;
  const startHp=tile.room.guardHp,turns=run.turn;
  A('cast','bolt');
+ assert.equal(run.pendingSpell,'bolt','Targeted scroll opens target selection');
+ assert.equal(run.scrolls.bolt,3,'Selecting a target does not spend the scroll');
+ assert.equal(run.turn,turns,'Selecting a target costs no turns');
+ assert.match(el('content').innerHTML,/spell-target-banner/);
+ const guard=tile.room.guards.find(g=>g.hp>0);
+ A('cast-target',tile.id+':'+guard.slot);
  assert.ok(tile.room.guardHp<startHp);
  assert.equal(run.scrolls.bolt,2);
  assert.equal(run.turn,turns+1);

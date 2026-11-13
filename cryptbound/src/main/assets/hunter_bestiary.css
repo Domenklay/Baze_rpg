@@ -113,3 +113,102 @@
 .hb-inventory-access .hb-special-item b{font:700 14px Georgia}
 .hb-inventory-access .hb-special-item small{font:10px Georgia;color:#c3aa85;display:block}
 @media(max-width:370px){.hb-inventory-access .hb-special-item strong{font-size:11px}.hb-inventory-access .hb-special-item b{font-size:12px}.hb-inventory-access .hb-special-item .hb-book-icon{width:30px;height:34px}}
+
+/* v0.7.5: hand-painted real open-book sprite, two persistent facing pages
+   in a PORTRAIT game. Art is a standalone offline SVG sprite; actual creatures
+   continue to use the same packaged idle sprites as the maze. */
+#overlay .dialog.hb-dialog{width:min(96vw,620px);max-width:620px;max-height:96dvh;padding:0;border:0!important;border-image:none!important;background:none!important;box-shadow:none}
+#overlay .dialog.hb-dialog:before,#overlay .dialog.hb-dialog:after{display:none}
+.hb-window{height:min(94dvh,900px);min-height:440px;border:0;border-radius:0;box-shadow:0 16px 38px #000c;background:transparent url("hunter_spread.svg") center / 100% 100% no-repeat;overflow:hidden}
+.hb-window:before,.hb-window:after{display:none}
+.hb-head{height:105px;min-height:105px;flex:none;padding:49px 35px 5px;background:transparent;border:0;text-align:center}
+.hb-head-art{display:none}
+.hb-head h2{font:700 clamp(18px,4.4vw,29px)/1 Georgia,serif;color:#efcf98;text-shadow:0 2px 2px #110c09,1px 0 #1e130e}
+.hb-head p{font:clamp(8px,1.55vw,11px)/1.25 Georgia;color:#edd3aa;letter-spacing:0;margin-top:6px;text-shadow:0 1px #100c09}
+.hb-close{right:18px;top:18px;border:3px solid #be925b;color:#f2c787;width:38px;height:38px;background:linear-gradient(140deg,#633623,#231410);box-shadow:inset 0 0 0 2px #30180e;border-radius:3px;z-index:7}
+.hb-tabs{z-index:3;flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:2px 24px 0;background:transparent;border:0;height:43px}
+.hb-tabs button{height:40px;min-height:0;border:3px solid #9b6d3f;border-radius:5px 5px 2px 2px;box-shadow:inset 0 0 0 1px #26160d,0 2px 2px #180f0b;cursor:pointer;background:linear-gradient(#3a2b24,#1d1915 65%,#35241c);color:#dfc59c;font:700 clamp(11px,2.3vw,16px)/1 Georgia;padding:3px 1px}
+.hb-tabs button.selected{background:linear-gradient(#9f442e,#70241d 62%,#451a18);color:#f3ddad;border-color:#d9a45b}
+.hb-tabs button span{color:#e6b46b;font-size:1.12em;margin-right:5px}
+.hb-inner{z-index:3;flex:1;min-height:0;padding:9px clamp(20px,5.8vw,42px) 0;background:transparent;overflow:hidden}
+.hb-beasts-layout{display:grid;grid-template-columns:minmax(0,46%) minmax(0,54%);grid-template-rows:minmax(0,1fr);height:100%;gap:8px}
+.hb-beast-list{display:block;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#8e6b3e transparent;max-height:none;min-height:0;padding:5px 2px;border:0;background:transparent;box-shadow:none}
+.hb-beast{min-height:64px;display:flex;align-items:center;gap:6px;width:100%;margin:0 0 6px;padding:5px 4px;border:2px solid #665038;border-radius:2px;box-shadow:0 1px #e4c4924d;background:#211b17 url("hunter_row.svg") center / 100% 100% no-repeat;color:#e6d0a8}
+.hb-beast.on{border:2px solid #efc579;background:#2b2118 url("hunter_row.svg") center / 100% 100% no-repeat;box-shadow:0 0 0 2px #a76b26,0 0 12px #d79b4685}
+.hb-small-portrait{width:45px;height:47px;flex:none;display:grid;place-items:center;border:2px solid #b78b54;background:radial-gradient(circle at 50% 25%,#4f4132,#131411);overflow:hidden}
+.hb-small-portrait img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.hb-beast-meta{flex:1;min-width:0}
+.hb-beast-meta b{font:700 clamp(10px,1.8vw,13px)/1.2 Georgia;color:#f0dbad;margin-bottom:6px;white-space:normal}
+.hb-count{flex:none;font:clamp(9px,1.6vw,11px)/1 Georgia;color:#e5c58a;margin-top:3px}
+.hb-progress-track{height:13px;border:0;background:#101710 url("hunter_progress.svg") center / 100% 100% no-repeat;box-shadow:inset 0 1px 2px #0009;padding:3px 6px;overflow:hidden}
+.hb-progress-track i{display:block;height:100%;background:linear-gradient(#bed971,#729d31 43%,#425e20);box-shadow:inset 0 1px #e3ec9d,0 0 3px #91ba52;max-width:100%}
+.hb-detail{padding:8px 5px 4px;min-height:0;min-width:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#956c42 transparent;background:transparent;border:0;box-shadow:none;color:#2c1c12}
+.hb-detail-header{min-height:53px;align-items:center;justify-content:center;text-align:center}
+.hb-detail-header h3{font:700 clamp(17px,3.4vw,30px)/1.1 Georgia;color:#27170e;margin:0;text-shadow:0 1px #f1cf99}
+.hb-detail-header small{font:clamp(10px,1.7vw,13px)/1.2 Georgia;color:#654328}
+.hb-pawmark{display:none}
+.hb-hero-portrait{height:clamp(108px,21dvh,200px);min-height:108px;max-height:200px;margin:3px 0 7px;display:grid;place-items:center;background:transparent url("hunter_stage.svg") center / 100% 100% no-repeat}
+.hb-hero-portrait img{width:80%;height:87%;max-width:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(2px 4px 1px #09090999)}
+.hb-hero-portrait .hb-beast-placeholder{font-size:65px}
+.hb-description{font:clamp(10px,1.7vw,13px)/1.33 Georgia;color:#332216;margin:6px 1px 9px;text-align:left}
+.hb-study{padding:5px 0;border:0;color:#3c281b;font:700 12px Georgia}
+.hb-study .hb-progress-track{margin-top:5px;height:16px}
+.hb-detail h4{font:700 clamp(12px,2.1vw,16px)/1.2 Georgia;color:#583115;margin:8px 0 6px;text-align:center}
+.hb-detail h4 small{color:#6b5438;font:11px Georgia}
+.hb-milestones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.hb-milestones>div{min-height:62px;display:grid;grid-template-columns:20px 1fr;gap:1px 2px;padding:7px 5px;background:#221a16 url("hunter_milestone.svg") center /100% 100% no-repeat;border:0;color:#ead0a0}
+.hb-milestones>div.locked{opacity:.70;filter:grayscale(.75)}
+.hb-milestones>div.unlocked{filter:drop-shadow(0 0 2px #a8c576)}
+.hb-milestone-symbol{font-size:15px;color:#a5bb72}
+.hb-milestones strong{font-size:11px;color:#efd7a6}
+.hb-milestones span:last-child{font-size:10px;color:#d3b580}
+.hb-footer{z-index:3;flex:none;height:39px;min-height:39px;padding:9px 34px 2px;align-items:center;background:transparent;border:0;color:#d6b47e;font:clamp(9px,1.65vw,12px)/1.1 Georgia;text-shadow:1px 2px #0c0705}
+.hb-footer span:last-child{text-align:right}
+.hb-trophy-intro{font:clamp(11px,2vw,15px)/1.4 Georgia;color:#3b2518;border:0;padding:8px 4px 12px;text-align:center}
+.hb-trophy-list{padding:4px;gap:6px}
+.hb-trophy{min-height:68px;background:linear-gradient(100deg,#3c2920,#201916);border:2px solid #86633e;box-shadow:0 1px 3px #3d2610}
+.hb-trophy-icon{width:45px;height:45px}
+.hb-bonus-title{color:#322015}
+.hb-bonus-list>div{border-bottom:1px solid #866844;color:#2f1d11;background:#a9815040}
+.hb-bonus-list strong{color:#3c6020}
+.hb-inner>.hb-description{color:#352518}
+@media(max-width:630px){
+ #overlay .dialog.hb-dialog{width:98vw;max-width:98vw;max-height:96dvh}
+ .hb-window{height:min(94dvh,890px);min-height:0}
+ .hb-head{height:98px;min-height:98px;padding:45px 25px 4px}
+ .hb-head h2{font-size:clamp(18px,5vw,25px)}
+ .hb-head p{font-size:clamp(8px,1.8vw,10px)}
+ .hb-close{right:12px;top:12px;width:34px;height:34px}
+ .hb-tabs{height:40px;padding:0 17px;gap:3px}
+ .hb-tabs button{min-height:0;height:38px;font-size:clamp(11px,2.6vw,14px)}
+ .hb-inner{padding:8px clamp(14px,5vw,28px) 0}
+ .hb-beasts-layout{grid-template-columns:minmax(0,44%) minmax(0,56%);grid-template-rows:minmax(0,1fr);gap:5px}
+ .hb-beast-list{display:block;max-height:none;padding:2px 0}
+ .hb-beast{min-height:54px;gap:4px;margin:0 0 4px;padding:4px 3px}
+ .hb-small-portrait{width:36px;height:37px}
+ .hb-beast-meta b{font-size:clamp(9px,2.7vw,12px);margin-bottom:4px}
+ .hb-count{font-size:9px}
+ .hb-detail{padding:3px 2px 2px}
+ .hb-detail-header{min-height:42px}
+ .hb-detail-header h3{font-size:clamp(16px,4vw,22px)}
+ .hb-hero-portrait{height:clamp(102px,21dvh,165px);min-height:0}
+ .hb-description{font-size:clamp(10px,2.65vw,12px)}
+ .hb-milestones{grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}
+ .hb-milestones>div{min-height:57px;padding:4px 2px}
+ .hb-footer{height:34px;min-height:34px;padding:6px 18px}
+ .hb-trophy b{font-size:13px}
+}
+@media(max-width:365px){.hb-hero-portrait{height:100px}.hb-head{height:89px;min-height:89px;padding-top:39px}.hb-small-portrait{width:30px;height:32px}.hb-beast{min-height:48px}.hb-count{font-size:8px}.hb-description{font-size:10px}.hb-tabs{height:36px}.hb-tabs button{height:35px}.hb-milestones>div{min-height:48px}.hb-milestones strong{font-size:9px}.hb-milestones span:last-child{font-size:9px}}
+@media(max-height:620px){.hb-window{height:96dvh}.hb-head{height:72px;min-height:72px;padding-top:26px}.hb-tabs{height:34px}.hb-tabs button{height:33px}.hb-hero-portrait{height:84px}.hb-beast{min-height:45px}.hb-footer{height:25px;min-height:25px;padding:4px 17px}}
+
+/* Target-selecting mode for single-target scrolls: the board remains visible. */
+.spell-target-banner{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;min-width:0;padding:4px 9px;background:linear-gradient(100deg,#3c2d21,#171b15);border:3px solid #b99459;box-shadow:inset 0 0 0 1px #312518,0 1px 10px #03070299;color:#eee0b9;font:12px/1.3 Georgia}
+.spell-target-banner span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spell-target-banner b{color:#bfda86}
+.spell-target-banner button{flex:none;min-height:27px;padding:2px 9px;border:2px solid #c29964;background:linear-gradient(#8f3123,#541d19);color:#f2deb0;font:700 11px Georgia;cursor:pointer}
+.dungeon-board .tile.spell-target-valid{outline:3px solid #c7d56c;outline-offset:-2px;box-shadow:inset 0 0 10px #b0df5277,0 0 9px #a1c85e88!important;cursor:crosshair}
+.dungeon-board .tile.spell-target-valid:after{content:"✧";position:absolute;top:0;right:3px;font:14px Georgia;color:#def5a3;text-shadow:0 1px 4px #162009}
+.dungeon-board .tile.spell-target-valid:focus-visible{outline:4px solid #eddfa5;outline-offset:0}
+.illustrated-gear{width:100%;height:100%;min-width:0;object-fit:contain;filter:drop-shadow(1px 2px 1px #0007)}
+.gear-slot .illustrated-gear{width:89%;height:88%;margin:auto}
+.gear-compact-head .illustrated-gear{width:88%;height:88%}
