@@ -90,6 +90,7 @@ function init(r){
  if(!r.titleFloorAtk)r.titleFloorAtk=0;
  if(!r.titleHealAtk)r.titleHealAtk=0;
  if(!r.titleTurnTick)r.titleTurnTick=0;
+ if(has(r,'war_paladin')&&r.titlePaladinFlat==null)r.titlePaladinFlat=Math.max(1,Math.round((r.hp||1)*.10));
 }
 function pathConflict(r,t){
  return data.some(function(x){return x.tree===t.tree&&x.rank===t.rank&&x.id!==t.id&&has(r,x.id);});
@@ -118,7 +119,7 @@ function reward(r,t,levelNum,h){
  if(t.id==='war_faith'){supply(r,'holy_badge',1);r.guardCharges=(r.guardCharges||0)+1;}
  if(t.id==='war_dancer'||t.id==='war_great_sword')supply(r,'sword_scroll',1);
  if(t.id==='war_commander'&&levelNum===1)h.addItem('amulet',6);
- if(t.id==='war_paladin'&&levelNum===1){r.hp=h.stats().hp;}
+ if(t.id==='war_paladin'&&levelNum===1){r.titlePaladinFlat=Math.max(1,Math.round(h.stats().hp*.10));r.hp=h.stats().hp;}
  if(t.id==='war_sword_sage'&&levelNum===1)r.titleSageFlat=Math.max(1,Math.round(h.stats().atk*.30));
  if(t.rank===5&&t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
  if(t.id==='adv_farplane'&&levelNum===1)h.log('Особая специализация: '+(has(r,'adv_night_walker')?'извлечение душ из останков':'души павших врагов')+'.');
@@ -279,7 +280,8 @@ function canCast(r,sp){
  if(sp.rank<=2||sp.rank===6)return null;
  if(level(r,'mag_apprentice')>0&&sp.rank<=2+level(r,'mag_apprentice'))return null;
  var caster=has(r,'war_magic')?['earth','fire','dark']:has(r,'war_dancer')?['fire','air','dark']:has(r,'war_silver')?['earth','water','light']:has(r,'war_faith')?['water','air','light']:[];
- if(caster.indexOf(sp.school)>=0&&sp.rank<=2+Math.max(level(r,'war_magic'),level(r,'war_dancer'),level(r,'war_silver'),level(r,'war_faith')))return null;
+ if(has(r,'war_faith')&&sp.rank===3&&['water','air','light'].includes(sp.school))return null;
+ if(caster.indexOf(sp.school)>=0&&sp.rank<=2+Math.max(level(r,'war_magic'),level(r,'war_dancer'),level(r,'war_silver')))return null;
  return 'Для свитка '+sp.rank+'★ нужно магическое или воинское звание';
 }
 function corpse(r,entry,h){
