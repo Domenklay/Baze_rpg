@@ -27,6 +27,14 @@ function A(name,id){
   }
  }
 }
+/* Combat fixtures keep enemies reachable; unexcavated paths are prohibited. */
+function standNextTo(run,enemyTile){
+ const neighbor=CR.near(enemyTile.id).find(id=>id>=0&&id<run.tiles.length);
+ assert.notEqual(neighbor,undefined);
+ const land=run.tiles[neighbor];
+ land.kind='empty';land.foe=null;land.drops=null;land.revealed=true;land.cleared=true;
+ run.heroTile=neighbor;
+}
 let checks=0;
 function test(name,fn){fn();checks++;console.log('PASS '+name);}
 A('choose');
@@ -210,7 +218,7 @@ test('Permanent T1 material drops are sourced from the imported monster table',(
  t.foe={id:source.id,name:source.name,visual:'wolf',hp:1,maxHp:1,atk:3,def:0,
   ep:1,gold:2,ranged:false,burn:0,poison:0,stun:0,guard:0,loot:source.loot,
   skill:{name:'Укус',every:3,kind:'bite'},cooldown:3};
- A('strike',t.id);assert.ok(t.drops);
+ standNextTo(r,t);A('strike',t.id);assert.ok(t.drops);
  assert.ok(t.drops.materials.length>=1);
  const got=t.drops.materials[0];const before=r.materials[got.name]||0;
  A('pickup',t.id);
@@ -250,6 +258,7 @@ test('Hero actions choose one original frame, retain it on redraw and never repe
  r.tab='maze';r.mp=10000;r.hp=10000;
  const target=r.tiles.find(t=>t.foe&&t.foe.hp>0);assert.ok(target);
  target.revealed=true;target.foe.hp=100000;target.foe.maxHp=100000;
+ standNextTo(r,target);
  let previous=null;
  for(let i=0;i<5;i++){
   A('strike',target.id);const html=el('portrait').innerHTML;
@@ -298,7 +307,7 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
   const boss=run.tiles.find(t=>t.kind==='boss');assert.ok(boss);
   assert.equal(boss.foe.name,DN.location(0,stage).boss.name);
   run.tiles.forEach(t=>{if(t.foe&&t!==boss)t.foe.hp=0;});
-  boss.foe.hp=1;boss.revealed=true;A('strike',boss.id);
+  boss.foe.hp=1;boss.revealed=true;standNextTo(run,boss);A('strike',boss.id);
   assert.equal(run.portalReady,true);
   assert.match(el('content').innerHTML,/safe-portal/);
   assert.ok(run.questItems.includes(DN.location(0,stage).questItem));
@@ -405,7 +414,7 @@ test('Regional boss has warned phases and cannot produce a safe portal before de
   for(let attempt=0;attempt<4&&boss.foe.phase<3;attempt++){boss.foe.provoked=true;A('wait');}
  if(boss.foe.phase!==3)console.log('BOSS_PHASE_DIAGNOSTIC',JSON.stringify({phase:boss.foe.phase,hp:boss.foe.hp,maxHp:boss.foe.maxHp,stun:boss.foe.stun,turn:run.turn,heroHp:run.hp,lastLogs:run.log.slice(0,10)}));
  assert.equal(boss.foe.phase,3);
- boss.foe.hp=1;A('strike',boss.id);
+ boss.foe.hp=1;standNextTo(run,boss);A('strike',boss.id);
  assert.equal(run.portalReady,true);
 });
 
@@ -791,7 +800,7 @@ test('Full-clear animation expires, keeps its original timeline on redraw and ne
  run.floorCleared=false;
  const RealDate=ctx.Date;let clock=Date.now();ctx.Date=class extends Date{static now(){return clock;}};
  try{
-  live.debug.action('strike',foeTile.id);
+  standNextTo(run,foeTile);live.debug.action('strike',foeTile.id);
   assert.equal(run.floorCleared,true);assert.match(el('content').innerHTML,/tile-auto-open/);
   const afterClearGold=run.gold;
   clock+=100;live.debug.draw();assert.match(el('content').innerHTML,/animation-delay:-100ms/,'Redraw continues the same animation instead of restarting it');
@@ -815,7 +824,7 @@ test('Combat feedback separates healing from retaliation and does not damage uni
  assert.ok(emitted.some(x=>x.kind==='heal'&&x.text==='+20'),'Heal is reported before the enemy turn');
  assert.ok(!emitted.some(x=>x.kind==='damage'),'Healing does not provoke an untouched melee enemy');
   const afterHeal=win.CryptFeedback.events().at(-1)?.id||0;
-  live.debug.action('strike',foe.id);
+  standNextTo(run,foe);live.debug.action('strike',foe.id);
   assert.ok(win.CryptFeedback.events().some(x=>x.id>afterHeal&&x.actor==='hero'&&x.kind==='damage'),'A direct hit causes a retaliatory attack');
  const chamber=run.tiles.find(t=>t.kind==='empty'&&!t.foe);chamber.kind='chamber';chamber.revealed=true;chamber.cleared=false;
  const before=win.CryptFeedback.events().at(-1)?.id||0;live.debug.action('pickup',chamber.id);
@@ -838,7 +847,7 @@ test('Enemy retaliation, flat armor and red/green damage badges update live',()=
   hp:999999,maxHp:999999,atk:defense+11,baseAtk:defense+11,def:0,
   cooldown:999,skill:{name:'Удар',every:999,kind:'none'},guard:0,
   ranged:false,stun:0,burn:0,poison:0,loot:[],ep:0,gold:0};
- run.hp=10000;live.debug.draw();
+ standNextTo(run,spot);run.hp=10000;live.debug.draw();
  assert.match(el('content').innerHTML,/damage-reduced/,'Armor should color the displayed enemy attack red');
  const random=Math.random;
  try{
@@ -919,6 +928,7 @@ test('Summon retaliation hits the summon, while targeted magic causes no melee c
   run.summon=null;run.summonTile=null;foeTile.foe.provoked=false;foeTile.foe.provokedBy=null;
   run.scrolls.bolt=1;
   const hp=run.hp,foeHp=foeTile.foe.hp;
+  standNextTo(run,foeTile);
   live.debug.action('cast','bolt');
   assert.equal(run.pendingSpell,'bolt');
   live.debug.action('cast-target',foeTile.id);
@@ -942,6 +952,7 @@ test('Scout double shot damages target twice and grants temporary +50 evasion',(
  const before=t.foe.hp,turn=run.turn,random=Math.random;
  try{
   Math.random=()=>.99;
+  standNextTo(run,t);
   live.debug.action('skill');
   assert.equal(run.turn,turn+1,'Scout skill consumes one action');
   assert.ok(t.foe.hp<before-1.5*live.debug.stats().atk,'Both arrows strike the enemy');
