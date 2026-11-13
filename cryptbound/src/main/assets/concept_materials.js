@@ -121,5 +121,18 @@ window.CryptConceptMaterials={
  "Нота чёрной хороводчицы": "t6_concept_nota_chiornoi_khorovodchitsy",
  "Обломок древней якорной связки": "t6_concept_oblomok_drevnei_iakornoi_sviazki",
  "Осколок сердечной оболочки": "t6_concept_oskolok_serdechnoi_obolochki",
- "Остаток голодающей сердцевины": "t6_concept_ostatok_golodaiushchei_serdtseviny"
+ "Остаток голодающей сердцевины": "t6_concept_ostatok_golodaiushchei_serdtseviny",
+ "Панцирь приливного гиганта": "t6_concept_pantsir_prilivnogo_giganta",
+ "Первое зерно сердцевины": "t6_concept_pervoe_zerno_serdtseviny",
+ "Плавниковый нерв сирены": "t6_concept_plavnikovyi_nerv_sireny",
+ "Плотное сторожевое сухожилие": "t6_concept_plotnoe_storozhevoe_sukhozhilie",
+ "Приливная панцирная пластина": "t6_concept_prilivnaia_pantsirnaia_plastina",
+ "Рыба без внутренней тени": "t6_concept_ryba_bez_vnutrennei_teni",
+ "Сердце чёрного спрута": "t6_concept_serdtse_chiornogo_spruta",
+ "Шепчущий рог Пророка": "t6_concept_shepchushchii_rog_proroka",
+ "Складка бесформенного панциря": "t6_concept_skladka_besformennogo_pantsiria",
+ "Сшитая хрящевая пластина": "t6_concept_sshitaia_khriashchevaia_plastina",
+ "Тихоцвет": "t6_concept_tikhotsvet",
+ "Тёмная моллюсковая мембрана": "t6_concept_tiomnaia_molliuskovaia_membrana",
+ "Ткань несказанных мыслей": "t6_concept_tkan_neskazannykh_myslei"
 };
