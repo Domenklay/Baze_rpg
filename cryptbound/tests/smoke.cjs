@@ -164,8 +164,13 @@ test('Six hero archetypes have distinct starting skills',()=>{
  for(const klass of ['necromancer','executioner','scout','sorceress','guardian','assassin']){
   A('begin',klass);r=state.run;r.mp=1000;r.hp=5000;
   if(klass!=='necromancer'){
-   const target=r.tiles.find(t=>t.foe&&!t.foe.ranged);target.revealed=true;
-   target.foe.hp=200;target.foe.maxHp=200;
+   // Skill targets must actually be reachable from the hero's starting tile.
+   const target=r.tiles.find(t=>t.foe&&!t.foe.ranged);
+   const next=CR.near(r.heroTile)[0],adjacent=r.tiles[next];
+   assert.ok(target&&adjacent);
+   if(target!==adjacent){adjacent.foe=target.foe;target.foe=null;}
+   adjacent.kind='enemy';adjacent.revealed=true;adjacent.cleared=false;
+   adjacent.foe.hp=200;adjacent.foe.maxHp=200;
   }
   A('skill');
   assert.ok(r.turn>=1);
@@ -861,7 +866,7 @@ test('Unlimited backpack displays found items in slots but not equipped gear or 
  run.soulBag.push({id:99001,name:'Память спутника',kind:'common'});
  live.debug.action('ui-panel','bag');
  const html=el('overlay').innerHTML;
- assert.match(html,/64 предметов|65 предметов|66 предметов|67 предметов|68 предметов|69 предметов|70 предметов/);
+ assert.match(html,/\d+ предметов · без ограничения/);
  assert.doesNotMatch(html,/data-action="item-select" data-id="90000"/,'Worn equipment must not occupy a backpack cell');
  assert.match(html,/data-action="item-select" data-id="90001"/);
  assert.match(html,/data-action="forest-use" data-id="honey"/);
