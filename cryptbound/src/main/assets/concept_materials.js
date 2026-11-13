@@ -1,4 +1,4 @@
-/* Original RPG Clicker Infinity art embedded for offline dungeon resources. */
+/* Original Clicker sprites, embedded for offline resources. */
 window.CryptConceptMaterials={
  "Малахит": "t3_concept_malakhit",
  "Медный мох": "t3_concept_mednyi_mokh",
@@ -32,5 +32,16 @@ window.CryptConceptMaterials={
  "Осколок молота Бродгара": "t3_concept_oskolok_molota_brodgara",
  "Палаческое рунное клеймо": "t3_concept_palacheskoe_runnoe_kleimo",
  "Печать расколотого клана": "t3_concept_pechat_raskolotogo_klana",
- "Первый големий сердечник": "t3_concept_pervyi_golemii_serdechnik"
+ "Первый големий сердечник": "t3_concept_pervyi_golemii_serdechnik",
+ "Плетёный подрывной фитиль": "t3_concept_pletionyi_podryvnoi_fitil",
+ "Подгорный горицвет": "t3_concept_podgornyi_goritsvet",
+ "Подгорный железнокорень": "t3_concept_podgornyi_zheleznokoren",
+ "Прицел Рагна": "t3_concept_pritsel_ragna",
+ "Сера": "t3_concept_sera",
+ "Слепая подгорная форель": "t3_concept_slepaia_podgornaia_forel",
+ "Цепь бригадира": "t3_concept_tsep_brigadira",
+ "Жало матки паразитов": "t3_concept_zhalo_matki_parazitov",
+ "Жаростойкий глубинный лишайник": "t3_concept_zharostoikii_glubinnyi_lishainik",
+ "Жаровое ядро голема": "t3_concept_zharovoe_iadro_golema",
+ "Знак командора караула": "t3_concept_znak_komandora_karaula"
 };
