@@ -2460,7 +2460,7 @@ function showPuzzle(){
  r.pendingPuzzle={answer:correctIndex,regional:!!regional};
  dialog('<div class="emblem">✣</div><div class="subhead">'+(regional?'ТАЙНА РЕГИОНА':'КАМЕННАЯ ЗАГАДКА')+'</div>'+
  '<h2>ПРОВЕРКА ПАМЯТИ</h2><p>'+esc(question)+'</p>'+
- ((lvl('seeker')||lvl('scavenger'))&&hint?'<p class="fine golden">Подсказка авантюриста: '+esc(hint)+'.</p>':'')+
+ ((lvl('adv_seeker')||lvl('adv_god_thieves'))&&hint?'<p class="fine golden">Подсказка авантюриста: '+esc(hint)+'.</p>':'')+
  '<div class="btnrow wrap">'+options.map(function(o,i){return '<button class="btn alt" data-action="puzzle-answer" data-id="'+i+'">'+esc(o)+'</button>';}).join('')+'</div>'+
  '<p class="fine muted space-top">Ошибка пробудит защитные руны. Ответ стоит одного хода.</p>');
 }
@@ -2487,7 +2487,7 @@ function puzzleAnswer(id){
 }
 function titleHelpers(){
  return {stats:stats,log:log,grant:grantScroll,addItem:addItem,spells:SPELLS,addSoul:addSpiritSoul,
- targets:function(){return enemies();},reachable:reachableEnemy,kill:kill,
+ targets:function(){return enemies();},hiddenTargets:function(){return hiddenEnemies();},reachable:reachableEnemy,kill:kill,
  hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
  flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
   if(t.foe.hp<=0)return;var hit=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=hit;if(t.foe.hp<=0)kill(t);});},
@@ -2519,7 +2519,7 @@ function titleToolDialog(){
 function titleToolUse(){
  var message=TR.useTool(r,titleHelpers());
  if(!message)return;
- if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых/.test(message)){toast(message);return;}
+ if(/Не хватает|Нужн|Нет доступн|Сначала|не осталось|открывается|не найден|Пока|Скрытых|Нужно надетое/.test(message)){toast(message);return;}
  log(message);close();finishAction();
 }
 function equip(id){
