@@ -61,7 +61,10 @@ for(const art of ['hunter_spread.svg','hunter_stage.svg','hunter_row.svg','hunte
  assert.ok(fs.statSync(file).size>450,'Sprite cannot be empty: '+art);
 }
 const css=fs.readFileSync(path.join(root,'hunter_bestiary.css'),'utf8');
-assert.match(css,/grid-template-columns:minmax\(0,44%\) minmax\(0,56%\)/,'Two facing book pages on narrow phones');
+assert.match(css,/grid-template-columns:minmax\(0,50%\) minmax\(0,50%\)/,'Two facing book pages on narrow phones');
+assert.match(css,/\.hb-beast-list\{[^}]*overflow-y:auto/,'Creature list must scroll inside its own page');
+assert.match(css,/#overlay \.dialog\.hb-dialog \.hb-detail \.hb-description\{[^}]*color:#3e291b!important/,'Description must be dark, readable ink on parchment');
+assert.match(decorated,/hb-label-row/,'Names and counts share a bounded row');
 A('ui-panel','bag');
 assert.match(el('overlay').innerHTML,/gear_boots_hunter\.svg/);
 assert.match(el('overlay').innerHTML,/gear_ring_hunter\.svg/);
