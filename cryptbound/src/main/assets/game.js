@@ -249,6 +249,12 @@ function distributeTiles(){
  if(!boss&&r.floor%2===0&&Math.random()<.4)insert('corpse',1);
  if(!boss&&r.floor%3===0&&Math.random()<.5)insert('chamber',1);
  }
+ // More than half the board should contain something to discover, but never
+ // flood it with treasure: most added cells contain tiny finds or curios.
+ var desired=rand(14,18),occupied=types.filter(function(kind){return kind!=='empty';}).length;
+ while(occupied<desired){
+  insert(pick(['vial-hp','vial-mp','coin-small','trinket','trinket','trinket']),1);occupied++;
+ }
  var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
  var forestChosen=[];
@@ -522,8 +528,8 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
- var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
+ var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?uiIcon('bag'):['vial-hp','vial-mp'].includes(marker)?uiIcon('potion'):marker==='coin-small'?uiIcon('coin'):marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.ranged?t.foe.attackCooldown:(t.foe.cooldown==null?EX.monster(t.foe.visual||t.foe.id).every:t.foe.cooldown)):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
@@ -1880,6 +1886,17 @@ function forestWellOffer(id,coin){
   '<p class="golden">+'+amount+' '+result[1]+bonusScroll+' до конца экспедиции.</p>'+
   '<button class="btn wide" data-action="close">Продолжить</button>');}
 }
+function addPocketItem(kind,qty){
+ var definitions={ 'vial-hp':['Склянка здоровья','Восстанавливает 1–2 HP'],
+  'vial-mp':['Склянка маны','Восстанавливает 1–2 MP']};
+ var oddities=['Погнутая ложка','Треснувшая пуговица','Обрывок старой ленты','Бесполезная гайка','Камешек с дыркой','Ржавая игла'];
+ var label=kind==='trinket'?pick(oddities):(definitions[kind]||[kind])[0],amount=Math.max(1,qty||1);
+ r.lootBag=r.lootBag||[];
+ var slot=r.lootBag.find(function(x){return x.kind===kind&&x.name===label;});
+ if(slot){slot.qty+=amount;return slot;}
+ var item={id:++s.seq,kind:kind,name:label,description:kind==='trinket'?'Старая безделушка без игрового эффекта.':definitions[kind][1],qty:amount};
+ r.lootBag.push(item);return item;
+}
 function claimTile(t){
  if(!t||!t.revealed||t.cleared)return;
  var kind=t.kind,lines=[],labels=[],pending=t.drops||null;
@@ -1942,6 +1959,16 @@ function claimTile(t){
   if(r){if(lines.length>1)rewardDialog('Старинный сундук',lines);else floatLoot(t.id,labels);}
   return;
  }
+ if(kind==='vial-hp'||kind==='vial-mp'||kind==='trinket'){
+  var amount=kind==='trinket'?1:rand(1,2),found=addPocketItem(kind,amount);
+  t.cleared=true;log('В рюкзак: '+found.name+' ×'+amount+'.');
+  finishAction();if(r)floatLoot(t.id,[found.name+' ×'+amount]);return;
+ }
+ if(kind==='coin-small'){
+  var coins=addGold(rand(0,2));t.cleared=true;
+  log(coins?'Подобрана мелочь: +'+coins+' монет.':'Пустой кошелёк.');
+  finishAction();if(r)floatLoot(t.id,[coins?'◈ +'+coins:'Пустой кошелёк']);return;
+ }
  if(kind==='coin'){
   var gold=addGold(Math.round((rand(9,18)+r.floor*2)*(1+(r.actIndex||0)*.16)));t.cleared=true;log('Подобрано '+gold+' монет.');
   finishAction();if(r)floatLoot(t.id,['◈ Монеты +'+gold]);return;
@@ -1986,7 +2013,7 @@ function triggerTrap(t){
   else if(k==='forest-event'){log('Найдено в лесу: '+(FE.scene(t.forestId)||{}).title+'.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
  else if(k==='start'){t.cleared=true;}
- else log('Под камнем обнаружено: '+({'hunter-corpse':'погибший охотник с книгой','forest-well':'старый колодец',chest:'сундук',coin:'монеты',potion:'флакон',trap:'ловушка',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие',corpse:'останки исследователя',chamber:'побочная комната'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
+ else log('Под камнем обнаружено: '+({'hunter-corpse':'погибший охотник с книгой','forest-well':'старый колодец',chest:'сундук',coin:'монеты',potion:'флакон','vial-hp':'малые склянки HP','vial-mp':'малые склянки MP','coin-small':'кошелёк',trinket:'безделушка',trap:'капкан',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие',corpse:'останки исследователя',chamber:'побочная комната'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
  finishAction();
 }
 
