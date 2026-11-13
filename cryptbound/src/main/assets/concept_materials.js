@@ -134,5 +134,18 @@ window.CryptConceptMaterials={
  "Сшитая хрящевая пластина": "t6_concept_sshitaia_khriashchevaia_plastina",
  "Тихоцвет": "t6_concept_tikhotsvet",
  "Тёмная моллюсковая мембрана": "t6_concept_tiomnaia_molliuskovaia_membrana",
- "Ткань несказанных мыслей": "t6_concept_tkan_neskazannykh_myslei"
+ "Ткань несказанных мыслей": "t6_concept_tkan_neskazannykh_myslei",
+ "Тысяча запертых голосов": "t6_concept_tysiacha_zapertykh_golosov",
+ "Узел старшего сухожилия": "t6_concept_uzel_starshego_sukhozhiliia",
+ "Жало королевы личинок": "t6_concept_zhalo_korolevy_lichinok",
+ "Желчноплавый угорь": "t6_concept_zhelchnoplavyi_ugor",
+ "Зуб матёрого муренолова": "t6_concept_zub_matiorogo_murenolova",
+ "Древесина плакучей ивы душ": "t7_concept_drevesina_plakuchei_ivy_dush",
+ "Фосфорит": "t7_concept_fosforit",
+ "Фрагмент скипетра Нерота": "t7_concept_fragment_skipetra_nerota",
+ "Глаз вожака сумеречной своры": "t7_concept_glaz_vozhaka_sumerechnoi_svory",
+ "Гробничный угорь": "t7_concept_grobnichnyi_ugor",
+ "Капля призрачной короны": "t7_concept_kaplia_prizrachnoi_korony",
+ "Ключ Прокуратора душ": "t7_concept_kliuch_prokuratora_dush",
+ "Коса Первого жнеца": "t7_concept_kosa_pervogo_zhnetsa"
 };
