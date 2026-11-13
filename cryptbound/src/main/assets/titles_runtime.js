@@ -64,7 +64,7 @@ function unlocked(r,t){
 function cost(r,t){
  var n=level(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
  var noble=(r.titleSupplies&&r.titleSupplies.noble)||0;
- return Math.max(1,Math.ceil(raw*(1-Math.min(.45,noble*.05))));
+ return Math.max(1,Math.ceil(raw*(1-Math.min(.27,noble*.09))));
 }
 function supply(r,key,amount){r.titleSupplies=r.titleSupplies||{};r.titleSupplies[key]=(r.titleSupplies[key]||0)+amount;}
 function curSup(r,key){return (r.titleSupplies&&r.titleSupplies[key])||0;}
@@ -83,7 +83,7 @@ function reward(r,t,levelNum,h){
  if(t.id==='war_commander'&&levelNum===1)h.addItem('amulet',6);
  if(t.id==='war_paladin'&&levelNum===1){r.hp=Math.ceil(h.stats().hp*1.1);r.titlePaladinBonus=.10;}
  if(t.id==='war_sword_sage'&&levelNum===1)r.titleSageBonus=.30;
- if(t.rank===5&&t.tree===2){var tool=toolOf(r);supply(r,tool.icon==='crossbow'?'arrow':tool.icon==='lantern'?'wick':'quench',2);}
+ if(t.rank===5&&t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
  if(t.id==='adv_farplane'&&levelNum===1)h.log('Особая специализация: '+(has(r,'adv_night_walker')?'извлечение душ из останков':'души павших врагов')+'.');
  if(t.id==='adv_legendary_hunter'&&levelNum===1)supply(r,'arrow',3);
 }
@@ -106,7 +106,7 @@ function masteryUpgrade(r,t,key,h){
  var now=h.stats();
  r.hp=Math.min(now.hp,r.hp+Math.max(0,now.hp-old.hp));
  r.mp=Math.min(now.mp,r.mp+Math.max(0,now.mp-old.mp));
- if(t.tree===2){var tool=toolOf(r);supply(r,tool.icon==='crossbow'?'arrow':tool.icon==='lantern'?'wick':'quench',2);}
+ if(t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
  if(t.id==='mag_destruction'&&key==='hp')h.grant('flame',5,'title');
  if(t.id==='mag_time'){h.grant(key==='pow'?'chain':key==='mp'?'lightning':'curse',key==='pow'?2:key==='mp'?5:3,'title');}
@@ -154,7 +154,7 @@ function turn(r,h){
   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*.5)-v.foe.def);
   v.foe.hp-=amount;h.log('Тотем наносит '+amount+' урона.');if(v.foe.hp<=0)h.kill(v);
  }
- if(alive.length&&curSup(r,'leopard')>0&&r.titleTurnTick%(has(r,'adv_elf_king')?2:3)===0){
+ if(alive.length&&curSup(r,'leopard')>0&&r.titleTurnTick%(has(r,'adv_elf_king')&&has(r,'adv_night_walker')?2:3)===0){
   var g=alive[0],hit=Math.max(1,Math.floor(h.stats().atk*.5)+curSup(r,'leopard')*2-g.foe.def);
   g.foe.hp-=hit;h.log('Чёрная пантера наносит '+hit+' урона.');if(g.foe.hp<=0)h.kill(g);
  }
@@ -248,8 +248,14 @@ function useTool(r,h){
   if(!candidates.length)return 'Нужно два одинаковых свитка ниже 5-го ранга.';
   var sp=candidates[0],next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
   if(!next.length)return 'Подходящий свиток для объединения не найден.';
-  if(!has(r,'adv_holy_rune'))return 'Объединение свитков открывается Святым мастером рун.';
-  r.scrolls[sp.id]-=2;h.grant(next[0].id,1,'forge');return 'Два свитка преобразованы в '+next[0].name+'.';
+  if(!has(r,'adv_holy_rune')){
+   if(!has(r,'adv_royal_rune'))return 'Объединение свитков открывается Святым мастером рун.';
+   r.scrolls[sp.id]--;var recovered=3+3*curSup(r,'rune_piece');
+   r.mp=Math.min(h.stats().mp,r.mp+recovered);
+   return 'Тигель разобрал свиток: восстановлено '+recovered+' маны.';
+  }
+  if(curSup(r,'rune')<1)return 'Нужна магическая руна для объединения свитков.';
+  supply(r,'rune',-1);r.scrolls[sp.id]-=2;h.grant(next[0].id,1,'forge');return 'Два свитка и магическая руна преобразованы в '+next[0].name+'.';
  }
  if(tool.kind==='forge'){
   if(has(r,'adv_great_enchanter')||has(r,'adv_great_swordsmith')){
