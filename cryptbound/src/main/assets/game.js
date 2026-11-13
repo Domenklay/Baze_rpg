@@ -1621,6 +1621,99 @@ function hunterBookDialog(){
  $('overlay').innerHTML='<div class="veil"><div class="dialog hb-dialog">'+HB.render(s.meta,r.hunterBookTab||'beasts',r.hunterBookSelected||'r1_0')+'</div></div>';
  save();
 }
+/* Forest Outskirts: connected story scenes, not generic yes/no trivia. */
+function forestEventDialog(t){
+ if(!t||t.kind!=='forest-event'||t.cleared||!t.revealed)return;
+ dialog(FE.render(r,t));
+}
+function forestReveals(count){
+ var opened=0;
+ for(var i=0;i<count;i++){
+  var valid=r.tiles.filter(function(t){return !t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&CR.exploreStatus(t,r.tiles).ok;});
+  if(!valid.length)break;
+  var t=pick(valid);t.revealed=true;if(t.kind==='empty')t.cleared=true;opened++;
+ }
+ return opened;
+}
+function forestSpawn(type,count,task,alpha,origin){
+ var candidates=[],square=null;
+ if(alpha){
+  for(var row=0;row<4;row++)for(var col=0;col<4;col++){
+   var indexes=[row*5+col,row*5+col+1,(row+1)*5+col,(row+1)*5+col+1];
+   var slots=indexes.map(function(i){return r.tiles[i];});
+   if(slots.every(function(t){return t&&t.id!==r.heroTile&&t.id!==r.summonTile&&
+     (t.kind==='empty'||(origin&&t.id===origin.id&&t.kind==='forest-event'))})){square=slots;break;}
+  }
+  if(!square){
+   // A 2x2 beast may displace unattended minor pickups, never the stairs,
+   // another creature, a secret, the hunter's book or a quest cell.
+   for(var row2=0;row2<4;row2++)for(var col2=0;col2<4;col2++){
+    var idx=[row2*5+col2,row2*5+col2+1,(row2+1)*5+col2,(row2+1)*5+col2+1];
+    var cells=idx.map(function(i){return r.tiles[i];});
+    if(cells.every(function(t){return t&&t.id!==r.heroTile&&t.id!==r.summonTile&&
+      (['empty','coin','potion'].indexOf(t.kind)>=0||(origin&&t.id===origin.id&&t.kind==='forest-event'))})){square=cells;break;}
+   }
+  }
+  if(!square)return 0;
+  candidates=[square[0]];
+ }else{
+  candidates=r.tiles.filter(function(t){return t&&t.kind==='empty'&&t.id!==r.heroTile&&t.id!==r.summonTile;});
+  if(candidates.length<count)return 0;
+  for(var i=candidates.length-1;i>0;i--){var j=rand(0,i),v=candidates[i];candidates[i]=candidates[j];candidates[j]=v;}
+  candidates=candidates.slice(0,count);
+ }
+ var mobNames={wolf:'Лесной волк',boar:'Дикий кабан',badger:'Барсук-корнеед',beetle:'Жук-короед',spore:'Споровый пухляк',root:'Оживший корешок'};
+ var creature=mobNames[type]||mobNames.wolf;
+ var pool=(DB.regions[0]&&DB.regions[0].enemies||[]).concat(currentRegion().mobs||[]);
+ var source=pool.find(function(x){return x.name===creature;})||pool.find(function(x){return x.name.indexOf(creature.split(' ')[0])>=0;});
+ for(var spot of candidates){
+  var foe=mkEnemy(false,false,false);
+  foe.name=alpha?'Альфа: '+creature:creature;
+  foe.id=alpha?'forest-alpha-'+type:source?source.id:'forest-'+type;
+  foe.visual=CR.visualId(creature);foe.loot=source&&source.loot||foe.loot;
+  foe.roleName=alpha?'Особая охота':source&&source.role||'Лесной зверь';
+  foe.forestTask=task;foe.forestAlpha=!!alpha;
+  if(alpha){foe.maxHp=Math.round(foe.maxHp*4);foe.hp=foe.maxHp;foe.atk=Math.ceil(foe.atk*1.7);foe.def+=3;}
+  spot.kind='enemy';spot.cleared=false;spot.revealed=true;spot.foe=foe;
+  spot.drops=null;spot.hasKey=false;spot.forestId=null;
+  if(alpha){
+   spot.forestAlpha=true;
+   spot.forestAlphaSquare=square.map(function(t){return t.id;});
+   square.slice(1).forEach(function(t){
+    t.kind='forest-alpha-block';t.cleared=false;t.revealed=true;t.foe=null;t.drops=null;
+    t.forestAlphaAnchor=spot.id;t.forestId=null;
+   });
+  }
+ }
+ log(alpha?'Огромный зверь занимает четыре клетки. Бейте по нему, чтобы победить.':'На поле появились звери: '+count+'.');
+ return count;
+}
+function forestApi(origin){
+ return {stats:stats,rollSpell:rollSpell,grantScroll:grantScroll,addItem:addItem,revealSafe:forestReveals,
+  target:target,spawn:function(type,n,task,alpha){return forestSpawn(type,n,task,alpha,origin);}};
+}
+function forestChoose(id){
+ var values=String(id||'').split(':'),t=tile(values[0]),index=Number(values[1]);
+ if(!t||!Number.isInteger(index)||t.kind!=='forest-event')return;
+ var result=FE.choose(r,s.meta,t,index,forestApi(t));
+ if(!result.ok){toast(result.message||'Выбор недоступен');return;}
+ close();
+ if(result.leave){toast('Вы оставили находку. К ней можно вернуться.');return;}
+ if(result.message)log(result.message);
+ if(result.turn)finishAction();
+ if(r&&!result.combat&&result.message){
+  dialog('<div class="forest-reward-summary"><h2>'+esc((FE.scene(t.forestId)||{}).title||'Лесная находка')+'</h2>'+
+   '<p>'+esc(result.message)+'</p><button class="btn wide" data-action="close">Продолжить</button></div>');
+ }else if(result.combat)toast(result.message||'Началась охота.');
+}
+function forestPackDialog(){if(!r)return;dialog('<h2>Походный карман</h2><p>Лесные находки, ловушки и предметы для связанных событий.</p>'+
+ FE.inventory(r)+'<button class="btn wide" data-action="close">Закрыть</button>');}
+function forestUse(id){
+ var used=FE.use(r,id,forestApi(null));
+ if(!used.ok){toast(used.message||'Применение невозможно');return;}
+ log(used.message);close();finishAction();
+ if(r)toast(used.message);
+}
 function forestWellDialog(id){
  var t=tile(id);if(!t||!t.revealed||t.cleared||t.kind!=='forest-well')return;
  var cost=10+2*r.floor+5*(r.forestWellUses||0);
