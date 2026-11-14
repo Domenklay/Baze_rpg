@@ -376,24 +376,32 @@ test('Ten acts can each generate their correct regional boss',()=>{
 });
 
 
-test('Elite spawn calendar: exactly once on floors 5–9 of every decade',()=>{
+test('Elite spawns exactly on floors 10, 20, 30, 40; boss remains on floor 30',()=>{
  A('begin','necromancer');let run=state.run;run.hp=50000;
  const locations=[];
- for(let depth=2;depth<=39;depth++){
-  const stair=run.tiles.find(t=>t.kind==='exit');assert.ok(stair);
-  stair.revealed=true;run.key=true;
+ for(let depth=2;depth<=41;depth++){
+  const stair=run.tiles.find(t=>t.kind==='exit');assert.ok(stair);stair.revealed=true;
+  run.key=true;
+  const livingElite=run.tiles.find(t=>t.foe&&t.foe.elite&&t.foe.hp>0);
+  if(livingElite){
+   const floorBefore=run.floor;A('descend');
+   assert.equal(run.floor,floorBefore,'Living elite must prevent skipping the encounter');
+   livingElite.foe.hp=0;
+  }
   A('descend');assert.equal(run.floor,depth);
-  const elite=run.tiles.filter(t=>t.foe&&t.foe.elite);
-  assert.ok(elite.length<=1);
-  if(elite.length)locations.push(depth);
-  assert.equal(elite.length,depth%10>=5&&depth%10<=9&&run.eliteSchedule[Math.floor((depth-5)/10)]===depth?1:0);
+  const elites=run.tiles.filter(t=>t.foe&&t.foe.elite&&t.foe.hp>0);
+  assert.equal(elites.length,depth%10===0?1:0,'Elite count at floor '+depth);
+  if(elites.length){
+   locations.push(depth);
+   assert.equal(elites[0].kind,'elite');
+   elites[0].revealed=true;window.Crypt.debug.draw();
+   assert.match(el('content').innerHTML,/class="elite-tag"/,'Elite must have an unmistakable label');
+   assert.match(el('content').innerHTML,/elite-floor-warning/,'Elite floor warning must remain visible');
+  }
+  if(depth===30||depth===40)assert.equal(run.tiles.filter(t=>t.foe&&t.foe.boss).length,1,
+   'The normal boss remains present alongside the elite on floor '+depth);
  }
- for(let n=0;n<4;n++){
-  const hits=locations.filter(depth=>Math.floor((depth-5)/10)===n);
-  assert.equal(hits.length,1);
-  assert.ok(hits[0]>=5+n*10&&hits[0]<=9+n*10);
- }
- assert.equal(run.tiles.find(t=>t.kind==='boss'),undefined);
+ assert.deepEqual(locations,[10,20,30,40]);
 });
 test('Walking takes no turn and cannot cross hidden or occupied cells',()=>{
  A('begin','necromancer');let run=state.run;
