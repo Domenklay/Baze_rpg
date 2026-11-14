@@ -419,6 +419,10 @@ function startFloor(){
   if(r.ridge.flags.seal_restored||r.ridge.flags.mountain_heart_safe){r.shield+=25;log('Сохранённая печать горы защищает от болотного тумана: +25 щита.');}
   if(r.ridge.flags.seal_broken){r.poisonTurns=Math.max(2,r.poisonTurns||0);log('Разрушенная печать распространяет болотное проклятие.');}
   if(r.ridge.flags.bog_clue)r.mp=Math.min(st.mp,r.mp+10);
+  if((r.ridge.items||{}).keeper_testament>0&&!r.ridge.flags.keeper_testament_used){
+   r.ridge.items.keeper_testament--;r.ridge.flags.keeper_testament_used=true;
+   r.shield+=20;log('Свидетельство хранителя: +20 щита перед дорогой через топи.');
+  }
  }
  if(RG.gearBonus(r,'cursed')>0){r.hp=Math.max(1,r.hp-RG.gearBonus(r,'cursed'));log('Проклятый шлем отнимает 5 HP.');}
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
