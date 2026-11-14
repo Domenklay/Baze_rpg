@@ -1146,7 +1146,7 @@ test('Opening a dungeon trap springs an ambush of two independent ranged enemies
  assert.ok(run.hp<=hpBeforeDisarm,'The archers may act in their autonomous round');
 });
 
-test('Fast-sweep research and loot pickup each charge a normal turn and stop at hazards',()=>{
+test('500ms held-finger sweep reveals hidden enemies, fights and collects loot with full turn costs',()=>{
  A('begin','scout');const run=api.state().run;
  run.hp=30000;
  const targets=CR.near(run.heroTile).slice(0,2);
@@ -1166,26 +1166,72 @@ test('Fast-sweep research and loot pickup each charge a normal turn and stop at 
  assert.equal(api.debug.quickSweep(money.id),true,'Finger drag collects ground gold');
  assert.equal(run.turn,turns+1,'Picking up money also consumes one action');
  assert.ok(run.gold>gold);
- const enemy=run.tiles[targets[1]];enemy.foe={hp:9,maxHp:9,name:'Враг'};
+ const enemy=run.tiles[targets[1]];
+ enemy.kind='enemy';enemy.cleared=false;enemy.revealed=false;
+ enemy.foe={id:'sweep-test',name:'Враг с плиты',hp:800,maxHp:800,atk:1,baseAtk:1,def:0,
+  gold:7,loot:[],ep:1,stun:100,guard:0,evadeCharges:0,
+  ranged:false,cooldown:100,skill:{name:'Удар',every:100,kind:'bite'}};
  turns=run.turn;
- assert.equal(api.debug.quickSweep(enemy.id),false,'The gesture never attacks monsters');
+ assert.equal(api.debug.quickSweep(enemy.id),false,'Enemy is not magically attacked before being revealed');
+ // The enemy's slab is currently covered; it must still be opened first.
+ assert.equal(enemy.revealed,false);
+ // Make its corridor safe: the neighboring revealed floor is already open.
+ const covered=run.tiles[targets[0]];
+ covered.kind='empty';covered.revealed=true;covered.cleared=true;
+ assert.equal(CR.exploreStatus(enemy,run.tiles,run.heroTile).ok,true);
+ assert.equal(api.debug.quickSweep(enemy.id),true,'Long hold opens the enemy slab');
+ assert.equal(enemy.revealed,true,'Enemy becomes visible after a paid reveal');
+ assert.equal(run.turn,turns+1);
+ turns=run.turn;const enemyHp=enemy.foe.hp;
+ assert.equal(api.debug.quickSweep(enemy.id),true,'The same held gesture now attacks the revealed enemy');
+ assert.equal(run.turn,turns+1);
+ assert.ok(enemy.foe.hp<enemyHp,'Damage uses the ordinary strike action');
+ // The next regular strike kills the creature; the next tick picks up its loot.
+ enemy.foe.hp=1;turns=run.turn;
+ assert.equal(api.debug.quickSweep(enemy.id),true);
+ assert.equal(enemy.foe.hp,0);
+ assert.equal(run.turn,turns+1);
+ const beforeCorpseGold=run.gold;turns=run.turn;
+ assert.equal(api.debug.quickSweep(enemy.id),true,'After death, the same held gesture collects the corpse');
+ assert.equal(run.turn,turns+1);
+ assert.ok(run.gold>=beforeCorpseGold);
+ assert.equal(enemy.cleared,true);
+ const trap=money;trap.kind='trap';trap.revealed=true;trap.cleared=false;
+ trap.trapActive=true;trap.trapSpent=false;
+ run.trappedTile=trap.id;
+ turns=run.turn;
+ assert.equal(api.debug.quickSweep(enemy.id),false,'Active trap blocks actions on other tiles');
  assert.equal(run.turn,turns);
- run.trappedTile=money.id;
- assert.equal(api.debug.quickSweep(targets[1]),false,'No free collection while trapped');
- run.trappedTile=null;
+ assert.equal(api.debug.quickSweep(trap.id),true,'Holding over the trap can disarm it in a real turn');
+ assert.equal(run.trappedTile,null);
+ assert.equal(trap.trapSpent,true);
+ assert.equal(api.debug.quickSweepInterval,500,'Gestures are throttled to exactly 500ms per action');
  const css=fs.readFileSync(path.join(root,'hud_titles_v082.css'),'utf8');
  assert.match(css,/\.dungeon-board \.maze\{touch-action:none/,'Board supports held finger gestures');
+});
+
+test('Temporary playtest research gives 100000 EP once, without resetting future saved progress',()=>{
+ A('begin','scout');
+ const run=api.state().run;
+ assert.ok(run.ep>=100000,'New playtest expeditions start with a large EP budget');
+ assert.equal(run.testResearchGranted,true);
+ assert.equal(api.debug.testResearch,100000);
+ const before=run.ep;
+ api.save();
+ // The existing legacy reload test below checks save migration separately.
+ assert.equal(api.state().run.ep,before,'Saving never grants a second test bonus');
 });
 
 test('Loading a legacy save removes useless trinkets without deleting real gear',()=>{
  const live=win.Crypt,run=live.state().run;
  run.lootBag=[{id:99002,kind:'trinket',name:'Треснувшая пуговица',qty:1}];
- const itemCount=run.items.length;
+ const itemCount=run.items.length,epBefore=run.ep;
  live.save();
  vm.runInContext(fs.readFileSync(path.join(root,'game.js'),'utf8'),ctx,{filename:'legacy-curios-migration',timeout:12000});
  const migrated=win.Crypt.state().run;
  assert.ok(migrated&&!migrated.lootBag.some(x=>x.kind==='trinket'));
  assert.equal(migrated.items.length,itemCount);
+ assert.equal(migrated.ep,epBefore,'Reloading an existing expedition does not regrant test EP');
 });
 
 console.log('V0.4 GAMEPLAY SMOKE TESTS PASSED: '+checks);
