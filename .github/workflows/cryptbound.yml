@@ -86,8 +86,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.4-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.4-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.5-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.5-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.4 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.4 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.4 — гарантированные элитники" --notes "Офлайн APK для Android. Один гарантированный элитный противник на 10, 20, 30, 40 и каждом последующем десятом этаже, включая боссовые этажи. Элитники помечены золотой рамкой и надписью, на этаже есть предупреждение. Пока элитник жив, нельзя пропустить его через лестницу или безопасный портал. Исправляется уже открытый десятый этаж из старых сохранений. Сохранены все предыдущие исправления боя, предметов и локаций."
+          if ! gh release view cryptbound-v0.8.5 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.5 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.5 — редкие элитники и гарантированная добыча" --notes "Офлайн Android APK. Исправлено ошибочное размещение элитных монстров на этажах 10, 20, 30 и 40. Возвращено изначальное правило: по одному случайному элитнику на этажах 5–9, 15–19, 25–29, 35–39 и далее. Боссы остаются только на 30, 40, 50 и последующих десятых этажах. Элитники опасные, но необязательные: они не держат ключ лестницы и не блокируют выход либо портал. Их можно узнать по золотой рамке, надписи ЭЛИТА и предупреждению при обнаружении. С каждого элитника гарантированно выпадают материалы. Сохранения v0.8.4 автоматически приводятся к правильному расписанию без сброса прогресса."
           fi
-          gh release upload cryptbound-v0.8.4 dist/Cryptbound-v0.8.4-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.5 dist/Cryptbound-v0.8.5-offline-Android.apk dist/SHA256SUMS.txt --clobber
