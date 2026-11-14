@@ -11,7 +11,7 @@ function grantTestResearch(run){
  run.testResearchGranted=true;
  return true;
 }
-var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters,CM=window.CryptMining,RG=window.CryptRidgeEvents;
+var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,FW=window.CryptForestRework,RE=window.CryptT1Encounters,CM=window.CryptMining,RG=window.CryptRidgeEvents;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -113,7 +113,7 @@ function stats(){
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+FW.bonus(r,'dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
@@ -271,6 +271,7 @@ function distributeTiles(){
  insert('exit',1);
  if(RG.active(r))RG.floorSpecials(r).forEach(function(id){insert('ridge-fixed-'+id,1);});
  if(r.actIndex===0&&r.locationIndex===0&&r.floor===1&&!HB.owned(s.meta))insert('hunter-corpse',1);
+ if(r.actIndex===0&&r.locationIndex===0&&r.floor===1&&!FE.ensure(r).flags.squirrel_saved)insert('forest-fixed-1',1);
  if(r.actIndex===0&&r.locationIndex===0&&!boss&&Math.random()<.25)insert('forest-well',1);
  insert('enemy',boss?3:total-(elite?1:0));
  if(elite)insert('elite',1);
@@ -285,7 +286,7 @@ function distributeTiles(){
   if(Math.random()<.35)insert('trap',1);
   if(Math.random()<.13)insert('altar',1);
   if(Math.random()<.14)insert('shop',1);
-  if(Math.random()<.86)insert('forest-event',1);
+  if(FW.nextQuest(r)||Math.random()<.86)insert('forest-event',1);
   if(r.floor>=4&&Math.random()<.22)insert('forest-event',1);
   if(Math.random()<.22)insert('secret',1);
   if(Math.random()<.38)insert('coin',1);
@@ -325,6 +326,7 @@ function distributeTiles(){
  var tiles=types.map(function(kind,id){
   var forestId=null,t1Id=null;
   if(kind==='forest-event'){forestId=FE.pick(r,forestChosen);if(forestId)forestChosen.push(forestId);else kind='empty';}
+  if(kind.startsWith('forest-fixed-')){forestId=Number(kind.slice(13));kind='forest-event';}
   if(kind==='t1-event'){t1Id=RG.active(r)?RG.pick(r,t1Chosen):RE.pick(r,t1Chosen);if(t1Id)t1Chosen.push(t1Id);else kind='empty';}
   if(kind.startsWith('ridge-fixed-')){t1Id=Number(kind.slice(12));kind='t1-event';}
   var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite'||kind==='ridge-ether';
@@ -427,6 +429,8 @@ function startFloor(){
  if(RG.gearBonus(r,'cursed')>0){r.hp=Math.max(1,r.hp-RG.gearBonus(r,'cursed'));log('Проклятый шлем отнимает 5 HP.');}
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
+ var forestBlessing=FW.onFloor(r,s.meta,st);
+ if(forestBlessing)log(forestBlessing);
  CM.revealHints(r);
  activateEntranceEquipment(false);
  var revealCount=Math.floor(bonus('revealFloor'))+(s.meta.diamondUpgrades?.scouting||0);
@@ -687,7 +691,8 @@ function activeTileView(t){
   var hint=(t.hintKey?'<span class="slab-hint slab-hint-key" title="Разведан ключ">⚿</span>':'')+
    (t.hintEnemy?'<span class="slab-hint slab-hint-enemy" title="Разведан враг">⚔</span>':'')+
    (t.hintSpecial?'<span class="slab-hint slab-hint-secret" title="Тайник">✦</span>':'')+
-   (t.hintOre?'<span class="slab-hint slab-hint-secret" title="Рудная жила">◆</span>':'');
+   (t.hintOre?'<span class="slab-hint slab-hint-secret" title="Рудная жила">◆</span>':'')+
+   (t.forestHintDanger?'<span class="slab-hint slab-hint-enemy" title="Разведывательный порошок: опасная клетка">⚠</span>':'');
   var description=(t.hintKey?' · ключ':t.hintEnemy?' · враг':t.hintSpecial?' · секрет':'');
   return access.ok?
    '<button class="tile hidden tile-frontier'+(hint?' tile-scouted':'')+'" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход'+description+'" aria-label="Доступная каменная плита'+description+'"><span class="slab-face">'+(t.hinted&&!hint?'✦':'✥')+'</span>'+hint+'</button>':
@@ -811,7 +816,7 @@ function backpackExtraSlots(){
  var forest=FE.ensure(r).items;
  Object.keys(forest).filter(function(id){return forest[id]>0;}).forEach(function(id){
   var def=FE.itemDefs[id]||[id,'F02_001'];
-  var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id);
+  var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id)||!!FW.itemUsedDescription(id);
   add(usable?'active-item-info':'forest-item-info',(usable?'forest:':'')+id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
  });
  RE.inventory(r).forEach(function(entry){add('t1-item-info',entry.id,entry.name,uiIcon('key'),entry.qty);});
@@ -849,9 +854,10 @@ function activeItemDetails(token){
    stun_trap:'Оглушает выбранного доступного врага на 3 хода.',
    honey:'Восстанавливает до 24 HP.',mushroom:'Восстанавливает до 14 HP.',
    water:'Снимает отравление и кровотечение, а также восстанавливает до 8 HP.'};
-  var stock=FE.ensure(r).items,def=FE.itemDefs[id];if(!Object.prototype.hasOwnProperty.call(usable,id)||!def||!stock[id])return null;
+  var stock=FE.ensure(r).items,def=FE.itemDefs[id],newDescription=FW.itemUsedDescription(id);
+  if(!Object.prototype.hasOwnProperty.call(usable,id)&&!newDescription||!def||!stock[id])return null;
   var attack=id==='bleed_trap'||id==='stun_trap',healing=id==='honey'||id==='mushroom';
-  return {name:def[0],description:usable[id],qty:stock[id],action:'forest-use',id:id,
+  return {name:def[0],description:usable[id]||newDescription,qty:stock[id],action:'forest-use',id:id,
    disabled:attack?!enemies().length:healing&&r.hp>=st.hp,
    reason:attack?'Нет доступного врага.':healing?'Здоровье уже полное.':''};
  }
@@ -1722,7 +1728,7 @@ function kill(t){
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  var hunterNotice=HB.gain(s.meta,r,e,t.id);if(hunterNotice)log('КНИГА: '+hunterNotice);
- r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal')+miningBonus('healOnKill'));
+ r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal')+miningBonus('healOnKill')+FW.bonus(r,'killHeal'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[],soul:null};
  if((e.boss||e.id&&e.elite)&&lvl('magnate')>0)drop.soul={kind:'elite',name:'Душа '+e.name};
  else if(!e.boss&&lvl('merchant')>0&&Math.random()<Math.min(.72,.12*lvl('merchant')))drop.soul={kind:'common',name:'Душа '+e.name};
@@ -1858,6 +1864,7 @@ function strike(tid){
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
  if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  amount=TR.attack(r,t.foe,amount,titleHelpers());
+ var forestStrike=FW.firstStrikeBonus(r);if(forestStrike)amount=Math.max(1,Math.floor(amount*(1+forestStrike*.01)));
  if(ridgeStrike.extra)amount=Math.max(1,Math.floor(amount*(1+ridgeStrike.extra*.01)));
  t.foe.hp-=amount;
  if(t.foe.hp>0&&Math.random()*100<miningBonus('stunChance')){t.foe.stun=Math.max(t.foe.stun||0,1);log('Кирка оглушает '+t.foe.name+'.');}
@@ -2514,7 +2521,7 @@ function triggerTrap(t){
  if(!t||t.kind!=='trap'||t.trapSpent||t.trapActive)return;
  t.trapActive=true;r.trappedTile=t.id;r.heroTile=t.id;
  trapArchers(t);
- var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce')+RG.gearBonus(r,'trapReduce'))*.01,0,.95);
+ var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce')+FW.bonus(r,'trapReduce')+FW.trapBonus(r)+RG.gearBonus(r,'trapReduce'))*.01,0,.95);
  var dmg=Math.max(1,Math.floor((6+r.floor*.65+(r.actIndex||0)*5)*reduction*(r.class==='scout'?.55:1)));
  r.hp=Math.max(0,r.hp-dmg);
  r.bleedTurns=Math.max(1,r.bleedTurns||0);
@@ -3236,6 +3243,7 @@ function town(){
  dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
  '<p>Обычные материалы: <b class="golden">'+available+'</b>. Руда с нагорья учитывается отдельно и расходуется на Шахтный двор. Добычу сдаём на склад при безопасном возвращении.</p>'+
  '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
+ (s.meta.forestProjects&&Object.keys(s.meta.forestProjects).length?'<div class="frame-title space-top">Наследие Лесной окраины</div><p class="fine golden">'+Object.keys(s.meta.forestProjects).filter(function(k){return s.meta.forestProjects[k];}).map(function(k){return esc(({forest_shrine:'Святилище рощи · +5 щита на каждом этаже леса',grove_seed:'Саженец древнего дуба · +3 HP на каждом этаже леса'})[k]||k);}).join(' · ')+'</p>':'')+
  (s.meta.ridgePerks?'<div class="frame-title space-top">Трофеи Каменистого нагорья</div><p class="fine golden">'+Object.keys(s.meta.ridgePerks).filter(function(k){return s.meta.ridgePerks[k];}).map(function(k){return esc(({troll_horn:'Рог тролля',vibrosieve:'План вибросита',artel:'Восстановленная артель',heart_of_mountain:'Сердце горы'})[k]||k);}).join(' · ')+'</p>':'')+
  '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
  '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
