@@ -1118,6 +1118,64 @@ test('Every scroll rank appears on the same spellbook page',()=>{
  live.debug.action('close');
 });
 
+test('Opening a dungeon trap springs an ambush of two independent ranged enemies',()=>{
+ A('begin','scout');const run=api.state().run;
+ run.hp=50000;run.mp=api.debug.stats().mp;
+ const target=run.tiles[CR.near(run.heroTile)[0]];
+ target.kind='trap';target.foe=null;target.hasKey=false;target.drops=null;
+ target.revealed=false;target.cleared=false;target.trapSpent=false;target.trapActive=false;
+ assert.ok(CR.exploreStatus(target,run.tiles,run.heroTile).ok,'Fixture trap must be openable');
+ const before=run.tiles.filter(t=>t.foe&&t.foe.trapAmbush).length;
+ const start=run.turn;
+ A('reveal',target.id);
+ assert.equal(run.turn,start+1,'Opening the trap still costs one action');
+ assert.equal(run.trappedTile,target.id,'Hero is trapped until disarm');
+ const reinforcements=run.tiles.filter(t=>t.foe&&t.foe.trapAmbush);
+ assert.equal(reinforcements.length,before+2,'Exactly two new ranged enemies spawn');
+ for(const t of reinforcements){
+  assert.equal(t.foe.ranged,true,'Trap reinforcement uses ranged attacks');
+  assert.equal(t.revealed,true,'Both ambushers are visible');
+  assert.equal(t.foe.attackInterval,2,'New archer acts every two rounds');
+ }
+ const hpBeforeDisarm=run.hp;
+ A('pickup',target.id);
+ assert.equal(run.trappedTile,null,'Disarming frees the character');
+ assert.equal(target.trapSpent,true,'Trap is permanently spent');
+ assert.equal(run.tiles.filter(t=>t.foe&&t.foe.trapAmbush).length,2,'Disarming never summons more');
+ assert.ok(run.hp<=hpBeforeDisarm,'The archers may act in their autonomous round');
+});
+
+test('Fast-sweep research and loot pickup each charge a normal turn and stop at hazards',()=>{
+ A('begin','scout');const run=api.state().run;
+ run.hp=30000;
+ const targets=CR.near(run.heroTile).slice(0,2);
+ assert.equal(targets.length,2);
+ for(const id of targets){
+  const t=run.tiles[id];t.kind='empty';t.foe=null;t.hasKey=false;t.drops=null;
+  t.revealed=false;t.cleared=false;t.summon=false;
+ }
+ let turns=run.turn;
+ assert.equal(api.debug.quickSweep(targets[0]),true,'Can trace across the first covered tile');
+ assert.equal(run.turn,turns+1);
+ turns=run.turn;
+ assert.equal(api.debug.quickSweep(targets[1]),true,'Can reveal second cell while holding');
+ assert.equal(run.turn,turns+1);
+ const money=run.tiles[targets[0]];money.kind='coin';money.cleared=false;
+ const gold=run.gold;turns=run.turn;
+ assert.equal(api.debug.quickSweep(money.id),true,'Finger drag collects ground gold');
+ assert.equal(run.turn,turns+1,'Picking up money also consumes one action');
+ assert.ok(run.gold>gold);
+ const enemy=run.tiles[targets[1]];enemy.foe={hp:9,maxHp:9,name:'Враг'};
+ turns=run.turn;
+ assert.equal(api.debug.quickSweep(enemy.id),false,'The gesture never attacks monsters');
+ assert.equal(run.turn,turns);
+ run.trappedTile=money.id;
+ assert.equal(api.debug.quickSweep(targets[1]),false,'No free collection while trapped');
+ run.trappedTile=null;
+ const css=fs.readFileSync(path.join(root,'hud_titles_v082.css'),'utf8');
+ assert.match(css,/\.dungeon-board \.maze\{touch-action:none/,'Board supports held finger gestures');
+});
+
 test('Loading a legacy save removes useless trinkets without deleting real gear',()=>{
  const live=win.Crypt,run=live.state().run;
  run.lootBag=[{id:99002,kind:'trinket',name:'Треснувшая пуговица',qty:1}];
