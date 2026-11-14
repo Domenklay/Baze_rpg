@@ -68,6 +68,11 @@ const rangedSkillHp=foe.hp,rangedTurn=run.turn;
 run.skillUsed=-100;A('skill');
 assert.ok(foe.hp<rangedSkillHp,'Scout double shot ignores unexcavated corridor');
 assert.equal(run.turn,rangedTurn+1,'Ranged class skill spends one turn');
+run.class='sorceress';run.skillUsed=-100;foe.hp=1000;run.mp=5000;
+const mageBefore=run.turn;
+A('skill');
+assert.ok(foe.hp<1000,'Sorceress ranged area magic ignores unopened slabs');
+assert.equal(run.turn,mageBefore+1);
 // Enemy reinforcements and story spawns can be trapped by the closed grid.
 const rule=window.ClickerRules;
 for(const id of [15,16]){run.tiles[id].revealed=true;run.tiles[id].cleared=true;run.tiles[id].kind='empty';run.tiles[id].foe=null;}
