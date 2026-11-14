@@ -863,7 +863,7 @@ function shownSpells(){return SPELLS.filter(function(sp){return (!sp.titleOnly||
 
 function renderSpells(){
  var list=shownSpells();
- return '<div class="spellbook"><aside class="element-tabs">'+[{id:'all',name:'Все',icon:'scroll'}].concat(SYS.schools.map(function(x){return {id:x.id,name:x.name,icon:schoolIcon(x.id)};})).map(function(x){return '<button class="'+((r.spellSchool||'all')===x.id?'active':'')+'" data-action="spell-school" data-id="'+x.id+'" aria-label="'+esc(x.name)+'">'+uiIcon(x.icon)+'<span>'+esc(x.name)+'</span></button>';}).join('')+'</aside><div class="book-page"><div class="book-title">'+esc((SYS.schools.find(function(x){return x.id===r.spellSchool;})||{name:'Все школы'}).name)+'<small>Мана '+r.mp+'/'+stats().mp+'</small></div><div class="book-spells">'+list.map(function(sp){var error=spellValid(sp);return '<button class="book-spell '+(r.scrolls[sp.id]?'owned':'')+'" data-action="spell-detail" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<strong>'+esc(sp.name)+'</strong><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · ×'+(r.scrolls[sp.id]||0)+'</small><span class="spell-availability">'+esc(error||'Можно применить')+'</span></button>';}).join('')+'</div></div></div>';
+ return '<div class="spellbook"><aside class="element-tabs">'+[{id:'all',name:'Все',icon:'scroll'}].concat(SYS.schools.map(function(x){return {id:x.id,name:x.name,icon:schoolIcon(x.id)};})).map(function(x){return '<button class="'+((r.spellSchool||'all')===x.id?'active':'')+'" data-action="spell-school" data-id="'+x.id+'" aria-label="'+esc(x.name)+'">'+uiIcon(x.icon)+'<span>'+esc(x.name)+'</span></button>';}).join('')+'</aside><div class="book-page"><div class="book-title">'+esc((SYS.schools.find(function(x){return x.id===r.spellSchool;})||{name:'Все школы'}).name)+'<small>Мана '+r.mp+'/'+stats().mp+'</small></div><div class="book-spells">'+list.map(function(sp){var error=spellValid(sp);return '<button class="book-spell '+(r.scrolls[sp.id]?'owned':'')+'" data-action="spell-detail" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<strong>'+esc(sp.name)+'</strong><small>'+sp.rank+'★ · '+manaCost(sp)+' МН · ×'+(r.scrolls[sp.id]||0)+'</small>'+(spellPreview(sp)?'<em class="book-spell-power">'+spellPreview(sp).label+': '+spellPreview(sp).value+'</em>':'')+'<span class="spell-availability">'+esc(error||'Можно применить')+'</span></button>';}).join('')+'</div></div></div>';
 }
 function renderTalents(){
  var tree=clamp(r.treeView||0,0,2),nodes=talentsByTree(tree),positions={};
@@ -1788,6 +1788,18 @@ function wait(){log('Вы затаились, собираясь с силами
 /* Six-school combat and exploration magic. The sixth tier alters the entire
    floor; boss HP is protected from instant kills and one-shot quest loss. */
 
+/* Deterministic live spell preview. No state mutations or random proc rolls. */
+function spellPreview(sp){
+ var k=sp.kind,harm=['attack','burn','stun','drain','holy','weakness','chain','aoe','burnall','freezeall','drainall','earthquake','sunfall','soulcovenant','firstlight'];
+ var heals=['heal','healshield','lastlight'],shield=['shield'];
+ if(!harm.includes(k)&&!heals.includes(k)&&!shield.includes(k))return null;
+ var st=stats(),raw=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ var strength=Math.max(1,Math.ceil(raw*TR.previewMultiplier(r,sp)));
+ if(heals.includes(k))strength=Math.ceil(strength*(1+bonus('healPower')*.01));
+ if(shield.includes(k))strength=Math.ceil(strength*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));
+ return {label:harm.includes(k)?'Урон':heals.includes(k)?'Лечение':'Щит',value:strength,
+  note:harm.includes(k)?'До брони врага; случайные критические эффекты не включены.':'С учётом магии, экипировки и текущих усилений.'};
+}
 function spellPower(sp,st){
  r.titleAuroraTriggered=false;r.titlePopeTriggered=false;
  var amount=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
@@ -3057,7 +3069,7 @@ function action(name,id){
   if(name==='title-mastery'){gainTitleMastery(id);return;}
   if(name==='title-tool'){titleToolDialog();return;}
   if(name==='title-tool-use'){titleToolUse(id);return;}
- if(name==='spell-detail'){var detail=SPELLS.find(function(x){return x.id===id;});if(!detail)return;var err=spellValid(detail);dialog('<div class="panel-heading"><h2>Книга заклинаний</h2><button class="panel-close" data-action="ui-panel" data-id="spells" aria-label="Назад в книгу">←</button></div><article class="spell-detail-page"><div class="spell-detail-seal">'+uiIcon(schoolIcon(detail.school))+'</div><div class="sheet-kicker">'+esc((SYS.schools.find(function(x){return x.id===detail.school;})||{}).name||'')+' · '+detail.rank+'★</div><h2>'+esc(detail.name)+'</h2><p>'+esc(detail.description)+'</p><div class="spell-detail-cost"><span>'+manaCost(detail)+'<small>маны</small></span><span>'+(r.scrolls[id]||0)+'<small>свитков</small></span><span>1<small>ход</small></span></div><div class="spell-detail-note">'+esc(err||'Готово к применению')+'</div></article><button class="btn wide space-top" data-action="cast-modal" data-id="'+id+'" '+(err?'disabled':'')+'>Применить · 1 ход</button>');return;}
+ if(name==='spell-detail'){var detail=SPELLS.find(function(x){return x.id===id;});if(!detail)return;var err=spellValid(detail);dialog('<div class="panel-heading"><h2>Книга заклинаний</h2><button class="panel-close" data-action="ui-panel" data-id="spells" aria-label="Назад в книгу">←</button></div><article class="spell-detail-page"><div class="spell-detail-seal">'+uiIcon(schoolIcon(detail.school))+'</div><div class="sheet-kicker">'+esc((SYS.schools.find(function(x){return x.id===detail.school;})||{}).name||'')+' · '+detail.rank+'★</div><h2>'+esc(detail.name)+'</h2><p>'+esc(detail.description)+'</p><div class="spell-detail-cost"><span>'+manaCost(detail)+'<small>маны</small></span><span>'+(r.scrolls[id]||0)+'<small>свитков</small></span><span>1<small>ход</small></span></div>'+(spellPreview(detail)?'<div class="spell-detail-preview"><strong>'+spellPreview(detail).label+': '+spellPreview(detail).value+'</strong><small>'+spellPreview(detail).note+'</small></div>':'')+'<div class="spell-detail-note">'+esc(err||'Готово к применению')+'</div></article><button class="btn wide space-top" data-action="cast-modal" data-id="'+id+'" '+(err?'disabled':'')+'>Применить · 1 ход</button>');return;}
  if(name==='pin-spell'){r.quickSpells=[id].concat((r.quickSpells||[]).filter(function(x){return x!==id;})).slice(0,3);save();draw();panelDialog('spells');toast('Заклинание добавлено в быстрый доступ');return;}
  if(name==='hunter-book'){hunterBookDialog();return;}
  if(name==='forest-choice'){forestChoose(id);return;}
