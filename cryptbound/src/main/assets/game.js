@@ -299,7 +299,7 @@ function distributeTiles(){
  if(!boss&&Math.random()<.16)insert('shop',1);
  if(!boss&&Math.random()<.65&&!RE.active(r))insert('event',1);
  if(!boss&&RE.active(r)){
-  if(Math.random()<.86)insert('t1-event',1);
+  if((RG.active(r)&&RG.chainPriority(r))||Math.random()<.86)insert('t1-event',1);
   if(r.floor>=4&&Math.random()<.22)insert('t1-event',1);
  }
  if(!boss&&Math.random()<.55)insert('puzzle',1);
