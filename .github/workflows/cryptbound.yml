@@ -59,6 +59,8 @@ jobs:
           node --check cryptbound/src/main/assets/forest_encounters.js
           node --check cryptbound/src/main/assets/t1_encounters.js
           node --check cryptbound/src/main/assets/mining.js
+          node --check cryptbound/src/main/assets/ridge_catalog.js
+          node --check cryptbound/src/main/assets/ridge_events.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -77,6 +79,7 @@ jobs:
           node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/t1_encounters.cjs
           node cryptbound/tests/mining.cjs
+          node cryptbound/tests/ridge_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
@@ -88,8 +91,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.12-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.12-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.13-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.13-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -102,7 +105,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.12 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.12 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.12 — кирка нагорья и паутинка 18 навыков" --notes "Офлайн Android APK v0.8.12. Каменистое нагорье: кирка выдаётся при входе и занимает слот оружия, 4 вида руды, рудные жилы с прочностью и ходами добычи, опыт и уровни кирки 1–10 (10-й требует рунной руды). Каждому уровню соответствует +1% физической атаки с киркой и рост силы добычи. Новая паутинка из 6 лучей по 3 навыка: 18 узлов с прокачкой 0–5 за руду, в том числе меткость, критический шанс и урон, двойной удар, защита и бонусы добычи. Кнопка кирки вместо лесной книги на втором регионе. Поселение: Шахтный двор с рецептами из руды; базовые здания не расходуют руду автоматически. Сохранения прежних версий совместимы. Быстрый сбор, механика боя и тестовые очки исследования прежней версии сохранены."
+          if ! gh release view cryptbound-v0.8.13 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.13 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.13 — кирка нагорья и паутинка 18 навыков" --notes "Cryptbound v0.8.13 offline Android. Каменистое нагорье: 50 новых взаимосвязанных событий с уникальной экипировкой, рабочими расходниками, торговлей и улучшениями деревни. Зафиксированная сквозная штольня на этажах X, X+10 и X+20 с переходами назад на 10 и вперёд на 20 этажей. Кнопка подъёма на предыдущий этаж полностью регенерирует врагов, руду, сундуки и случайные события, но сохраняет уникальные находки и этапы штольни. На уже побеждённом этаже босса две двери: на базу и дальше; повторного босса нет. Одноразовый Грохочущий бур привлекает 1–2 эфирных элитников на новых этажах, усиливается по мере спуска и выдаёт богатую награду рудой после победы. Эфирные элитники не имеют дропа и не учитываются в обычных трофеях. При подъёме бур теряется, при остановке не перезапускается. Старые сохранения поддерживаются."
           fi
-          gh release upload cryptbound-v0.8.12 dist/Cryptbound-v0.8.12-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.13 dist/Cryptbound-v0.8.13-offline-Android.apk dist/SHA256SUMS.txt --clobber
