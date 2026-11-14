@@ -86,8 +86,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.6-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.6-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.7-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.7-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.6 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.6 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.6 — крупные склянки, мешочки и монеты" --notes "Офлайн APK Android. Увеличены спрайты малых склянок HP и MP и мешочков с добычей: убраны лишние прозрачные поля и иконки заполняют клетки лабиринта. Добавлен новый пиксельный кошель с золотыми монетами для обычных и маленьких денежных находок. Сохранены механики элитников, боссов и исправления предыдущих версий; игровой прогресс не сбрасывается."
+          if ! gh release view cryptbound-v0.8.7 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.7 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.7 — уменьшенные склянки и мешочки" --notes "Офлайн APK для Android. Склянки HP и MP, кошель с монетами и мешочки добычи уменьшены на 30% относительно v0.8.6 (до 70% клетки). Баланс, боя и поведение добычи не изменены. Подготовлен отдельный художественный комплект из 64 спрайтов останков для последующего распределения по монстрам; в этой версии они ещё не подключены к таблице выпадения."
           fi
-          gh release upload cryptbound-v0.8.6 dist/Cryptbound-v0.8.6-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.7 dist/Cryptbound-v0.8.7-offline-Android.apk dist/SHA256SUMS.txt --clobber
