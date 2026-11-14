@@ -311,12 +311,18 @@ function homeRewards(r,meta){
 }
 function mineBonuses(r){if(!active(r))return {extra:0,rare:0,instant:0,extraQty:0};
  var x=ensure(r),b={extra:gearBonus(r,'mineExtra'),rare:0,instant:gearBonus(r,'mineInstant'),extraQty:0};
+ var perks=x.perks||{};
+ if(perks.troll_horn)b.extra+=5;
+ if(perks.vibrosieve)b.extra+=10;
+ if(perks.heart_of_mountain)b.rare+=5;
  (x.buffs||[]).filter(function(y){return y.left>0;}).forEach(function(y){if(y.kind==='rare')b.rare+=y.value;if(y.kind==='extra')b.extraQty+=y.value;});
  if(x.flags.soot_companion)b.extra+=6;
  return b;
 }
 function mined(r){
  if(!active(r))return;var x=ensure(r);
+ x.totalMines=(x.totalMines||0)+1;
+ if(x.perks&&x.perks.artel&&x.totalMines%3===0){r.materials[ORE.iron]=(r.materials[ORE.iron]||0)+1;}
  x.buffs=x.buffs.filter(function(y){if(y.left>0)y.left--;return y.left>0;});
  if(x.items.mirror_chisel>0){x.items.mirror_chisel--;r.materials[ORE.iron]=(r.materials[ORE.iron]||0)+1;}
 }
