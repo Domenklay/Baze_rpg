@@ -542,7 +542,7 @@ function load(){
     else v.run.key=true;
   }
  }
- if(v.run&&CM.active(v.run)){CM.ensure(v.run);if(!CM.pickItem(v.run))CM.grantPick(v.run,++v.seq);}
+ if(v.run&&CM.active(v.run)){RG.ensure(v.run);CM.ensure(v.run);if(!CM.pickItem(v.run))CM.grantPick(v.run,++v.seq);}
  if(v.run)TR.init(v.run);
   if(meta.activeExpedition)TR.init(meta.activeExpedition);
   return v;}catch(e){return null;}
@@ -655,7 +655,7 @@ function activeTileView(t){
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
  if(t.kind==='boss-base-door')return '<button class="tile boss-choice-door" data-action="safe-portal" data-id="'+t.id+'" aria-label="Дверь на базу">'+uiIcon('home')+'<span>НА БАЗУ</span></button>';
- if(t.kind==='boss-next-door')return '<button class="tile boss-choice-door" data-action="descend" data-id="'+t.id+'" aria-label="Дверь дальше">'+uiIcon('door-open')+'<span>ДАЛЬШЕ</span></button>';
+ if(t.kind==='boss-next-door')return '<button class="tile boss-choice-door" data-action="descend" data-id="'+t.id+'" aria-label="Дверь дальше">'+uiIcon('compass')+'<span>ДАЛЬШЕ</span></button>';
  if(t.kind==='trap'&&t.trapSpent)return '<button class="tile tile-discovered tile-trap trap-spent" data-action="move-hero" data-id="'+t.id+'" title="Обезвреженный капкан">'+icon('trap')+hero+'</button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
   return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
@@ -757,7 +757,7 @@ function renderMaze(){
  return '<div class="dungeon-root theme-'+(r.actIndex||0)+'" data-location="'+((r.actIndex||0)*3+(r.locationIndex||0))+'" style="--floor-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-floor.svg);--cover-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-cover.svg);--floor-art:url(ui/atlas-'+String(artPair).padStart(2,'0')+'.png);--cover-art:url(ui/atlas-'+String(artPair+1).padStart(2,'0')+'.png)">'+
  '<div class="expedition-top"><div class="dungeon-name"><small>АКТ '+((r.actIndex||0)+1)+' · '+(r.locationIndex+1)+'/3</small><h1>'+esc(room?'Заброшенное убежище':region.name)+'</h1></div><button class="expedition-ep" data-action="ui-panel" data-id="talents" title="Очки исследования для званий" aria-label="Очки исследования: '+r.ep+'">'+uiIcon('talent')+'<span>'+r.ep+'</span><small>ОИ</small></button><button class="floor-seal" data-action="battle-log" aria-label="Журнал этажа">'+r.floor+'<small>ЭТАЖ</small></button><div class="expedition-money"><span title="Золото"><img class="gold-coin-icon" src="ui/gold_coin.png" alt="" draggable="false"/>'+r.gold+'</span><span title="Алмазы">'+uiIcon('gem')+(r.diamonds||0)+'</span></div><button class="hud-menu" data-action="menu" aria-label="Меню">'+uiIcon('menu')+'</button></div>'+
  '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.titlePanther&&r.titlePanther.hp>0?'<button data-action="title-panther-info" aria-label="Чёрная пантера">'+uiIcon('paw')+'<small>'+r.titlePanther.hp+'</small></button>':'')+
-  (r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&r.locationIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+(CM.active(r)?'<button class="hb-v072-access mine-hud-access" data-action="mine-menu" title="Кирка и добыча" aria-label="Кирка: уровень '+CM.ensure(r).level+'"><span class="mine-hud-pick">⚒</span><small>'+CM.ensure(r).level+'</small></button>':'')+'</div></div>'+
+  (r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&r.locationIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+(CM.active(r)?'<button class="hb-v072-access mine-hud-access" data-action="mine-menu" title="Кирка и добыча" aria-label="Кирка: уровень '+CM.ensure(r).level+'"><span class="mine-hud-pick">⚒</span><small>'+CM.ensure(r).level+'</small></button>':'')+(RG.active(r)&&RG.ensure(r).bur.status==='active'?'<button class="hb-v072-access mine-hud-access" data-action="ridge-bur" title="Грохочущий бур · работает" aria-label="Грохочущий бур"><span class="mine-hud-pick">⚙</span><small>'+RG.ensure(r).bur.completed+'</small></button>':'')+'</div></div>'+
  '<div class="dungeon-board'+(room?' cave-active':'')+'"><div class="dungeon-border'+(room?' cave-scene':'')+'"><div class="maze'+(room?' chamber-maze':'')+'">'+(room?renderChamberTiles(room):r.tiles.map(activeTileView).join(''))+'</div></div></div>'+
  '<div class="encounter-slot">'+(!room&&r.tiles.some(function(t){return t.revealed&&t.foe&&t.foe.elite&&t.foe.hp>0;})?'<div class="elite-floor-warning">⚔ ОБНАРУЖЕН ЭЛИТНЫЙ ПРОТИВНИК</div>':'')+encounter+(!room&&r.portalReady?'<button class="portal-compact" data-action="safe-portal">Безопасный портал · на базу</button>':'')+'</div>'+
  '<div class="battle-dock"><div class="dock-wing"><div class="quick-spells" aria-label="Классовые способности">'+quick+'</div><button class="dock-button" data-action="ui-panel" data-id="spells">'+uiIcon('book')+'<span>Свитки</span></button></div>'+
@@ -1193,6 +1193,8 @@ function safePortal(){
  var locKey='act'+(oldAct+1)+'-location'+(oldLocation+1);
  var rainbow=awardAchievement(locKey+'-first-boss',1);
  if(r.bossClears[50])rainbow+=awardAchievement(locKey+'-deep-50',2);
+ var ridgeHome=RG.homeRewards(r,s.meta);
+ if(ridgeHome.length)log('В деревню доставлены чертежи и трофеи: '+ridgeHome.join(', ')+'.');
  var loot=bankExpeditionLoot(1),scrap=0;
  s.meta.best=Math.max(s.meta.best,r.floor);
  fairyRemark('rest');
@@ -1225,7 +1227,7 @@ function resumeExpedition(){
  r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);grantTestResearch(r);
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
- if(CM.active(r)){if(!CM.pickItem(r)){CM.grantPick(r,++s.seq);log('Найдена кирка рудокопа. Оружие установлено в слот.');}else CM.ensure(r);}
+ if(CM.active(r)){RG.ensure(r);if(!CM.pickItem(r)){CM.grantPick(r,++s.seq);log('Найдена кирка рудокопа. Оружие установлено в слот.');}else CM.ensure(r);}
  r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
  fillPreparedPotions(r);r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
@@ -1872,6 +1874,13 @@ function mineHit(id){
  if(!result.ok){toast(result.message);return;}
  log(result.message);finishAction();
  if(r&&result.finished)floatLoot(t.id,[result.ore+' ×'+result.qty,'Опыт кирки +'+result.xp]);
+}
+function ridgeBurDialog(){
+ if(!RG.active(r))return;
+ var b=RG.ensure(r).bur;
+ dialog('<h2>⚙ Грохочущий бур</h2><p>Статус: '+(b.status==='active'?'работает':b.status==='lost'?'потерян':'остановлен')+'</p><p>Завершено этажей добычи: '+b.completed+'. На каждом новом этаже необходимо победить 1–2 эфирных элитников. Они не оставляют трофеев; награду рудой выдаёт бур.</p>'+
+ (b.status==='active'?'<button class="btn gold wide" data-action="ridge-bur-stop">Остановить бур окончательно</button>':'')+
+ '<button class="btn alt wide" data-action="close">Вернуться</button>');
 }
 function mineDialog(){
  if(!r||!CM.active(r))return;
@@ -3202,6 +3211,7 @@ function town(){
  dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
  '<p>Обычные материалы: <b class="golden">'+available+'</b>. Руда с нагорья учитывается отдельно и расходуется на Шахтный двор. Добычу сдаём на склад при безопасном возвращении.</p>'+
  '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
+ (s.meta.ridgePerks?'<div class="frame-title space-top">Трофеи Каменистого нагорья</div><p class="fine golden">'+Object.keys(s.meta.ridgePerks).filter(function(k){return s.meta.ridgePerks[k];}).map(function(k){return esc(({troll_horn:'Рог тролля',vibrosieve:'План вибросита',artel:'Восстановленная артель',heart_of_mountain:'Сердце горы'})[k]||k);}).join(' · ')+'</p>':'')+
  '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
  '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
  '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
@@ -3461,7 +3471,7 @@ function quickSweepTile(id){
  }else if(t.foe&&t.foe.hp>0){
   if(r.class!=='scout'&&!reachableEnemy(t))return false;
   verb='strike';
- }else if(!t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block'){
+ }else if(!t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block'&&t.kind!=='boss-base-door'&&t.kind!=='boss-next-door'){
   // Includes corpses, keys, treasure, events, and active traps.
   verb='pickup';
  }
@@ -3474,7 +3484,7 @@ function sweepTilePending(t){
  if(!t)return false;
  if(!t.revealed)return true;
  if(t.foe&&t.foe.hp>0)return true;
- return !t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block';
+ return !t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block'&&t.kind!=='boss-base-door'&&t.kind!=='boss-next-door';
 }
 var quickSweep=null,quickSweepTimer=null,quickSweepClock=null,quickSweepSuppressUntil=0;
 function cancelQuickSweep(){
