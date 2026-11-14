@@ -68,7 +68,7 @@ const marsh={kind:'t1-event',t1Id:2,revealed:true,cleared:false};
 assert.equal(RE.choose(serialized,marsh,0,api).ok,true);
 assert.equal(RE.state(serialized).items.bog_map,1);
 assert.equal(RE.inventory(serialized).some(x=>x.id==='1:ridge_map'),true);
-assert.equal(RE.pick(serialized,[1,2,3,4,5,6,7,8,9,10]),null===undefined?true:RE.pick(serialized,[1,2,3,4,5,6,7,8,9,10])!==2); // exclusion
+assert.notEqual(RE.pick(serialized,[1,2,3,4,5,6,7,8,9,10]),2,'Picked scene must not be excluded');
 const missing={kind:'t1-event',t1Id:16,revealed:true,cleared:false};
 assert.equal(RE.choose(serialized,missing,0,api).ok,false,'Antidote requires a gathered herb');
 const tHerb={kind:'t1-event',t1Id:12,revealed:true,cleared:false};
