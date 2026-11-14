@@ -552,6 +552,56 @@ function forestAlphaVisual(t){
  var quarter=Math.max(0,(anchor.forestAlphaSquare||[anchor.id]).indexOf(t.id));
  return '<span class="forest-alpha-quarter alpha-q'+quarter+'">'+monsterVisual(anchor.foe)+'</span>';
 }
+
+/* Approved 8x8 / 64-icon remains atlas. A stable match selects an appropriate
+   aftermath for each monster; no new craft material is created by these visuals. */
+function remainsId(e){
+ var n=((e&&e.id)||'')+' '+((e&&e.name)||'')+' '+((e&&e.roleName)||'')+' '+((e&&e.visual)||'');
+ n=n.toLowerCase();
+ var groups=[
+  [/волк|wolf|гонч|hound|лисиц|fox|шакал|jackal|псин|dog/, [9]],
+  [/кабан|boar|свин|pig/, [10]],
+  [/олень|deer|лось|elk|марал/, [11]],
+  [/ворон|crow|raven|птиц|bird|сова|owl|гриф|vulture|пернат/, [12,56,61]],
+  [/зме|snake|serpent|гадюк|уж\b/, [14]],
+  [/ящер|дракон|dragon|reptil|крокодил|lizard/, [13,59,60]],
+  [/краб|crab|рак\b|crustacean/, [15,16]],
+  [/паук|spider|арахн|arachn/, [17,62]],
+  [/пчел|bee|шмел|wasp|ос(а|ы|у)|honey/, [19,63]],
+  [/мух|fly|комар|mosquito|мотыл|moth/, [18]],
+  [/скорпион|scorpion/, [20]],
+  [/жук|beetle|хитин|insect|мурав|ant|богомол|mantis/, [21,22,23]],
+  [/личин|larva|черв|worm|гусениц/, [23,62]],
+  [/слиз|slime|слизень|ooze|жиж|gelatin/, [24,25,26]],
+  [/лед|мороз|ice|frost|снеж|snow|холод|cold/, [27,32]],
+  [/воздух|буря|ветер|air|wind|storm|гроз|lightning/, [28,49]],
+  [/лав|lava|огн|fire|плам|flame|жар|burn|магма|magma/, [29,48]],
+  [/песчан|sand|прах|dust|пепел|ash/, [30,64]],
+  [/кристалл|crystal|рунич|rune|магическ|arcane/, [41,45,47,64]],
+  [/голем|golem|истукан|каменн|stone|rock|стату|construct|механ|machine|робот|metal|железн|iron|бронз|bronze/, [31,41,42,43,44,45,46]],
+  [/гриб|mushroom|spore|спор|плесень|mold/, [35,38]],
+  [/корн|root|древень|treant|дерев|tree|лоза|vine|ветв|branch/, [33,34,36,39,40]],
+  [/растен|plant|цвет|flower|бутон|thorn|шип|куст|bush/, [33,34,36,37,38,57,58]],
+  [/призрак|ghost|specter|spirit|дух|фантом|phantom|тень|shadow|эфир|ether/, [49,50,64]],
+  [/скелет|skeleton|кость|bone|костян|нежит|undead|мертв|зомб|zomb|лич\b|lich|упыр|ghoul|мумия|mummy/, [1,2,3,4,5,6,7,8,51,53,54,55]],
+  [/культист|cultist|ведьм|witch|чародей|sorcer|некромант|necroman|колдун|mage|warlock/, [4,7,51,52,53,54,55]],
+  [/рыцарь|knight|страж|guard|воин|warrior|мечник|swords|разбой|bandit|человек|human|солдат|soldier|пират|pirate/, [1,2,5,6,7,8,52,53,54]],
+  [/летуч|bat|медвед|bear|барсук|badger|бобр|beaver|крыса|rat|мыш|mouse|заяц|rabbit|рысь|lynx|кот|cat/, [9,10,11,12,59,61]],
+  [/яйц|egg|гнезд|nest/, [59,60,61,62]]
+ ];
+ var available=[1,2,3,8,9,10,13,16,31,52,53,54,55,56,64];
+ for(var g of groups){if(g[0].test(n)){available=g[1];break;}}
+ var seed=2166136261;
+ for(var i=0;i<n.length;i++)seed=Math.imul(seed^n.charCodeAt(i),16777619);
+ return available[(seed>>>0)%available.length];
+}
+function remainsArt(id){
+ var idx=Math.max(0,Math.min(63,(Number(id)||1)-1)),col=idx%8,row=Math.floor(idx/8);
+ return '<span class="tile-remains-art" role="img" aria-label="Останки" style="background-position:'+((col/7)*100).toFixed(3)+'% '+((row/7)*100).toFixed(3)+'%"></span>';
+}
+function goldArt(className){
+ return '<img class="'+(className||'gold-coin-inline')+'" src="ui/gold_coin.png" alt="" draggable="false"/>';
+}
 function activeTileView(t){
  if(t.forestAlphaAnchor!=null){
   var anchor=r.tiles[t.forestAlphaAnchor];
@@ -559,6 +609,8 @@ function activeTileView(t){
    '" data-action="'+(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike')+'" data-id="'+anchor.id+'" title="'+esc(anchor.foe.name)+'">'+forestAlphaVisual(t)+'</button>';
  }
  var alive=t.foe&&t.foe.hp>0,drop=!!t.drops;
+ var valuables=drop&&(t.drops.key||t.drops.gear||t.drops.scroll||t.drops.potion||t.drops.relic||t.drops.soul||t.drops.diamonds||(t.drops.materials||[]).length);
+ var remains=drop&&!alive&&!valuables&&t.foe&&t.foe.hp<=0;
  var clearAge=Date.now()-(r.clearAnimationStarted||0),opening=t.autoOpened!=null&&clearAge>=0&&clearAge<t.autoOpened*35+260;
  var hero=r.heroTile===t.id?'<span class="hero-on-board" data-unit="hero">'+window.CryptArt.miniHero(r.class,r.fxUntil>Date.now()?r.fx:null)+'</span>':'';
  if(t.revealed&&t.kind==='start')return '<button class="tile tile-origin" data-action="move-hero" data-id="'+t.id+'" aria-label="Стартовая клетка">'+hero+'<span class="origin-dot">◆</span></button>';
@@ -576,9 +628,9 @@ function activeTileView(t){
    '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">'+(t.hinted?'✦':'✥')+'</span></button>':
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
- var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
- var name=alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
+ var marker=alive?'enemy':remains?'remains':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
+ var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var name=alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='remains'?'Останки '+t.foe.name+(t.drops.gold?' · монеты '+t.drops.gold:''):marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.cooldown==null?((t.foe.skill&&t.foe.skill.every)||EX.monster(t.foe.visual||t.foe.id).every):t.foe.cooldown):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
@@ -586,7 +638,7 @@ function activeTileView(t){
   damageBadge(t.foe)+enemyDebuffs(t.foe):'';
  return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&(r.pendingSpell||r.pendingSkill||r.pendingForestUse)?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
-  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+(alive&&t.foe.elite?'<span class="elite-tag" aria-hidden="true">ЭЛИТА</span>':'')+unit+(t.kind==='trap'?hero:'')+
+  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+(!alive&&drop&&t.drops.gold?'<span class="loot-coin-badge">'+goldArt('gold-coin-tile')+'<small>'+t.drops.gold+'</small></span>':'')+(alive&&t.foe.elite?'<span class="elite-tag" aria-hidden="true">ЭЛИТА</span>':'')+unit+(t.kind==='trap'?hero:'')+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+(t.kind==='exit'&&!r.key?'<span class="stairs-locked" title="Нужен ключ">'+uiIcon('key')+' ✕</span>':'')+'</button>';
 }
 function inspectUnit(kind,id){
@@ -1577,7 +1629,7 @@ function consumeTurn(){
 function kill(t){
  if(FD)FD.capture();
  var e=t.foe;if(!e||e.hp>0||e.deathProcessed)return;
- e.deathProcessed=true;e.hp=0;t.cleared=false;r.kills++;r.ep+=e.ep*12;
+ e.deathProcessed=true;e.hp=0;t.cleared=false;t.remainsId=remainsId(e);r.kills++;r.ep+=e.ep*12;
  if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
   t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
    shadow.kind='empty';shadow.cleared=true;shadow.foe=null;shadow.forestAlphaAnchor=null;shadow.revealed=true;
