@@ -23,6 +23,7 @@ var UNIQUE={
  mountain_heart:{name:'Сердечник древней горы',slot:'ring',def:4,mineExtra:15,icon:'💠',trait:'+5% урона киркой, +15% дополнительной руды'}
 };
 var ITEMS={
+ whetstone:['Точильный кристалл','На следующих трёх жилах снижает начальную прочность породы вдвое.'],
  rail_key:['Ключ путевой стрелки','Однократно ускоряет раскопку последнего тоннеля.'],
  repair_parts:['Механическая деталь','Материал для восстановления оборудования.'],
  miner_token:['Жетон старшей артели','Открывает доступ к складам и особым разговорам.'],
@@ -55,7 +56,7 @@ var ITEMS={
  keeper_testament:['Свидетельство хранителя','Память о связи горы и болот.']
 };
 var USE={
- drill_charge:1,collapse_charge:1,emergency_fuse:1,miner_ration:1,healing_salt:1,recovery_crystal:1,
+ whetstone:1,drill_charge:1,collapse_charge:1,emergency_fuse:1,miner_ration:1,healing_salt:1,recovery_crystal:1,
  shock_wedge:1,mirror_chisel:1,mirror_shard:1,guardian_seal:1,bell_fragment:1,armor_wedge:1,
  troll_tip:1,rune_accumulator:1,bog_ward:1,drill_coolant:1
 };
@@ -358,7 +359,8 @@ function useItem(r,id){
  if(id==='emergency_fuse'&&x.bur.status!=='active')return {ok:false,message:'Бур уже остановлен'};
  x.items[id]--;if(!x.items[id])delete x.items[id];
  var st=null;
- if(id==='healing_salt'){r.hp+=25;r.bleedTurns=0;}
+ if(id==='whetstone')x.whetstone=(x.whetstone||0)+3;
+ else if(id==='healing_salt'){r.hp+=25;r.bleedTurns=0;}
  else if(id==='recovery_crystal'){r.hp+=10000;r.mp+=10000;}
  else if(id==='miner_ration'){r.hp+=20;r.shield+=10;}
  else if(id==='guardian_seal'){r.shield+=45;}
