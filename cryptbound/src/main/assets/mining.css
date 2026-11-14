@@ -55,3 +55,12 @@
 .mine-branch-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center}
 .mine-branch-legend span{font-size:10px;color:#b7a98e;padding:3px;background:#2a2522;border-radius:4px}
 @media (max-width:360px){.mine-web{width:min(100%,304px)}.mine-web-node{width:34px;height:34px}.mine-web-core{width:47px;height:47px}.mine-branch-legend{grid-template-columns:repeat(2,1fr)}}
+
+/* Revisited boss: two true exits. Ridge backtrack is a separate navigation action. */
+.boss-choice-door{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:5px!important;border:2px solid #c8a165!important;background:linear-gradient(160deg,#544333,#302c2a)!important;color:#f7dfaa!important;font-weight:800;box-shadow:inset 0 0 12px #201812}
+.boss-choice-door .ui-icon{width:34px;height:34px;color:#e7bd77}
+.boss-choice-door span{font-size:9px;letter-spacing:.03em;text-align:center}
+.ridge-prev-btn{min-width:37px;padding:3px 4px;background:#40372e;border:1px solid #ae8c5e;color:#e5cda1;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.ridge-prev-btn .ui-icon{height:17px;width:17px}
+.ridge-prev-btn small{font-size:9px}
+.ridge-prev-btn:active,.boss-choice-door:active{filter:brightness(1.2)}
