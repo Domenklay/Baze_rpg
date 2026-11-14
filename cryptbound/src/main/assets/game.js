@@ -11,7 +11,7 @@ function grantTestResearch(run){
  run.testResearchGranted=true;
  return true;
 }
-var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters,CM=window.CryptMining;
+var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters,CM=window.CryptMining,RG=window.CryptRidgeEvents;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -97,7 +97,8 @@ function stats(){
  var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0)+(r.titleBlessAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
- a+=miningBonus('flatDamage');hp+=miningBonus('maxHp');crit+=miningBonus('critChance');
+ a+=miningBonus('flatDamage');hp+=miningBonus('maxHp');crit+=miningBonus('critChance')+(RG.active(r)?(RG.ensure(r).crit||0):0);
+ if(RG.active(r)&&RG.ensure(r).flags.bag_masterwork&&RG.gearBonus(r,'mineExtra')>=25)def+=2;
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -112,7 +113,7 @@ function stats(){
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
@@ -164,7 +165,7 @@ function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
  r.items.push(i);log('Найдено: '+i.name+' ('+RARITY[i.rarity]+').');return i;
 }
-function bonusGold(n){return Math.round(n*(1+bonus('gold')*.01));}
+function bonusGold(n){return Math.round(n*(1+(bonus('gold')+RG.gearBonus(r,'gold'))*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
 function mkEnemy(boss,ranged,forcedElite){
  var reg=currentRegion(),elites=reg.elites||[],mobs=(reg.mobs||[]).slice();
@@ -860,6 +861,7 @@ function inventoryPanel(){
 }
 function gearArt(it,slot){
  if(it&&it.miningPick)return '<span class="mine-gear-art" role="img" aria-label="Кирка">⚒</span>';
+ if(it&&it.ridgeUniqueId){var spec=RG.UNIQUE[it.ridgeUniqueId];if(spec)return '<span class="mine-gear-art" role="img" aria-label="'+esc(it.name)+'">'+spec.icon+'</span>';}
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
  var type=slot||(it&&it.slot)||'weapon';
  if(type==='boots'||type==='ring')return '<img class="painted-gear illustrated-gear illustrated-'+type+'" src="'+(type==='boots'?'gear_boots_hunter.svg':'gear_ring_hunter.svg')+'" alt="" draggable="false"/>';
@@ -1778,7 +1780,7 @@ function echoFollowUp(enemy,st,fromPick){
  var damage=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,(enemy.def||0)-miningBonus('armorPen'))-(enemy.guard||0));
  enemy.guard=0;
  if(enemy.boss)damage=Math.floor(damage*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage'))*.01));
+ if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  damage=Math.max(1,Math.floor(damage*(1+miningBonus('secondDamage')*.01)));
  damage=TR.attack(r,enemy,damage,titleHelpers());
  if(enemy.hp>0)enemy.hp=Math.max(0,enemy.hp-damage);
@@ -1802,7 +1804,7 @@ function strike(tid){
  var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,t.foe.def-miningBonus('armorPen'))-(t.foe.guard||0));
  t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage'))*.01));
+ if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  amount=TR.attack(r,t.foe,amount,titleHelpers());
  t.foe.hp-=amount;
  if(t.foe.hp>0&&Math.random()*100<miningBonus('stunChance')){t.foe.stun=Math.max(t.foe.stun||0,1);log('Кирка оглушает '+t.foe.name+'.');}
@@ -2443,7 +2445,7 @@ function triggerTrap(t){
  if(!t||t.kind!=='trap'||t.trapSpent||t.trapActive)return;
  t.trapActive=true;r.trappedTile=t.id;r.heroTile=t.id;
  trapArchers(t);
- var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce'))*.01,0,.95);
+ var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce')+RG.gearBonus(r,'trapReduce'))*.01,0,.95);
  var dmg=Math.max(1,Math.floor((6+r.floor*.65+(r.actIndex||0)*5)*reduction*(r.class==='scout'?.55:1)));
  r.hp=Math.max(0,r.hp-dmg);
  r.bleedTurns=Math.max(1,r.bleedTurns||0);
