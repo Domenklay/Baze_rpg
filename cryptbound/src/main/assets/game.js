@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
-var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents;
+var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -233,7 +233,11 @@ function distributeTiles(){
  if(!boss&&Math.random()<.40)insert('trap',1);
  if(!boss&&Math.random()<.18)insert('altar',1);
  if(!boss&&Math.random()<.16)insert('shop',1);
- if(!boss&&Math.random()<.65)insert('event',1);
+ if(!boss&&Math.random()<.65&&!RE.active(r))insert('event',1);
+ if(!boss&&RE.active(r)){
+  if(Math.random()<.86)insert('t1-event',1);
+  if(r.floor>=4&&Math.random()<.22)insert('t1-event',1);
+ }
  if(!boss&&Math.random()<.55)insert('puzzle',1);
  if(!boss&&Math.random()<.40)insert('secret',1);
  if(Math.random()<.45)insert('coin',1);
@@ -249,12 +253,13 @@ function distributeTiles(){
  }
  var ranged=boss?0:r.floor<6?0:r.floor<16?1:2;
  for(var x=0;x<ranged;x++){var index=types.indexOf('enemy');if(index<0)break;types[index]='ranged';}
- var forestChosen=[];
+ var forestChosen=[],t1Chosen=[];
  var tiles=types.map(function(kind,id){
-  var forestId=null;
+  var forestId=null,t1Id=null;
   if(kind==='forest-event'){forestId=FE.pick(r,forestChosen);if(forestId)forestChosen.push(forestId);else kind='empty';}
+  if(kind==='t1-event'){t1Id=RE.pick(r,t1Chosen);if(t1Id)t1Chosen.push(t1Id);else kind='empty';}
   var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
-  return {id:id,forestId:forestId,kind:kind==='ranged'?'enemy':kind,
+  return {id:id,forestId:forestId,t1Id:t1Id,kind:kind==='ranged'?'enemy':kind,
    spawnIntro:kind==='ranged'?types.slice(0,id+1).filter(function(v){return v==='ranged';}).length:0,
    revealed:kind==='start'||kind==='ranged',cleared:kind==='start',
    foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'):null,
@@ -545,8 +550,8 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?uiIcon('bag'):['vial-hp','vial-mp'].includes(marker)?uiIcon('potion'):marker==='coin-small'?uiIcon('coin'):marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
- var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка'})[t.kind]||'Находка';
+ var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?uiIcon('bag'):['vial-hp','vial-mp'].includes(marker)?uiIcon('potion'):marker==='coin-small'?uiIcon('coin'):marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.cooldown==null?((t.foe.skill&&t.foe.skill.every)||EX.monster(t.foe.visual||t.foe.id).every):t.foe.cooldown):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
@@ -665,6 +670,7 @@ function backpackExtraSlots(){
   var usable=['bleed_trap','stun_trap','honey','mushroom','water'].includes(id);
   add(usable?'active-item-info':'forest-item-info',(usable?'forest:':'')+id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
  });
+ RE.inventory(r).forEach(function(entry){add('t1-item-info',entry.id,entry.name,uiIcon('key'),entry.qty);});
  if(TR.curSup(r,'leopard')>0)add('active-item-info','panther','Статуэтка чёрной пантеры',uiIcon('paw'),TR.curSup(r,'leopard'));
  (r.soulBag||[]).forEach(function(x){add('active-item-info','soul:'+x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
  (r.questItems||[]).forEach(function(x){add('quest-item-info',x,x,uiIcon('key'),null);});
@@ -1548,6 +1554,8 @@ function kill(t){
  }
  var forestMessage=FE.onKill(r,e,forestApi(null));
  if(forestMessage)log(forestMessage);
+ var t1Message=RE.onKill(r,e,t1Api());
+ if(t1Message)log(t1Message);
  if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');localAchievement('elite',1,'Опасная добыча');fairyRemark('elite');}
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
@@ -2125,6 +2133,7 @@ function claimTile(t){
  }
  if(kind==='forest-well'){forestWellDialog(t.id);return;}
  if(kind==='forest-event'){forestEventDialog(t);return;}
+ if(kind==='t1-event'){t1EventDialog(t);return;}
  if(kind==='forest-alpha-block')return;
  if(pending){
   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');labels.push('⚿ Ключ');}
@@ -2231,6 +2240,7 @@ function triggerTrap(t){
  else if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
  else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
   else if(k==='forest-event'){log('Найдено в лесу: '+(FE.scene(t.forestId)||{}).title+'.');}
+ else if(k==='t1-event'){log('Найдено: '+(RE.scene(r,t.t1Id)||{}).title+'.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
  else if(k==='start'){t.cleared=true;}
  else log('Под камнем обнаружено: '+({'hunter-corpse':'погибший охотник с книгой','forest-well':'старый колодец',chest:'сундук',coin:'монеты',potion:'флакон','vial-hp':'малые склянки HP','vial-mp':'малые склянки MP','coin-small':'кошелёк',trinket:'безделушка',trap:'капкан',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие',corpse:'останки исследователя',chamber:'побочная комната'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
@@ -3073,6 +3083,8 @@ function action(name,id){
  if(name==='pin-spell'){r.quickSpells=[id].concat((r.quickSpells||[]).filter(function(x){return x!==id;})).slice(0,3);save();draw();panelDialog('spells');toast('Заклинание добавлено в быстрый доступ');return;}
  if(name==='hunter-book'){hunterBookDialog();return;}
  if(name==='forest-choice'){forestChoose(id);return;}
+ if(name==='t1-choice'){t1Choose(id);return;}
+ if(name==='t1-item-info'){var ps=String(id).split(':'),itemName=RE.info(ps.slice(1).join(':'));if(itemName)dialog('<h2>'+esc(itemName)+'</h2><p>Походный предмет для связанных событий локаций T1.</p><button class="btn wide" data-action="ui-panel" data-id="bag">В рюкзак</button>');return;}
  if(name==='forest-pack'){forestPackDialog();return;}
  if(name==='forest-use'){forestUse(id);return;}
  if(name==='hunter-tab'){if(['beasts','trophies','bonuses'].indexOf(id)>=0){r.hunterBookTab=id;hunterBookDialog();}return;}
