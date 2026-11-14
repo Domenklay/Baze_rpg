@@ -110,8 +110,11 @@ function pickScene(run,exclude){
  return pool[Math.floor(Math.random()*pool.length)].id;
 }
 function image(id,cls){
- if(!/^F0[1-3]_\d{3}$/.test(id))return '';
- return '<img class="'+(cls||'forest-event-image')+'" src="forest_events/sprites/'+id+'.png" alt="" draggable="false"/>';
+ var src='';
+ if(/^F0[1-3]_\d{3}$/.test(id))src='forest_events/sprites/'+id+'.png';
+ else if(/^forest_v2\/[a-z0-9_]+\.png$/.test(id))src=id;
+ if(!src)return '';
+ return '<img class="'+(cls||'forest-event-image')+'" src="'+src+'" alt="" draggable="false"/>';
 }
 function e(s){return String(s==null?'':s).replace(/[&<>"']/g,function(a){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[a];});}
 function choicesFor(run,t){
@@ -126,7 +129,7 @@ function render(run,t){
  var def=scene(t.forestId);if(!def)return '';
  var opts=choicesFor(run,t);
  return '<div class="forest-event-dialog"><div class="sheet-kicker">ЛЕСНАЯ ОКРАИНА · НАХОДКА '+String(def.id).padStart(2,'0')+'/50</div>'+
-  '<h2>'+e(def.title)+'</h2><div class="forest-event-picture">'+image(def.art)+'</div><p>'+e(def.text)+'</p>'+
+  '<h2>'+e(def.title)+'</h2><div class="forest-event-picture">'+image(def.sprite||def.art)+'</div><p>'+e(def.text)+'</p>'+
   (def.id===1&&t.forestPhase==='reward'?'<p class="golden">Три волка побеждены. Рыжуха уже может спуститься с пня.</p>':'')+
   opts.map(function(opt,i){
    // Hidden choices preserve their original index for validation in choose().
