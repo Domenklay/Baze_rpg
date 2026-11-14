@@ -11,7 +11,7 @@ function grantTestResearch(run){
  run.testResearchGranted=true;
  return true;
 }
-var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters;
+var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters,CM=window.CryptMining;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
 var C={
@@ -78,6 +78,7 @@ function depthMultiplier(){return DN.rewardMultiplier(r.floor);}
 function lvl(n){return TR.level(r,n);}
 function bonus(effect){return TALENTS.reduce(function(sum,t){return sum+(t.effect===effect?lvl(t.id)*t.amount:0);},0);}
 function hunterStat(k){return r&&r.actIndex===0?HB.bonus(s.meta,k):0;}
+function miningBonus(k){return CM.bonus(r,k);}
 function hunterPoison(turns){if(Math.random()*100<hunterStat('poisonResist')){log('Бестиарий: отравление предотвращено.');return;}r.poisonTurns=Math.max(r.poisonTurns||0,turns);}
 function levelCost(t){return TR.cost(r,t);}
 function talentPathConflict(t){return TR.pathConflict(r,t);}
@@ -96,6 +97,7 @@ function stats(){
  var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
  var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0)+(r.titleBlessAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
+ a+=miningBonus('flatDamage');hp+=miningBonus('maxHp');crit+=miningBonus('critChance');
  Object.keys(e).forEach(function(slot){
   var i=equippedItem(slot);if(!i)return;
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
@@ -106,7 +108,7 @@ function stats(){
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
- a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)));
+ a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)+CM.damagePct(r)*.01));
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
@@ -115,7 +117,7 @@ function stats(){
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
  }
- function incomingDamage(rawAttack,enemy){return TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));}
+ function incomingDamage(rawAttack,enemy){var val=TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)));}
  function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
  function enemyDebuffs(enemy){
   var effects=[['poison','☠','Яд'],['bleed','✣','Кровотечение'],['burn','♨','Горение'],['stun','✸','Оглушение']];
@@ -289,6 +291,7 @@ function distributeTiles(){
  if(!boss&&r.floor%2===0&&Math.random()<.4)insert('corpse',1);
  if(!boss&&r.floor%3===0&&Math.random()<.5)insert('chamber',1);
  }
+ if(!boss&&CM.active(r))insert('ore-vein',rand(1,2));
  // More than half the board should contain something to discover, but never
  // flood it with treasure: most added cells contain tiny finds or curios.
  var desired=rand(14,18),occupied=types.filter(function(kind){return kind!=='empty';}).length;
@@ -303,7 +306,7 @@ function distributeTiles(){
   if(kind==='forest-event'){forestId=FE.pick(r,forestChosen);if(forestId)forestChosen.push(forestId);else kind='empty';}
   if(kind==='t1-event'){t1Id=RE.pick(r,t1Chosen);if(t1Id)t1Chosen.push(t1Id);else kind='empty';}
   var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
-  return {id:id,forestId:forestId,t1Id:t1Id,kind:kind==='ranged'?'enemy':kind,
+  return {id:id,forestId:forestId,t1Id:t1Id,mine:kind==='ore-vein'?CM.newVein(r.floor):null,kind:kind==='ranged'?'enemy':kind,
    spawnIntro:kind==='ranged'?types.slice(0,id+1).filter(function(v){return v==='ranged';}).length:0,
    revealed:kind==='start'||kind==='ranged',cleared:kind==='start',
    foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'):null,
@@ -381,6 +384,7 @@ function startFloor(){
  var st=stats();
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
+ CM.revealHints(r);
  activateEntranceEquipment(false);
  var revealCount=Math.floor(bonus('revealFloor'))+(s.meta.diamondUpgrades?.scouting||0);
  for(var i=0;i<revealCount;i++){
@@ -518,6 +522,7 @@ function load(){
     else v.run.key=true;
   }
  }
+ if(v.run&&CM.active(v.run)){CM.ensure(v.run);if(!CM.pickItem(v.run))CM.grantPick(v.run,++v.seq);}
  if(v.run)TR.init(v.run);
   if(meta.activeExpedition)TR.init(meta.activeExpedition);
   return v;}catch(e){return null;}
@@ -636,16 +641,17 @@ function activeTileView(t){
   var access=CR.exploreStatus(t,r.tiles,r.heroTile);
   var hint=(t.hintKey?'<span class="slab-hint slab-hint-key" title="Разведан ключ">⚿</span>':'')+
    (t.hintEnemy?'<span class="slab-hint slab-hint-enemy" title="Разведан враг">⚔</span>':'')+
-   (t.hintSpecial?'<span class="slab-hint slab-hint-secret" title="Тайник">✦</span>':'');
+   (t.hintSpecial?'<span class="slab-hint slab-hint-secret" title="Тайник">✦</span>':'')+
+   (t.hintOre?'<span class="slab-hint slab-hint-secret" title="Рудная жила">◆</span>':'');
   var description=(t.hintKey?' · ключ':t.hintEnemy?' · враг':t.hintSpecial?' · секрет':'');
   return access.ok?
    '<button class="tile hidden tile-frontier'+(hint?' tile-scouted':'')+'" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход'+description+'" aria-label="Доступная каменная плита'+description+'"><span class="slab-face">'+(t.hinted&&!hint?'✦':'✥')+'</span>'+hint+'</button>':
    '<div class="tile hidden tile-locked'+(hint?' tile-scouted':'')+'" title="'+esc(access.reason)+description+'" aria-label="Путь заблокирован'+description+'"><span class="slab-face">◆</span>'+hint+'</div>';
  }
  var marker=alive?'enemy':remains?'remains':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
- var name=alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='remains'?'Останки '+t.foe.name+(t.drops.gold?' · монеты '+t.drops.gold:''):marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
- var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
+ var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='ore-vein'?'<span class="mine-vein-art ore-'+CM.ORES[(t.mine||{}).type||0].id+'">◆<small>'+Math.ceil((t.mine||{}).hp||0)+'</small></span>':marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var name=t.kind==='ore-vein'?'Рудная жила · '+CM.ORES[(t.mine||{}).type||0].name+' · прочность '+((t.mine||{}).hp||0):alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='remains'?'Останки '+t.foe.name+(t.drops.gold?' · монеты '+t.drops.gold:''):marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
+ var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':t.kind==='ore-vein'?'mine-hit':'pickup';
  var delay=alive?(t.foe.cooldown==null?((t.foe.skill&&t.foe.skill.every)||EX.monster(t.foe.visual||t.foe.id).every):t.foe.cooldown):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
   '<span class="unit-corner unit-cd">◷'+delay+'</span>'+
@@ -729,7 +735,7 @@ function renderMaze(){
  return '<div class="dungeon-root theme-'+(r.actIndex||0)+'" data-location="'+((r.actIndex||0)*3+(r.locationIndex||0))+'" style="--floor-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-floor.svg);--cover-texture:url(ui/locations/'+((r.actIndex||0)*3+(r.locationIndex||0))+'-cover.svg);--floor-art:url(ui/atlas-'+String(artPair).padStart(2,'0')+'.png);--cover-art:url(ui/atlas-'+String(artPair+1).padStart(2,'0')+'.png)">'+
  '<div class="expedition-top"><div class="dungeon-name"><small>АКТ '+((r.actIndex||0)+1)+' · '+(r.locationIndex+1)+'/3</small><h1>'+esc(room?'Заброшенное убежище':region.name)+'</h1></div><button class="expedition-ep" data-action="ui-panel" data-id="talents" title="Очки исследования для званий" aria-label="Очки исследования: '+r.ep+'">'+uiIcon('talent')+'<span>'+r.ep+'</span><small>ОИ</small></button><button class="floor-seal" data-action="battle-log" aria-label="Журнал этажа">'+r.floor+'<small>ЭТАЖ</small></button><div class="expedition-money"><span title="Золото"><img class="gold-coin-icon" src="ui/gold_coin.png" alt="" draggable="false"/>'+r.gold+'</span><span title="Алмазы">'+uiIcon('gem')+(r.diamonds||0)+'</span></div><button class="hud-menu" data-action="menu" aria-label="Меню">'+uiIcon('menu')+'</button></div>'+
  '<div class="expedition-effects"><div class="buff-strip">'+effectList().filter(function(x){return !['guardCharges','resurrection'].includes(x[0]);}).map(function(x){return '<button data-action="effect-info" data-id="'+x[0]+'" aria-label="'+x[1]+'">'+uiIcon(x[3])+'<small>'+r[x[0]]+'</small></button>';}).join('')+(r.summon&&r.summon.hp>0?'<button data-action="inspect-summon" aria-label="Призванный скелет">'+uiIcon('shield')+'<small>'+r.summon.hp+'</small></button>':'')+(r.titlePanther&&r.titlePanther.hp>0?'<button data-action="title-panther-info" aria-label="Чёрная пантера">'+uiIcon('paw')+'<small>'+r.titlePanther.hp+'</small></button>':'')+
-  (r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+'</div></div>'+
+  (r.ghost&&r.ghost.hp>0?'<button data-action="ghost-info" data-unit="ghost" aria-label="Призрачный страж">'+uiIcon('moon')+'<small>'+r.ghost.hp+'</small></button>':'')+'</div><div class="charge-strip">'+['guardCharges','resurrection'].filter(function(k){return r[k]>0;}).map(function(k){return '<button data-action="effect-info" data-id="'+k+'" aria-label="'+(k==='guardCharges'?'Защитные заряды':'Возрождение')+'">'+uiIcon(k==='guardCharges'?'shield':'sun')+'<span>'+r[k]+'</span></button>';}).join('')+(r.key?'<button data-action="key-info" aria-label="Ключ найден">'+uiIcon('key')+'</button>':'')+(r.actIndex===0&&r.locationIndex===0&&HB.owned(s.meta)?'<button class="hb-v072-access" data-action="hunter-book" aria-label="Охотничий бестиарий" title="Охотничий бестиарий">'+HB.bookIcon()+(HB.ensure(s.meta).unread?'<i class="hb-bang">!</i>':'')+'</button>':'')+(CM.active(r)?'<button class="hb-v072-access mine-hud-access" data-action="mine-menu" title="Кирка и добыча" aria-label="Кирка: уровень '+CM.ensure(r).level+'"><span class="mine-hud-pick">⚒</span><small>'+CM.ensure(r).level+'</small></button>':'')+'</div></div>'+
  '<div class="dungeon-board'+(room?' cave-active':'')+'"><div class="dungeon-border'+(room?' cave-scene':'')+'"><div class="maze'+(room?' chamber-maze':'')+'">'+(room?renderChamberTiles(room):r.tiles.map(activeTileView).join(''))+'</div></div></div>'+
  '<div class="encounter-slot">'+(!room&&r.tiles.some(function(t){return t.revealed&&t.foe&&t.foe.elite&&t.foe.hp>0;})?'<div class="elite-floor-warning">⚔ ОБНАРУЖЕН ЭЛИТНЫЙ ПРОТИВНИК</div>':'')+encounter+(!room&&r.portalReady?'<button class="portal-compact" data-action="safe-portal">Безопасный портал · на базу</button>':'')+'</div>'+
  '<div class="battle-dock"><div class="dock-wing"><div class="quick-spells" aria-label="Классовые способности">'+quick+'</div><button class="dock-button" data-action="ui-panel" data-id="spells">'+uiIcon('book')+'<span>Свитки</span></button></div>'+
@@ -850,6 +856,7 @@ function inventoryPanel(){
  '<button class="btn alt wide space-top" data-action="gear-sets">Комплекты и развитие героя</button><button class="btn alt wide space-top" data-action="bag-details">Материалы для крафта</button>';
 }
 function gearArt(it,slot){
+ if(it&&it.miningPick)return '<span class="mine-gear-art" role="img" aria-label="Кирка">⚒</span>';
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
  var type=slot||(it&&it.slot)||'weapon';
  if(type==='boots'||type==='ring')return '<img class="painted-gear illustrated-gear illustrated-'+type+'" src="'+(type==='boots'?'gear_boots_hunter.svg':'gear_ring_hunter.svg')+'" alt="" draggable="false"/>';
@@ -1193,6 +1200,7 @@ function resumeExpedition(){
  r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);grantTestResearch(r);
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
+ if(CM.active(r)){if(!CM.pickItem(r)){CM.grantPick(r,++s.seq);log('Найдена кирка рудокопа. Оружие установлено в слот.');}else CM.ensure(r);}
  r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
  fillPreparedPotions(r);r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
@@ -2271,6 +2279,7 @@ function claimTile(t){
   if(HB.acquire(s.meta)){r.journalNotes.push('У погибшего охотника найдена книга с записями о зверях.');log('Получен Охотничий бестиарий.');}
   finishAction();if(r)hunterBookDialog();return;
  }
+ if(kind==='ore-vein'){mineHit(t.id);return;}
  if(kind==='forest-well'){forestWellDialog(t.id);return;}
  if(kind==='forest-event'){forestEventDialog(t);return;}
  if(kind==='t1-event'){t1EventDialog(t);return;}
@@ -2404,6 +2413,7 @@ function triggerTrap(t){
  else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
   else if(k==='forest-event'){log('Найдено в лесу: '+(FE.scene(t.forestId)||{}).title+'.');}
  else if(k==='t1-event'){log('Найдено: '+(RE.scene(r,t.t1Id)||{}).title+'.');}
+ else if(k==='ore-vein'){log('Под плитой рудная жила. Наденьте кирку и разбейте породу.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
  else if(k==='start'){t.cleared=true;}
  else log('Под камнем обнаружено: '+({'hunter-corpse':'погибший охотник с книгой','forest-well':'старый колодец',chest:'сундук',coin:'монеты',potion:'флакон','vial-hp':'малые склянки HP','vial-mp':'малые склянки MP','coin-small':'кошелёк',trinket:'безделушка',trap:'капкан',altar:'алтарь',secret:'тайник',shop:'лавка',puzzle:'загадка',event:'странное событие',corpse:'останки исследователя',chamber:'побочная комната'}[k]||'находка')+'. Коснитесь предмета, чтобы взаимодействовать.');
