@@ -394,7 +394,7 @@ test('Elite spawns exactly on floors 10, 20, 30, 40; boss remains on floor 30',(
   if(elites.length){
    locations.push(depth);
    assert.equal(elites[0].kind,'elite');
-   elites[0].revealed=true;window.Crypt.debug.draw();
+   elites[0].revealed=true;win.Crypt.debug.draw();
    assert.match(el('content').innerHTML,/class="elite-tag"/,'Elite must have an unmistakable label');
    assert.match(el('content').innerHTML,/elite-floor-warning/,'Elite floor warning must remain visible');
   }
