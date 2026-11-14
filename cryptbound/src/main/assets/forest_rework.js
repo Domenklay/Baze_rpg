@@ -304,7 +304,24 @@ var useNames={
  tree_bark:'Кора живого древа: +25 щита',
  fungus_essence:'Эссенция грибницы: +15 HP и +15 MP'
 };
-function extra(run){var f=FE.ensure(run);if(!f.storyV2)f.storyV2={unique:{},home:{},buffs:[],uses:{},hintCharges:0};return f.storyV2;}
+function extra(run){
+ var f=FE.ensure(run);
+ if(!f.storyV2){
+  /* Existing saves may have finished the former low-impact scenes.
+     Offer the rewritten storylines without duplicating already earned alpha trophies or the squirrel reward. */
+  var old=f.seen||{};
+  if(Object.keys(old).length){
+   var keep={};
+   if(f.flags.squirrel_saved)keep[1]=true;
+   for(var pair of [[25,'wolf'],[29,'boar'],[37,'beetle'],[39,'root']]){
+    if(f.hunts&&f.hunts[pair[1]]&&f.hunts[pair[1]].completed)keep[pair[0]]=true;
+   }
+   f.seen=keep;
+  }
+  f.storyV2={unique:{},home:{},buffs:[],uses:{},hintCharges:0};
+ }
+ return f.storyV2;
+}
 function equipped(run,k){
  if(!run||!run.equip)return 0;
  return Object.keys(run.equip).reduce(function(v,slot){
