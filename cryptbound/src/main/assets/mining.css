@@ -12,6 +12,9 @@
 .mine-vein-art.ore-quartz,.mine-ore-dot.ore-quartz{color:#75b5d9}
 .mine-vein-art.ore-rune,.mine-ore-dot.ore-rune{color:#b991ed}
 .tile-ore-vein{border-color:#826b4f!important;background:linear-gradient(145deg,#4b4039,#26292e)!important}
+.tile-mine-wall{border-color:#665f54!important;background:repeating-linear-gradient(124deg,#48413b 0 12px,#37312d 12px 15px,#29262a 15px 19px)!important}
+.mine-wall-art{color:#a79d8b;text-shadow:-2px 2px #292624,2px -2px #6d665b}
+
 .mine-dialog{font-size:13px;max-width:100%;display:grid;gap:13px}
 .mine-summary{display:flex;align-items:center;gap:12px;border:1px solid #7b684e;background:#2e2825;padding:10px;border-radius:7px}
 .mine-summary .mine-emblem{display:grid;place-items:center;width:50px;height:50px;flex:none;background:#40372c;border:2px solid #b18c51;border-radius:6px;color:#efcd8a;font-size:29px}
