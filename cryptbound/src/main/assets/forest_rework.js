@@ -350,10 +350,11 @@ function homeReturn(run,meta){
  Object.keys(x.home).forEach(function(id){if(x.home[id]&&!home[id]){home[id]=true;arr.push(id);}delete x.home[id];});
  return arr;
 }
-function forage(run,material){
- var x=extra(run),bonus=equipped(run,'forage');if(!bonus)return 0;
- var key=material||'Лекарственный мох';
- run.materials[key]=(run.materials[key]||0)+bonus;return bonus;
+function forage(run,itemId){
+ var x=extra(run),bonus=equipped(run,'forage');if(!bonus||!FE.itemDefs[itemId])return 0;
+ var bag=FE.ensure(run).items;
+ bag[itemId]=(bag[itemId]||0)+bonus;
+ return bonus;
 }
 function onFloor(run,meta){
  if(!run||run.actIndex!==0||run.locationIndex!==0)return '';
