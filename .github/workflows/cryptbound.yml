@@ -86,8 +86,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.7-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.7-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.8-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.8-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.7 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.7 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.7 — уменьшенные склянки и мешочки" --notes "Офлайн APK для Android. Склянки HP и MP, кошель с монетами и мешочки добычи уменьшены на 30% относительно v0.8.6 (до 70% клетки). Баланс, боя и поведение добычи не изменены. Подготовлен отдельный художественный комплект из 64 спрайтов останков для последующего распределения по монстрам; в этой версии они ещё не подключены к таблице выпадения."
+          if ! gh release view cryptbound-v0.8.8 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.8 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.8 — открытие пути и дальние атаки" --notes "Офлайн APK для Android. Событийные и призванные враги, запертые за закрытыми плитами, доступны для удара и больше не блокируют открытие плит к себе, пока нет прохода. Обычным врагам для физической атаки нужен открытый путь. Все заклинания, магические массовые атаки, двойной выстрел разведчика, грозовое эхо, арбалет авантюриста и капканы теперь поражают обнаруженных врагов без прямого прохода. Необнаруженных врагов выбирать целью нельзя. Исправления v0.8.7 и сохранения сохранены."
           fi
-          gh release upload cryptbound-v0.8.7 dist/Cryptbound-v0.8.7-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.8 dist/Cryptbound-v0.8.8-offline-Android.apk dist/SHA256SUMS.txt --clobber
