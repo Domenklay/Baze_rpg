@@ -111,21 +111,25 @@ function newVein(floor,rng){var type=rollVein(floor,rng);return {type:type,hp:OR
 function harvest(r,tile,rng,houseLevel){
  if(!active(r)||!tile||tile.kind!=='ore-vein'||!tile.revealed||tile.cleared)return {ok:false,message:'Здесь нет доступной руды'};
  if(!equipped(r))return {ok:false,message:'Наденьте кирку в слот оружия'};
- var m=ensure(r),vein=tile.mine||newVein(r.floor||1,rng),ore=ORES[vein.type];
+ var m=ensure(r),vein=tile.mine||newVein(r.floor||1,rng),ore=ORES[vein.type],ridge=window.CryptRidgeEvents,
+ mods=ridge&&ridge.mineBonuses(r)||{extra:0,rare:0,instant:0,extraQty:0};
  if(m.level<ore.unlock)return {ok:false,message:ore.name+': требуется кирка уровня '+ore.unlock};
- var chance=(rng||Math.random),instant=chance()*100<bonus(r,'instantBreak');
+ var chance=(rng||Math.random),instant=chance()*100<(bonus(r,'instantBreak')+(mods.instant||0));
+ if(r.ridge&&r.ridge.instantOre>0){instant=true;r.ridge.instantOre--;}
  vein.hp=Math.max(0,vein.hp-(instant?vein.hp:miningPower(r)));
  tile.mine=vein;m.hits++;
  if(vein.hp>0)return {ok:true,finished:false,remaining:vein.hp,message:'Жила повреждена: осталось прочности '+vein.hp};
  var type=vein.type;
- if(type<3&&chance()*100<bonus(r,'rareOre'))type++;
+ if(type<3&&chance()*100<(bonus(r,'rareOre')+(mods.rare||0)))type++;
  var picked=ORES[type],qty=1;
- if(chance()*100<bonus(r,'extraOre'))qty++;
+ if(chance()*100<(bonus(r,'extraOre')+(mods.extra||0)))qty++;
+ qty+=(mods.extraQty||0);
  if(chance()*100<bonus(r,'doubleOre'))qty*=2;
  if(chance()*100<bonus(r,'oreCache'))qty++;
  if(houseLevel&&chance()*100<Math.min(25,Math.max(0,houseLevel)*5))qty++;
  r.materials=r.materials||{};r.materials[picked.name]=(r.materials[picked.name]||0)+qty;
  m.total+=qty;var xp=qty*picked.xp;var levels=gainXP(r,xp);
+ if(ridge)ridge.mined(r);
  tile.cleared=true;return {ok:true,finished:true,ore:picked.name,qty:qty,xp:xp,levels:levels,message:'Добыто: '+picked.name+' ×'+qty+' · +'+xp+' опыта кирки'+(levels?' · уровень +'+levels:'')};
 }
 function revealHints(r,rng){
