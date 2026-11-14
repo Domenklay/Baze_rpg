@@ -72,12 +72,11 @@ let wolves=r.tiles.filter(t=>t.foe&&t.foe.forestTask==='encounter:'+squirrel.id+
 assert.equal(wolves.length,3,'Exactly 3 wolves must spawn');
 for(const wolf of wolves){
  wolf.foe.hp=1;wolf.foe.evadeCharges=0;wolf.foe.stun=2;wolf.foe.guard=0;wolf.foe.def=0;wolf.revealed=true;
- // The hero must be adjacent, not attack through undiscovered cells.
- const near=window.ClickerRules.near(wolf.id).find(id=>r.tiles[id]&&!r.tiles[id].foe&&r.tiles[id].id!==squirrel.id&&r.tiles[id].kind!=='forest-event');
- assert.notEqual(near,undefined,'A navigable spot beside the quest wolf is required');
- const land=r.tiles[near];land.kind='empty';land.revealed=true;land.cleared=true;land.drops=null;
- r.heroTile=near;
+ // Event-spawned wolves remain attackable, even if enclosed by closed slabs.
+ // Do not replace the squirrel's event tile with a simulated walking position.
+ assert.equal(wolf.foe.spawnedByEvent,true);
  A('strike',wolf.id);
+ assert.equal(squirrel.kind,'forest-event','Quest event remains intact after attacks');
  assert.equal(wolf.foe.hp,0,'Quest wolf must die during the scripted kill test');
 }
 assert.equal(squirrel.forestPhase,'reward','Squirrel must be freed after three kills');
