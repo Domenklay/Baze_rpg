@@ -243,8 +243,13 @@ function choose(r,t,index,api){
  if(choice.reward==='leave')return {ok:true,leave:true,turn:false};
  if(!meets(r,choice.need)||!costsOk(r,choice.cost))return {ok:false,message:'Не выполнено условие или недостаточно материалов'};
  if([1,11,21].includes(id))return chooseShaft(r,id,choice);
- if(id===12)return chooseBur(r,choice);
+ if(id===12){var choiceResult=chooseBur(r,choice);
+  if(choiceResult.ok&&!choiceResult.leave){t.cleared=true;ensure(r).seen[12]=true;}
+  return choiceResult;
+ }
  var x=ensure(r),ops=list(choice.reward),fight=ops.find(function(e){return e.startsWith('fight:');});
+ if(id===26&&ops.includes('ore:rune:1')&&x.flags.marketRune)return {ok:false,message:'Редкая руда уже куплена на этом рынке в этой экспедиции'};
+ if(id===45&&ops.includes('home:transfer')&&!['iron','steel','quartz','rune'].some(function(k){return (r.materials[ORE[k]]||0)>0;}))return {ok:false,message:'Нужна хотя бы одна руда для отправки'};
  if(fight){
   var p=fight.split(':'),task='ridge:'+r.floor+':'+t.id+':'+id;
   if(x.battles[task]&&x.battles[task].remaining)return {ok:false,message:'Сначала завершите бой'};
@@ -260,6 +265,7 @@ function choose(r,t,index,api){
   x.bur.status='stopped';r.materials[ORE.quartz]=(r.materials[ORE.quartz]||0)+3;
   message+=' · Бур перегружен и остановлен: +3 кварцевой руды';
  }
+ if(id===26&&ops.includes('ore:rune:1'))x.flags.marketRune=true;
  if(!def.repeat)x.seen[id]=true;
  t.cleared=true;return {ok:true,turn:true,message:message||'Событие завершено'};
 }
