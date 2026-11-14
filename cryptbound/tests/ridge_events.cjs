@@ -19,7 +19,7 @@ for(let i=0;i<3;i++){let result=RG.choose(r,t,0,api());assert(result.ok&&result.
 assert.equal(state.shaft.first,3);
 assert(RG.render(r,t).includes('следующий тоннель'));
 r.floor=state.shaft.base+10;assert(RG.floorSpecials(r).includes(11));
-t=event(11);let back=RG.choose(r,t,0,api());assert.equal(back.navigate,-10);assert.equal(RG.floorSpecials(r).includes(11),'fixed until travel');
+t=event(11);let back=RG.choose(r,t,0,api());assert.equal(back.navigate,-10);assert(RG.floorSpecials(r).includes(11),'fixed until travel');
 for(let i=0;i<3;i++)assert.equal(RG.choose(r,t,1,api()).ok,true);
 assert.equal(state.shaft.middle,3);
 r.floor=state.shaft.base+20;t=event(21);
