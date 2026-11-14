@@ -128,12 +128,22 @@ function walkPath(tiles,from,to){
  var path=[to];while(path[0]!==from)path.unshift(parents[path[0]]);
  return path;
 }
-function exploreStatus(t,tiles){
+/* Event encounters and summoned enemy minions can spawn behind unopened slabs.
+   Only while isolated, they must not prevent digging the corridor needed to reach them. */
+function specialSpawned(foe){
+ return !!foe&&(!!foe.spawnedByEvent||!!foe.summoned||!!foe.t1Task||!!foe.forestTask);
+}
+function exploreStatus(t,tiles,heroTile){
  if(!t||t.revealed)return {ok:false,reason:'Плита уже открыта.'};
  var connected=openPath(tiles),adj=near(t.id);
  if(!adj.some(function(x){return connected.has(x);}))return {ok:false,reason:'Нужна соседняя исследованная клетка.'};
- if(adj.some(function(x){var n=tiles[x];return n&&n.revealed&&n.foe&&n.foe.hp>0&&!n.foe.ranged;}))
- return {ok:false,reason:'Ближний враг блокирует исследование соседних плит.'};
+ var origin=heroTile==null?(tiles.find(function(x){return x.kind==='start';})||{}).id:heroTile;
+ if(adj.some(function(x){
+  var n=tiles[x];
+  if(!n||!n.revealed||!n.foe||n.foe.hp<=0||n.foe.ranged)return false;
+  if(specialSpawned(n.foe)&&origin!=null&&!attackReachable(tiles,origin,n.forestAlphaSquare||[n.id]))return false;
+  return true;
+ }))return {ok:false,reason:'Ближний враг блокирует исследование соседних плит.'};
  return {ok:true,reason:''};
 }
 function summonSpot(tiles){
@@ -165,5 +175,5 @@ function rangedSource(){
 }
 window.ClickerRules={region:region,regionIndex:regionIndex,group:group,setDefinition:setDefinition,gear:gearFromCatalog,
  counts:counts,bonuses:bonuses,descriptions:descriptions,thresholds:thresholds,setRules:setRules,near:near,openPath:openPath,exploreStatus:exploreStatus,
- summonSpot:summonSpot,walkPath:walkPath,attackReachable:attackReachable,visualId:visualId,rangedSource:rangedSource};
+ summonSpot:summonSpot,walkPath:walkPath,attackReachable:attackReachable,specialSpawned:specialSpawned,visualId:visualId,rangedSource:rangedSource};
 })();
