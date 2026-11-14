@@ -167,11 +167,24 @@ function floorSpecials(r){
  return arr;
 }
 function scene(r,id){return C.find(function(x){return x.id===Number(id);})||null;}
+function chainPriority(r){
+ if(!active(r))return null;
+ var x=ensure(r),links=[
+  ['dorn_saved',4],['healer_quest',24],['lift_fixed',22],['workers_saved',30],
+  ['debt_ledger',30],['ilva_helped',40],['soul_freed',41],['workers_saved',48]
+ ];
+ for(var link of links){
+  var ready=link[0]==='debt_ledger'?(x.items.debt_ledger||0)>0:!!x.flags[link[0]];
+  var e=scene(r,link[1]);if(ready&&e&&r.floor>=e.min&&!x.seen[e.id])return e.id;
+ }
+ return null;
+}
 function pick(r,exclude){
  if(!active(r))return null;
  var x=ensure(r),pool=C.filter(function(e){
   return e.id!==1&&e.id!==11&&e.id!==12&&e.id!==21&&r.floor>=e.min&&!((exclude||[]).includes(e.id))&&(e.repeat||!x.seen[e.id]);
  });if(!pool.length)return null;
+ var priority=chainPriority(r);if(priority&&pool.some(function(e){return e.id===priority;}))return priority;
  var pending=pool.filter(function(e){return !e.repeat&&e.choices.some(function(c){return meets(r,c.need);});});
  if(pending.length&&Math.random()<.88)pool=pending;
  else if(Math.random()<.75){var novel=pool.filter(function(e){return !x.seen[e.id];});if(novel.length)pool=novel;}
@@ -377,7 +390,7 @@ function itemDetails(r,id){
  return {name:item[0],description:item[1]+' Расходует 1 ход.',qty:x.items[id],action:'ridge-use',id:id};
 }
 function resetForLocation(r){if(!r||!r.ridge)return;ensure(r).bur.status=ensure(r).bur.status==='active'?'lost':ensure(r).bur.status;}
-window.CryptRidgeEvents={catalog:C,active:active,ensure:ensure,scene:scene,pick:pick,floorSpecials:floorSpecials,
+window.CryptRidgeEvents={catalog:C,active:active,ensure:ensure,scene:scene,pick:pick,chainPriority:chainPriority,floorSpecials:floorSpecials,
  render:render,choose:choose,onKill:onKill,onFloorTransition:onFloorTransition,eliteCount:eliteCount,
  beginEliteFloor:beginEliteFloor,onEtherealKill:onEtherealKill,stopBur:stopBur,homeRewards:homeRewards,
  gearBonus:gearBonus,UNIQUE:UNIQUE,mineBonuses:mineBonuses,mined:mined,inventory:inventory,
