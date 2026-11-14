@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','t1_encounters.js','mining.js','ridge_catalog.js','ridge_events.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','forest_rework.js','t1_encounters.js','mining.js','ridge_catalog.js','ridge_events.js','game.js'];
 for(const file of sources){if(file==='gumballs_titles_reference.js')win.CryptLegacyTitles=win.CryptTitles;vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});}
 const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 /* Existing v0.7.2 tests skip directly to distant floors. Claim the newly required book
