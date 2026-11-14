@@ -129,7 +129,14 @@ function effects(r,ops,api){
   if(p[0]==='ore'){var name=ORE[v];if(name){r.materials[name]=(r.materials[name]||0)+n;log.push(name+' ×'+n);}}
   else if(p[0]==='gold'){r.gold+=Number(v);log.push('Золото +'+v);}
   else if(p[0]==='item'){x.items[v]=(x.items[v]||0)+n;log.push((ITEMS[v]||[v])[0]+' ×'+n);}
-  else if(p[0]==='flag'){x.flags[v]=true;log.push('Новое решение в истории: '+v);}
+  else if(p[0]==='flag'){
+   x.flags[v]=true;
+   if(v==='hollow_purified'){
+    var helm=(r.items||[]).find(function(it){return it.ridgeUniqueId==='hollow_helm';});
+    if(helm){helm.ridgeUniqueId='clean_helm';helm.name=UNIQUE.clean_helm.name;helm.def=UNIQUE.clean_helm.def;helm.hp=UNIQUE.clean_helm.hp;helm.trait=UNIQUE.clean_helm.trait;x.unique.clean_helm=true;}
+   }
+   log.push('Новое решение в истории: '+v);
+  }
   else if(p[0]==='gear'){log.push(giveGear(r,v,api));}
   else if(p[0]==='stat'){
    if(v==='crit')x.crit=(x.crit||0)+n;
