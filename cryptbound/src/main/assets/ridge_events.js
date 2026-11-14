@@ -9,7 +9,7 @@ var UNIQUE={
  quartz_bracers:{name:'Кварцевые наручи',slot:'bracer',def:2,critDamage:10,icon:'💎',trait:'+10% критического урона при кирке'},
  climber_boots:{name:'Сапоги скалолаза',slot:'boots',dodge:4,trapReduce:25,icon:'🥾',trait:'Уменьшают урон капканов на 25%'},
  artel_helm:{name:'Шлем старшей артели',slot:'helm',def:2,hp:10,icon:'⛑',trait:'Защита старшей артели'},
- guard_cloak:{name:'Плащ заставы',slot:'cloak',def:2,hp:5,icon:'🧥',trait:'Первый удар опасного врага ослаблен'},
+ guard_cloak:{name:'Плащ заставы',slot:'cloak',def:2,hp:5,firstHit:25,icon:'🧥',trait:'Первый удар каждого врага ослаблен на 25%'},
  collector_ring:{name:'Кольцо сборщика',slot:'ring',crit:3,gold:10,icon:'💍',trait:'+10% золота с врагов'},
  master_seal:{name:'Печать рудничного мастера',slot:'amulet',hp:12,crit:3,icon:'✥',trait:'Древняя печать начальника шахты'},
  stone_amulet:{name:'Каменный оберег',slot:'amulet',def:2,hp:20,icon:'🔰',trait:'Сердце пробуждённого стража'},
@@ -17,7 +17,7 @@ var UNIQUE={
  stonebreaker_ring:{name:'Кольцо камнелома',slot:'ring',crit:5,atk:3,icon:'💍',trait:'Усиливает удары киркой'},
  giant_ring:{name:'Кольцо великана',slot:'ring',def:3,atk:2,icon:'💍',trait:'Бой с бронированными противниками'},
  elder_ring:{name:'Кольцо старшего рудокопа',slot:'ring',hp:12,crit:4,mineExtra:5,icon:'💍',trait:'+5% шанс дополнительной руды'},
- hollow_helm:{name:'Проклятый пустой шлем',slot:'helm',def:4,hp:6,icon:'⛑',trait:'Проклят: ослабляет героя при переходе на этаж'},
+ hollow_helm:{name:'Проклятый пустой шлем',slot:'helm',def:4,hp:6,cursed:5,icon:'⛑',trait:'Проклят: −5 HP при каждом спуске на этаж'},
  clean_helm:{name:'Шлем очищенного стража',slot:'helm',def:3,hp:12,icon:'⛑',trait:'Очищенный древний шлем'},
  pass_amulet:{name:'Оберег хранителя перевала',slot:'amulet',def:3,hp:15,icon:'🔰',trait:'Печать, сдерживающая болотный туман'},
  mountain_heart:{name:'Сердечник древней горы',slot:'ring',def:4,mineExtra:15,icon:'💠',trait:'+5% урона киркой, +15% дополнительной руды'}
@@ -175,7 +175,7 @@ function shaftOptions(r,id){
  if(id===1){
   if(s.first<3)hold('Раскопать первый вход · '+s.first+'/3','shaft:first');
   else hold('Осмотреть: следующий тоннель обрушен','shaft:inspect');
-  hold('Осмотреть старую путевую стрелку','shaft:rail');
+  if(!ensure(r).flags.railInspected)hold('Осмотреть старую путевую стрелку','shaft:rail');
  }else if(id===11){
   if(s.first===3)hold('По открытому тоннелю назад на 10 этажей','shaft:back');
   if(s.middle<3)hold('Раскопать дальний завал · '+s.middle+'/3','shaft:middle');
@@ -211,7 +211,8 @@ function render(r,t){
 }
 function chooseShaft(r,id,c){
  var sh=ensure(r).shaft,cmd=c.reward.split(':')[1];
- if(cmd==='rail'){var x=ensure(r);if(!x.items.rail_key)x.items.rail_key=1;return {ok:true,turn:true,keep:true,message:'Получен ключ путевой стрелки. Дальняя часть тоннеля обвалилась.'};}
+ if(cmd==='rail'){var x=ensure(r);if(x.flags.railInspected)return {ok:true,turn:false,keep:true,message:'Стрелка уже исследована'};
+  x.flags.railInspected=true;x.items.rail_key=1;return {ok:true,turn:true,keep:true,message:'Получен ключ путевой стрелки. Дальняя часть тоннеля обвалилась.'};}
  if(cmd==='inspect')return {ok:true,turn:false,keep:true,message:'Этот участок тоннеля уже разобран. Дальнейший путь завален.'};
  if(cmd==='back'){
   if(sh.first<3)return {ok:false,message:'Сначала нужно раскопать первый вход'};
@@ -225,6 +226,7 @@ function chooseShaft(r,id,c){
  if(cmd==='middle'&&sh.first<3)return {ok:false,message:'Первый вход ещё не раскопан'};
  if(cmd==='last'&&sh.middle<3)return {ok:false,message:'Второй вход ещё не раскопан'};
  if(sh[cmd]>=3)return {ok:true,turn:false,keep:true,message:'Завал уже разобран'};
+ if(cmd==='last'&&sh[cmd]===1&&ensure(r).items.rail_key){delete ensure(r).items.rail_key;sh[cmd]++;}
  sh[cmd]++;
  if(cmd==='last'&&sh[cmd]===3&&ensure(r).items.rail_key){sh[cmd]=3;}
  return {ok:true,turn:true,keep:true,message:'Кирка разбирает завал: '+sh[cmd]+'/3. '+(sh[cmd]===3?'Проход открыт.':'Нужно продолжить раскопки.')};
@@ -318,6 +320,7 @@ function mineBonuses(r){if(!active(r))return {extra:0,rare:0,instant:0,extraQty:
  if(perks.heart_of_mountain)b.rare+=5;
  (x.buffs||[]).filter(function(y){return y.left>0;}).forEach(function(y){if(y.kind==='rare')b.rare+=y.value;if(y.kind==='extra')b.extraQty+=y.value;});
  if(x.flags.soot_companion)b.extra+=6;
+ b.extraQty+=(x.nextVeinBonus||0);
  return b;
 }
 function mined(r){
@@ -325,7 +328,7 @@ function mined(r){
  x.totalMines=(x.totalMines||0)+1;
  if(x.perks&&x.perks.artel&&x.totalMines%3===0){r.materials[ORE.iron]=(r.materials[ORE.iron]||0)+1;}
  x.buffs=x.buffs.filter(function(y){if(y.left>0)y.left--;return y.left>0;});
- if(x.items.mirror_chisel>0){x.items.mirror_chisel--;r.materials[ORE.iron]=(r.materials[ORE.iron]||0)+1;}
+ if(x.nextVeinBonus>0)x.nextVeinBonus--;
 }
 function inventory(r){if(!active(r))return [];var x=ensure(r);
  return Object.keys(x.items).filter(function(k){return x.items[k]>0;}).map(function(id){return {id:id,name:(ITEMS[id]||[id])[0],description:(ITEMS[id]||['', ''])[1],qty:x.items[id],usable:!!USE[id]};});
@@ -340,6 +343,7 @@ function useItem(r,id){
  else if(id==='miner_ration'){r.hp+=20;r.shield+=10;}
  else if(id==='guardian_seal'){r.shield+=45;}
  else if(id==='bell_fragment'){(r.tiles||[]).forEach(function(t){if(t.foe&&!t.foe.boss&&t.foe.hp>0)t.foe.stun=Math.max(t.foe.stun||0,1);});}
+ else if(id==='mirror_chisel')x.nextVeinBonus=(x.nextVeinBonus||0)+1;
  else if(id==='shock_wedge')x.nextStrike=(x.nextStrike||0)+30;
  else if(id==='mirror_shard')x.echo=(x.echo||0)+1;
  else if(id==='collapse_charge')x.nextStrike=(x.nextStrike||0)+45;
