@@ -174,12 +174,12 @@ rewrite(35,'Пост дальнего дозора','В сторожевом з�
  'Передать последнее письмо и получить нагрудник дозора|take:guard_letter:1;flag:guard_reported;unique:warden_armor|item:guard_letter:1',
  'Передать список браконьеров и открыть боевой склад|take:poacher_names:1;flag:guard_reported;item:cache_key:1;item:stun_trap:2|item:poacher_names:1',
  'Восстановить сигнальный пост и получить припасы|take:repair_straps:2;flag:watchtower_lit;item:supply_crate:2|item:repair_straps:2',
- 'Вернуться с доказательствами|leave']);
+ 'Вернуться с доказательствами|leave'],'');
 rewrite(36,'Закрытый сундук лесничего','На сундуке знак старшего дозорного. Замок отвечает на металлический жетон и на воронью печать.',[
  'Открыть жетоном лесничего|unique:warden_ring;gold:50|item:ranger_badge:1',
  'Открыть вороньим ключом|take:raven_key:1;unique:warden_ring|item:raven_key:1',
  'Разобрать внешний корпус|item:supply_crate:2;material:Кожа лесника:2',
- 'Оставить тайник|leave']);
+ 'Оставить тайник|leave'],'');
 rewrite(37,'Следы матки панцирников','Под гнилыми листьями трескаются хитиновые оболочки. Под курганом растёт огромная жучиная матка.',[
  'Вызвать матку панцирников|hunt:beetle',
  'Собрать пластины из сброшенных панцирей|material:Хитиновая пластина:4',
@@ -341,7 +341,10 @@ function onFloor(run,meta){
  var shield=equipped(run,'shieldFloor');
  if(meta&&meta.forestProjects&&meta.forestProjects.forest_shrine)shield+=5;
  if(shield){run.shield=(run.shield||0)+shield;messages.push('Обереги рощи: +'+shield+' щита');}
- if(meta&&meta.forestProjects&&meta.forestProjects.grove_seed){run.hp=Math.min(run.hp+3,run.hp+3);messages.push('Деревенский саженец восстанавливает 3 HP');}
+ if(meta&&meta.forestProjects&&meta.forestProjects.grove_seed){
+  var cap=arguments[2]&&arguments[2].hp||run.hp+3;run.hp=Math.min(cap,run.hp+3);
+  messages.push('Деревенский саженец восстанавливает до 3 HP');
+ }
  for(var b of x.buffs){
   if(b.left>0&&b.kind==='shelter'){run.shield=(run.shield||0)+b.value;b.left--;messages.push('Укрытие: +'+b.value+' щита');}
  }
@@ -355,7 +358,8 @@ function onFloor(run,meta){
 }
 function firstStrikeBonus(run){var x=extra(run),b=x.buffs.find(function(y){return y.kind==='hunt'&&y.left>0;});
  if(!b)return 0;b.left--;x.buffs=x.buffs.filter(function(y){return y.left>0;});return b.value;}
-function trapBonus(run){var x=extra(run),b=x.buffs.find(function(y){return y.kind==='trapward'&&y.left>0;});return b?b.value:0;}
+function trapBonus(run){var x=extra(run),b=x.buffs.find(function(y){return y.kind==='trapward'&&y.left>0;});
+ if(!b)return 0;b.left--;x.buffs=x.buffs.filter(function(y){return y.left>0;});return b.value;}
 function use(run,id,api){
  var f=FE.ensure(run),x=extra(run);if(!useNames[id]||!f.items[id])return {ok:false,message:'Предмет отсутствует'};
  if(id==='healing_salve'){run.hp=Math.min(api.stats().hp,run.hp+32);run.bleedTurns=0;}
