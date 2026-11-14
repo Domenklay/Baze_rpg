@@ -10,7 +10,7 @@ const ctx={window,document,Date,Math,setTimeout:()=>1,clearTimeout(){},setInterv
 vm.createContext(ctx);
 const js=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js',
  'clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js',
- 'hunter_bestiary.js','forest_encounters.js','t1_encounters.js','mining.js','game.js'];
+ 'hunter_bestiary.js','forest_encounters.js','t1_encounters.js','mining.js','ridge_catalog.js','ridge_events.js','game.js'];
 for(const name of js){
  if(name==='gumballs_titles_reference.js')window.CryptLegacyTitles=window.CryptTitles;
  vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx,{filename:name,timeout:15000});
