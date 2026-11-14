@@ -102,7 +102,7 @@ function pickScene(run,exclude){
  });
  if(!possible.length)return null;
  var upgrade=window.CryptForestRework;
- var story=upgrade&&upgrade.priority(run,possible);
+ var story=upgrade&&(upgrade.milestone(run,possible)||upgrade.priority(run,possible));
  if(story)return story;
  // Explore unfinished one-off discoveries before recurring harvests.
  var first=possible.filter(function(x){return !x.repeat;});
