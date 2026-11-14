@@ -528,7 +528,7 @@ function reachableEnemy(t){
    CR.specialSpawned(t.foe);
 }
 function rangedTarget(){return enemies()[0]||null;}
-function target(){return enemies().find(reachableEnemy)||null;}
+function target(){return r&&r.class==='scout'?rangedTarget():enemies().find(reachableEnemy)||null;}
 function tile(n){return r.tiles[Number(n)]||null;}
 function icon(kind,foe){return window.CryptArt.tile(kind,foe);}
 function hud(){
@@ -1708,7 +1708,7 @@ function echoFollowUp(enemy,st){
 }
 function strike(tid){
  var t=tile(tid),st=stats();if(!t||!t.revealed||!t.foe||t.foe.hp<=0)return;
- if(!reachableEnemy(t)){toast('Нет прохода к врагу. Сначала исследуйте путь к нему.');return;}
+ if(r.class!=='scout'&&!reachableEnemy(t)){toast('Нет прохода к врагу. Сначала исследуйте путь к нему.');return;}
  setHeroPose('attack');
  if(TR.beforeAttack(r)||TR.counterImmune(r)){t.foe.counteredAt=r.turn+1;t.foe.provoked=false;}else if(!counterBeforeHero(t.foe,t,null)||!r)return;
  if(t.foe.hp<=0){finishAction();return;}
