@@ -946,6 +946,42 @@ test('Numeric ability costs and generated loot sprites are wired to HUD',()=>{
  assert.match(css,/tile-item-sprite\{[^}]*width:70%/,'Loot art is 30% smaller on dungeon tiles');
 });
 
+test('Gold coin image, matching backpack elixir art and 64 semantic corpse sprites',()=>{
+ const live=win.Crypt;live.debug.action('begin','executioner');
+ const run=live.state().run;
+ const coin=fs.readFileSync(path.join(root,'ui','gold_coin.png'));
+ assert.equal(coin.subarray(0,8).toString('hex'),'89504e470d0a1a0a','HUD gold image is a real PNG');
+ assert.equal(coin.readUInt32BE(16),96,'Coin must be sharp enough for the HUD');
+ const atlas=fs.readFileSync(path.join(root,'ui','remains_atlas.png'));
+ assert.equal(atlas.subarray(0,8).toString('hex'),'89504e470d0a1a0a','Corpse atlas is PNG');
+ assert.equal(atlas.readUInt32BE(16),1024);
+ assert.equal(atlas.readUInt32BE(20),1024);
+ assert.match(el('content').innerHTML,/class="gold-coin-icon" src="ui\/gold_coin\.png"/);
+ const cell=run.tiles.find(t=>t.kind==='empty'&&t.id!==run.heroTile);assert.ok(cell);
+ const e={id:'forest-wolf-test',name:'Лесной волк',visual:'wolf',hp:1,maxHp:12,atk:1,baseAtk:1,def:0,
+  ep:1,gold:7,loot:[],ranged:false,stun:5,guard:0,evadeCharges:0,poison:0,burn:0,bleed:0,
+  skill:{name:'Укус',every:99,kind:'bite'},cooldown:99};
+ cell.kind='enemy';cell.foe=e;cell.revealed=true;cell.cleared=false;cell.drops=null;
+ standNextTo(run,cell);const beforeGold=run.gold;live.debug.action('strike',cell.id);
+ assert.ok(cell.drops,'Corpse with only gold must keep a pickup');
+ assert.equal(cell.drops.materials.length,0);
+ assert.equal(cell.remainsId,9,'A slain wolf uses the wolf-remains icon from the 64-sprite set');
+ const html=el('content').innerHTML;
+ assert.match(html,/class="tile-remains-art"/,'Corpse is visible instead of generic loot pouch');
+ assert.match(html,/class="gold-coin-tile"/,'Gold-only corpse shows its gold icon');
+ assert.match(html,/ui\/remains_atlas\.png|tile-remains-art/);
+ live.debug.action('pickup',cell.id);
+ assert.equal(run.gold,beforeGold+7,'Tapping remains picks up its gold');
+ assert.equal(cell.cleared,true);
+ assert.doesNotMatch(el('content').innerHTML,/class="tile-remains-art"/,'Corpse disappears after pickup');
+ run.potions=2;live.debug.action('ui-panel','bag');
+ const bag=el('overlay').innerHTML;
+ assert.match(bag,/aria-label="Целебный эликсир"/,'Elixir is present in the backpack');
+ assert.ok(bag.includes(win.CryptArt.tile('potion')),'Elixir backpack art matches the ground art');
+ live.debug.action('bag-details');
+ assert.match(el('overlay').innerHTML,/gold-coin-inline/,'Material ledger uses the real golden coin');
+});
+
 test('Small floor vials are consumed instantly with HP 5–20 and MP 3–10',()=>{
  const live=win.Crypt;live.debug.action('begin','necromancer');
  const run=live.state().run,st=live.debug.stats();
