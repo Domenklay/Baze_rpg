@@ -275,6 +275,22 @@ function incoming(r,e,damage){
  return Math.max(1,Math.ceil(damage));
 }
 function counterImmune(r){return has(r,'adv_great_swordsmith')&&has(r,'adv_rune_master')&&Math.random()<.15;}
+/* Deterministic part of actual spell strength, for spellbook previews only.
+   Random crits and on-cast title procs remain in spellMultiplier(). */
+function previewMultiplier(r,sp){
+ var map={fire:'mag_fire',dark:'mag_dark',earth:'mag_earth',air:'mag_air',light:'mag_light',water:'mag_water'};
+ var n=level(r,map[sp.school]),result=1+n*.1+(n?.1:0);
+ if(has(r,'mag_elements')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall','earthquake'].includes(sp.kind))
+  result+=.30+.10*(rank5(r,'mag_elements','pow')+rank5(r,'mag_elements','mp')+rank5(r,'mag_elements','hp'));
+ if(has(r,'mag_legendary')&&['blessing','heal','shield','healshield','lastlight','timestop','reveal'].includes(sp.kind))
+  result+=.30+.10*rank5(r,'mag_legendary','pow');
+ if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].includes(sp.kind))
+  result+=.30+.10*rank5(r,'mag_light_bishop','pow');
+ if(has(r,'mag_dark_priest')&&sp.id==='deathripple')result*=1+.25*rank5(r,'mag_dark_priest','pow');
+ if(has(r,'mag_dark_priest')&&sp.id==='implosion')result*=1+.25*rank5(r,'mag_dark_priest','mp');
+ if(has(r,'mag_pope')&&sp.id==='holybolt')result*=1+.25*rank5(r,'mag_pope','mp');
+ return result;
+}
 function spellMultiplier(r,sp){
  var n=has(r,'mag_fire')&&sp.school==='fire'?level(r,'mag_fire'):has(r,'mag_dark')&&sp.school==='dark'?level(r,'mag_dark'):has(r,'mag_earth')&&sp.school==='earth'?level(r,'mag_earth'):has(r,'mag_air')&&sp.school==='air'?level(r,'mag_air'):has(r,'mag_light')&&sp.school==='light'?level(r,'mag_light'):has(r,'mag_water')&&sp.school==='water'?level(r,'mag_water'):0;
  var result=1+n*.1+(n? .1:0);
@@ -406,5 +422,5 @@ function useTool(r,h,selected){
  return no('Этот инструмент действует автоматически.');
 }
 
-window.CryptTitlesRuntime={data:data,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
