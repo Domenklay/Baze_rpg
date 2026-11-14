@@ -114,6 +114,7 @@ function harvest(r,tile,rng,houseLevel){
  var m=ensure(r),vein=tile.mine||newVein(r.floor||1,rng),ore=ORES[vein.type],ridge=window.CryptRidgeEvents,
  mods=ridge&&ridge.mineBonuses(r)||{extra:0,rare:0,instant:0,extraQty:0};
  if(m.level<ore.unlock)return {ok:false,message:ore.name+': требуется кирка уровня '+ore.unlock};
+ if(r.ridge&&r.ridge.whetstone>0&&!tile.whetstoneUsed){vein.hp=Math.max(1,Math.ceil(vein.hp*.5));tile.whetstoneUsed=true;r.ridge.whetstone--;}
  var chance=(rng||Math.random),instant=chance()*100<(bonus(r,'instantBreak')+(mods.instant||0));
  if(r.ridge&&r.ridge.instantOre>0){instant=true;r.ridge.instantOre--;}
  vein.hp=Math.max(0,vein.hp-(instant?vein.hp:miningPower(r)));
