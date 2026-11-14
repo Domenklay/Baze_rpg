@@ -58,6 +58,7 @@ jobs:
           node --check cryptbound/src/main/assets/hunter_bestiary.js
           node --check cryptbound/src/main/assets/forest_encounters.js
           node --check cryptbound/src/main/assets/forest_rework.js
+          node --check cryptbound/src/main/assets/forest_v2_art.js
           node --check cryptbound/src/main/assets/t1_encounters.js
           node --check cryptbound/src/main/assets/mining.js
           node --check cryptbound/src/main/assets/ridge_catalog.js
@@ -79,6 +80,7 @@ jobs:
           node cryptbound/tests/hunter_book.cjs
           node cryptbound/tests/forest_events.cjs
           node cryptbound/tests/forest_rework.cjs
+          node cryptbound/tests/forest_v2_art.cjs
           node cryptbound/tests/t1_encounters.cjs
           node cryptbound/tests/mining.cjs
           node cryptbound/tests/ridge_events.cjs
@@ -93,8 +95,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.14-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.14-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.15-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.15-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -107,7 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.14 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.14 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.14 — 50 квестов Лесной окраины" --notes "Пепельный лабиринт v0.8.14 · Android офлайн. Полностью переработаны 50 событий первой локации «Лесная окраина»: связанные истории Рыжухи, спасённой лисицы, лесничих, браконьеров, охотников, дубовой рощи и заражённой грибницы. Варианты теперь дают уникальную экипировку, работающие расходники, тайники, боевую поддержку, защитные баффы, полезные припасы и постоянные проекты поселения вместо наград за открытие клеток или 1–5 очков исследования. Действуют сюжетные условия и приоритеты продолжения цепочек, на первом этаже гарантирована встреча с Рыжухой. Сохранены лесной колодец, книга охотника, охоты на альфа-существ, получение трофеев при безопасном возвращении, а также все механики Каменистого нагорья v0.8.13. Сохранения прежних версий поддерживаются."
+          if ! gh release view cryptbound-v0.8.15 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.15 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.15 — новые лесные спрайты" --notes "Пепельный лабиринт v0.8.15 · Android офлайн. Добавлены 97 новых индивидуально нарезанных PNG 128×128 RGBA спрайтов из шести утверждённых листов: лесные NPC и существа, локации событий, 10 уникальных предметов экипировки и инвентарные квестовые находки. Все PNG подключены к сценам, сетке лабиринта, рюкзаку и экрану экипировки через forest_v2_art.js. Старые эталонные изображения сохранены для совместимости, 50 обновлённых лесных событий и механики Каменистого нагорья остаются без изменения. В GitHub Actions добавлены проверки 97 PNG, соответствий и загрузки. Старые сохранения поддерживаются."
           fi
-          gh release upload cryptbound-v0.8.14 dist/Cryptbound-v0.8.14-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.15 dist/Cryptbound-v0.8.15-offline-Android.apk dist/SHA256SUMS.txt --clobber
