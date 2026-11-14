@@ -85,6 +85,73 @@ purchase(['mag_apprentice','mag_white','mag_priest','mag_air','mag_time']);
 assert.equal(r.talents.mag_time,1);
 A('title-mastery','mag_time:pow');
 assert.equal(rt.rank5(r,'mag_time','pow'),1);
+/* Verify every published title can actually be acquired along an eligible
+   parent chain, rather than merely existing as a display-only tree node. */
+for(const title of rt.data){
+ const klass=title.tree===0?'guardian':title.tree===1?'sorceress':'scout';
+ const run=begin(klass);const order=[];
+ let cursor=title;
+ while(cursor){
+  order.unshift(cursor);
+  cursor=(cursor.parents||[]).length?rt.data.find(x=>x.id===cursor.parents[0]):null;
+  assert.ok(order.length<=5,'Title parent chains must terminate');
+ }
+ for(const step of order)A('talent',step.id);
+ assert.ok(rt.ownedLevel(run,title.id)>=1,'Title '+title.id+' must really unlock and purchase');
+ assert.equal(rt.level(run,title.id)>=1,true,'Title '+title.id+' must have active gameplay rank');
+}
+console.log('PASS All 65 title paths can be purchased with real gameplay actions');
+
+r=begin('scout');
+purchase(['adv_seeker','adv_explorer','adv_night_walker']);
+assert.ok(rt.curSup(r,'wick')>=2,'Night walker must receive usable lantern charges');
+assert.equal(rt.curSup(r,'compass'),3,'Earlier compass remains after obtaining lantern');
+assert.equal(rt.toolOf(r).kind,'lantern');
+A('title-tool');
+assert.match(el('overlay').innerHTML,/Компас в фонаре/,'Compass is nested under the lantern icon');
+const stockBefore=rt.curSup(r,'compass'),wicksBefore=rt.curSup(r,'wick');
+A('title-tool-use','compass');
+assert.equal(rt.curSup(r,'compass'),stockBefore-1,'Embedded compass consumes compass charges');
+assert.equal(rt.curSup(r,'wick'),wicksBefore,'Using compass does not consume a lantern wick');
+r.talents.adv_night_walker=3;
+r.titleFlags.keyHintFloor='old-floor';
+rt.refreshHints(r,{log(){}});
+const keyTile=r.tiles.find(t=>t.hasKey&&!t.revealed);
+assert.ok(keyTile&&keyTile.hintKey,'Max-rank lantern marks the actual key holder behind a closed slab');
+const coveredEnemies=r.tiles.filter(t=>t.foe&&!t.revealed&&t.foe.hp>0);
+const spotted=coveredEnemies.filter(t=>t.hintEnemy);
+assert.equal(spotted.length,Math.min(3,coveredEnemies.length),'Rank-I seeker flags three hidden enemies');
+window.Crypt.debug.draw();
+assert.match(el('content').innerHTML,/slab-hint-key/,'A scouted key has a visible glyph on the board');
+assert.match(el('content').innerHTML,/slab-hint-enemy/,'A scouted enemy has a visibly distinct glyph');
+console.log('PASS Scout enemy positions, lantern key clue and nested compass');
+
+const lends=[
+ {set:'hunters_trail',borrow:'adv_seeker',klass:'scout'},
+ {set:'stone_oath',borrow:'war_novice',klass:'guardian'},
+ {set:'mana_whisper',borrow:'mag_apprentice',klass:'sorceress'}
+];
+for(const config of lends){
+ const run=begin(config.klass),spec=window.ClickerRules.setRules(config.set);
+ assert.equal(spec.borrowTitle,config.borrow,'Thematic set must match its lent title');
+ for(const slot of spec.slots){
+  const item={id:++state.seq,name:'Деталь комплекта',setId:config.set,slot,atk:0,def:0,hp:0,mp:0,pow:0,plus:0,rarity:1};
+  run.items.push(item);
+  A('equip',item.id);
+ }
+ assert.equal(rt.borrowedTitle(run,config.borrow),true,'Complete gear lends a working rank-I title');
+ assert.equal(rt.level(run,config.borrow),1);
+ assert.equal(rt.ownedLevel(run,config.borrow),0,'Temporary title is not permanently bought');
+ const child=rt.data.find(t=>(t.parents||[]).includes(config.borrow));
+ assert.ok(child&&!rt.unlocked(run,child),'Loaned title cannot unlock permanent higher branches');
+ assert.ok(window.ClickerRules.descriptions(config.set).some(x=>x.includes('Временное звание')),
+  'Set tooltip must advertise the borrowed title');
+ run.equip[spec.slots[0]]=null;
+ rt.refreshHints(run,{log(){}});
+ assert.equal(rt.level(run,config.borrow),0,'Unequipping breaks the temporary title');
+}
+console.log('PASS Three thematic original sets lend working temporary titles without corrupting progression');
+
 const old={class:'scout',ep:20,titleVersion:1,talents:{fortune:3,seeker:2},titleSupplies:{}};
 rt.init(old);
 assert.ok(old.legacyTitles.fortune===3);
