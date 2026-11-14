@@ -1982,6 +1982,42 @@ function hunterBookDialog(){
  $('overlay').innerHTML='<div class="veil"><div class="dialog hb-dialog">'+HB.render(s.meta,r.hunterBookTab||'beasts',r.hunterBookSelected||'r1_0')+'</div></div>';
  save();
 }
+/* T1 stages 2/3: local encounters reuse the same combat and turn engine. */
+function t1Spawn(mobId,count,task){
+ var src=(currentRegion().mobs||[]).find(function(m){return m.id===mobId&&!m.elite&&!m.boss;});
+ if(!src)return 0;
+ var spots=r.tiles.filter(function(t){return t.kind==='empty'&&!t.foe&&!t.drops&&t.id!==r.heroTile&&t.id!==r.summonTile;});
+ if(spots.length<count)return 0;
+ for(var j=spots.length-1;j>0;j--){var k=rand(0,j),sw=spots[j];spots[j]=spots[k];spots[k]=sw;}
+ for(var i=0;i<count;i++){
+  var t=spots[i],foe=mkEnemy(false,false,false),role=BAL.role(src,false);
+  var scaled=BAL.combat(r.actIndex||0,r.locationIndex||0,r.floor,role,false,false,src.id);
+  var ability=BAL.ability(src,role);
+  foe.id=src.id;foe.name=src.name;foe.visual=CR.visualId(src.name);
+  foe.hp=foe.maxHp=scaled.hp;foe.atk=foe.baseAtk=scaled.atk;foe.def=scaled.def;
+  foe.role=role;foe.roleName=BAL.roles[role].name;foe.ability=ability.id;
+  foe.abilityName=ability.name;foe.abilityDescription=ability.description;
+  foe.skill={name:src.skillName||ability.name,every:scaled.cooldown,description:src.role||ability.description,kind:ability.id};
+  foe.cooldown=scaled.cooldown;foe.loot=src.loot||[];foe.t1Task=task;
+  t.kind='enemy';t.revealed=true;t.cleared=false;t.foe=foe;t.drops=null;
+ }
+ return count;
+}
+function t1Api(){return {stats:stats,rollSpell:rollSpell,grantScroll:grantScroll,addItem:addItem,
+ revealSafe:forestReveals,spawn:t1Spawn};}
+function t1EventDialog(t){if(t&&t.kind==='t1-event'&&!t.cleared&&t.revealed)dialog(RE.render(r,t));}
+function t1Choose(id){
+ var a=String(id||'').split(':'),t=tile(a[0]),i=Number(a[1]);
+ if(!t||t.kind!=='t1-event'||!Number.isInteger(i))return;
+ var result=RE.choose(r,t,i,t1Api());
+ if(!result.ok){toast(result.message||'Действие недоступно');return;}
+ close();if(result.leave){toast('Находку можно исследовать позже.');return;}
+ if(result.message)log(result.message);
+ if(result.turn)finishAction();
+ if(r&&!result.combat&&result.message)dialog('<div class="forest-reward-summary"><h2>'+esc((RE.scene(r,t.t1Id)||{}).title||'Находка')+'</h2><p>'+esc(result.message)+'</p><button class="btn wide" data-action="close">Продолжить</button></div>');
+ if(result.combat)toast(result.message||'Начался бой');
+}
+
 /* Forest Outskirts: connected story scenes, not generic yes/no trivia. */
 function forestEventDialog(t){
  if(!t||t.kind!=='forest-event'||t.cleared||!t.revealed)return;
