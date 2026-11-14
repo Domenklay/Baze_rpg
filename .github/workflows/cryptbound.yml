@@ -57,6 +57,7 @@ jobs:
           node --check cryptbound/src/main/assets/combat_feedback.js
           node --check cryptbound/src/main/assets/hunter_bestiary.js
           node --check cryptbound/src/main/assets/forest_encounters.js
+          node --check cryptbound/src/main/assets/t1_encounters.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -73,6 +74,7 @@ jobs:
           node cryptbound/tests/combat_hud_v082.cjs
           node cryptbound/tests/hunter_book.cjs
           node cryptbound/tests/forest_events.cjs
+          node cryptbound/tests/t1_encounters.cjs
           node cryptbound/tests/hunter_book_visual.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
@@ -84,8 +86,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.2-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.2-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.3-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.3-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -98,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.2 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.2 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.2 — боевые таймеры и инвентарь" --notes "Тестовая офлайн APK для Android. Враги самостоятельно атакуют и применяют эффекты по достижении нуля на таймере. К врагу можно пройти через любые открытые клетки, включая предметы и находки. Бумажные записи убраны из рюкзака; бестиарий сохранён. На кнопках навыков отображается цена в мане, в книге свитков — актуальный урон с учётом магии и усилений. Рядом с этажом показаны очки талантов, для золота нарисована новая монета. Сохранены 65 званий, Чёрная пантера, Эхо и автоснятие ловушек после зачистки."
+          if ! gh release view cryptbound-v0.8.3 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.3 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.3 — все локации T1" --notes "Тестовая офлайн APK для Android. Каменистое нагорье и Туманные топи получают по 30 связанных событий с найденными предметами, тематическими засадами и наградами после победы. Предметы T1 доступны в рюкзаке, цепочки и открытия сохраняются между этапами. Боссы, портал, прогресс званий и механики v0.8.2 сохранены. Индивидуальные иллюстрации событий ещё в работе: используются стилизованные знаки регионов."
           fi
-          gh release upload cryptbound-v0.8.2 dist/Cryptbound-v0.8.2-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.3 dist/Cryptbound-v0.8.3-offline-Android.apk dist/SHA256SUMS.txt --clobber
