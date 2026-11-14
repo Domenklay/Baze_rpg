@@ -376,8 +376,8 @@ function useTool(r,h,selected){
  }
  if(tool.kind==='bow'){
   if(curSup(r,'arrow')<=0)return no('Не хватает стрел.');
-  var target=h.targets().find(function(t){return String(t.id)===String(selected)&&t.foe&&t.foe.hp>0&&h.reachable(t);});
-  if(!target)return no('Выберите доступную цель для арбалета.');
+  var target=h.targets().find(function(t){return String(t.id)===String(selected)&&t.foe&&t.foe.hp>0;});
+  if(!target)return no('Выберите обнаруженного противника для арбалета.');
   supply(r,'arrow',-1);
   var base=Math.round(h.stats().atk*(has(r,'adv_legendary_hunter')?1.4:1));
   h.hit(target,base);
