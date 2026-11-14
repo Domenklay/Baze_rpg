@@ -927,7 +927,7 @@ test('Numeric ability costs and generated loot sprites are wired to HUD',()=>{
  const html=el('content').innerHTML;
  assert.match(html,/class="quick-mana-cost">8<\/small>/,'Class ability shows only the numeric cost');
  assert.doesNotMatch(html,/class="quick-mana-cost">[^<]*МН/,'No mana suffix on class ability');
- for(const name of ['vial-hp','vial-mp','loot-pouch']){
+ for(const name of ['vial-hp','vial-mp','loot-pouch','coin-pouch']){
   const img=path.join(root,'ui',name+'.png');
   assert.ok(fs.statSync(img).size>400,name+' must have an actual PNG file');
  }
@@ -938,6 +938,12 @@ test('Numeric ability costs and generated loot sprites are wired to HUD',()=>{
  assert.match(el('content').innerHTML,/ui\/vial-mp\.png/);
  t.drops={materials:[{name:'Дерево',qty:1}],gold:1};live.debug.action('wait');
  assert.match(el('content').innerHTML,/ui\/loot-pouch\.png/);
+ t.drops=null;t.kind='coin';t.cleared=false;live.debug.draw();
+ assert.match(el('content').innerHTML,/ui\/coin-pouch\.png/,'Coin pile uses purse sprite');
+ t.kind='coin-small';live.debug.draw();
+ assert.match(el('content').innerHTML,/ui\/coin-pouch\.png/,'Small coin find uses purse sprite');
+ const css=fs.readFileSync(path.join(root,'hud_titles_v082.css'),'utf8');
+ assert.match(css,/tile-item-sprite\{[^}]*width:100%/,'Loot art fills its dungeon tile');
 });
 
 test('Small floor vials are consumed instantly with HP 5–20 and MP 3–10',()=>{
