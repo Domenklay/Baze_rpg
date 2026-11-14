@@ -26,21 +26,34 @@ function borrowedTitle(r,id){
 function level(r,id){return Math.max(ownedLevel(r,id),borrowedTitle(r,id)?1:0);}
 function has(r,id){return level(r,id)>0;}
 var TITLE_SUITS={
- adv_magic_bandit:{id:'noble',pieces:[['bracer','Лента дворянина'],['ring','Кольцо этикета'],['cloak','Бархатный плащ']]},
- adv_treasure_hunter:{id:'hunter',pieces:[['armor','Броня охотника'],['amulet','Охотничий медальон'],['boots','Сапоги охотника']]},
- adv_royal_rune:{id:'rune',pieces:[['ring','Рунное кольцо'],['gloves','Перчатки гоблина'],['amulet','Кулон магической энергии']]},
- adv_royal_blacksmith:{id:'smith',pieces:[['helm','Спектральный шлем'],['bracer','Наручи литейщика'],['boots','Сапоги кузнеца']]}
+ adv_magic_bandit:{id:'noble',name:'Облачение дворянина',pieces:[['bracer','Лента дворянина'],['ring','Кольцо этикета'],['cloak','Бархатный плащ']]},
+ adv_treasure_hunter:{id:'hunter',name:'Трофеи охотника',pieces:[['armor','Броня охотника'],['amulet','Охотничий медальон'],['boots','Сапоги охотника']]},
+ adv_royal_rune:{id:'rune',name:'Регалии мастера рун',pieces:[['ring','Рунное кольцо'],['gloves','Перчатки гоблина'],['amulet','Кулон магической энергии']]},
+ adv_royal_blacksmith:{id:'smith',name:'Кузнечное облачение',pieces:[['helm','Спектральный шлем'],['bracer','Наручи литейщика'],['boots','Сапоги кузнеца']]}
 };
 function titleSetEquipped(r,id){
  var items=r&&r.items||[],equip=r&&r.equip||{};
  return Object.keys(equip).filter(function(slot){return items.some(function(it){return it.id===equip[slot]&&it.titleSet===id;});}).length;
 }
+function titleSets(r){
+ var descriptions={
+  noble:'Каждая часть снижает цену званий на 6%; полный комплект — дополнительная скидка 10%.',
+  hunter:'За каждую часть +3 ОИ при входе на новый этаж; полный комплект: +3 защиты, +12% уклонения, +2 ОИ за убийство.',
+  rune:'При разборе предметов каждая часть восстанавливает +3 маны; полный комплект: +5 магии, +50 маны и 1 руна каждые пять этажей.',
+  smith:'Каждая часть даёт +2 ОИ при разборе предмета; полный комплект: 1 эссенция закалки каждые пять этажей.'
+ };
+ return Object.keys(TITLE_SUITS).map(function(key){
+  var suit=TITLE_SUITS[key],count=titleSetEquipped(r,suit.id);
+  return {id:suit.id,name:suit.name,count:count,max:suit.pieces.length,description:descriptions[suit.id]};
+ }).filter(function(x){return x.count>0;});
+}
 function grantTitlePiece(r,t,levelNum,h){
  var suit=TITLE_SUITS[t.id];if(!suit)return;
  var piece=suit.pieces[Math.min(suit.pieces.length-1,levelNum-1)];
  var item=h.addItem(piece[0],2);if(!item)return;
- item.name=piece[1];item.titleSet=suit.id;item.titlePiece=levelNum;
- item.setId=null;item.setName=null;item.catalogId=null;
+ item.name=piece[1];item.titleSet=suit.id;item.titleSetName=suit.name;item.titlePiece=levelNum;
+ item.setId=null;item.setName=suit.name;item.catalogId=null;
+ item.trait='Часть комплекта «'+suit.name+'»; дополнительные эффекты при экипировке.';
  h.log('Получена часть комплекта «'+piece[1]+'». Предмет помещён в рюкзак и не надет.');
 }
 function rank5(r,id,key){return Math.max(0,Math.min(3,Number(r.titleMastery&&r.titleMastery[id]&&r.titleMastery[id][key])||0));}
@@ -481,5 +494,5 @@ function useTool(r,h,selected){
  return no('Этот инструмент действует автоматически.');
 }
 
-window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,ownedLevel:ownedLevel,borrowedTitle:borrowedTitle,refreshHints:refreshHints,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,titleSets:titleSets,ownedLevel:ownedLevel,borrowedTitle:borrowedTitle,refreshHints:refreshHints,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
