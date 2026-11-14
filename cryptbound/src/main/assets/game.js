@@ -3304,12 +3304,73 @@ function action(name,id){
  if(name==='buy'){buy(id);return;}
  if(name==='puzzle-answer'){puzzleAnswer(id);return;}
 }
+/* Hold a normal maze tile, then trace neighboring tiles with the same finger.
+   Each valid reveal or pickup costs its ordinary turn; no free loot or attacks.
+   The gesture stops on traps, event dialogs and any unsafe/blocked square. */
+function quickSweepTile(id){
+ if(!r||activeRoom()||r.trappedTile!=null||r.pendingSpell||r.pendingSkill||r.pendingForestUse||
+  $('overlay').innerHTML)return false;
+ var t=tile(id);if(!t||t.foe&&t.foe.hp>0||t.summon)return false;
+ var allowed=false,verb=null;
+ if(!t.revealed){
+  allowed=CR.exploreStatus(t,r.tiles,r.heroTile).ok;verb='reveal';
+ }else if(!t.cleared&&(t.drops||
+  ['coin','coin-small','potion','vial-hp','vial-mp','chest'].indexOf(t.kind)>=0)){
+  allowed=true;verb='pickup';
+ }
+ if(!allowed)return false;
+ var started=r.turn,run=r;
+ action(verb,t.id);
+ return !!r&&r===run&&r.turn>started;
+}
+var quickSweep=null,quickSweepTimer=null,quickSweepSuppressUntil=0;
+function cancelQuickSweep(){
+ clearTimeout(quickSweepTimer);quickSweepTimer=null;
+ if(quickSweep&&quickSweep.started)quickSweepSuppressUntil=Date.now()+550;
+ quickSweep=null;
+}
+document.addEventListener('pointerdown',function(e){
+ if(!r||$('overlay').innerHTML||activeRoom()||e.button>0)return;
+ var target=e.target.closest('.maze .tile');
+ if(!target||target.dataset.hold||!['reveal','pickup','move-hero'].includes(target.dataset.action))return;
+ cancelQuickSweep();
+ var entry={pointerId:e.pointerId,x:e.clientX||0,y:e.clientY||0,startId:target.dataset.id,started:false,last:null};
+ quickSweep=entry;
+ quickSweepTimer=setTimeout(function(){
+  if(quickSweep!==entry||!r)return;
+  entry.started=true;entry.last=entry.startId;
+  quickSweepSuppressUntil=Date.now()+550;
+  quickSweepTile(entry.startId);
+ },280);
+});
+document.addEventListener('pointermove',function(e){
+ var entry=quickSweep;if(!entry||entry.pointerId!==e.pointerId)return;
+ if(!entry.started){
+  var dx=(e.clientX||0)-entry.x,dy=(e.clientY||0)-entry.y;
+  if(dx*dx+dy*dy>144)cancelQuickSweep();
+  return;
+ }
+ if(e.cancelable)e.preventDefault();
+ if(!r||r.trappedTile!=null||$('overlay').innerHTML){cancelQuickSweep();return;}
+ var under=document.elementFromPoint&&document.elementFromPoint(e.clientX,e.clientY);
+ var cell=under&&under.closest&&under.closest('.maze .tile');
+ if(!cell||cell.dataset.id==null||cell.dataset.id===entry.last)return;
+ entry.last=cell.dataset.id;
+ quickSweepTile(entry.last);
+ quickSweepSuppressUntil=Date.now()+550;
+});
+['pointerup','pointercancel'].forEach(function(type){
+ document.addEventListener(type,function(e){
+  if(quickSweep&&quickSweep.pointerId===e.pointerId)cancelQuickSweep();
+ });
+});
 document.addEventListener('change',function(e){
  var selector=e.target.closest('[data-alchemy-slot]');
  if(selector)choosePreparedPotion(selector.dataset.alchemySlot,selector.value);
 });
 document.addEventListener('click',function(e){
- if(Date.now()<suppressClickUntil && e.target.closest('[data-hold]')){e.preventDefault();return;}
+ if((Date.now()<suppressClickUntil&&e.target.closest('[data-hold]'))||
+   (Date.now()<quickSweepSuppressUntil&&e.target.closest('.maze .tile'))){e.preventDefault();return;}
  var b=e.target.closest('[data-action],[data-tab]');if(!b)return;e.preventDefault();
  if(b.dataset.tab){if(r)panelDialog(b.dataset.tab);return;}
  action(b.dataset.action,b.dataset.id);
@@ -3345,7 +3406,7 @@ window.Crypt={save:save,back:function(){
  if(activeRoom()){r.chamberActive=null;draw();save();return;}
  if(r&&r.tab!=='maze'){r.tab='maze';draw();return;}
  toast('Лабиринт хранит ваши следы.');
- },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction}};
+ },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction,quickSweep:quickSweepTile}};
 s=load();
 if(!s)fresh();r=s.run;
 if(r){if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());}
