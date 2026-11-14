@@ -376,32 +376,42 @@ test('Ten acts can each generate their correct regional boss',()=>{
 });
 
 
-test('Elite spawns exactly on floors 10, 20, 30, 40; boss remains on floor 30',()=>{
+test('One optional scheduled elite in each 5–9 window, none on boss floors',()=>{
  A('begin','necromancer');let run=state.run;run.hp=50000;
  const locations=[];
  for(let depth=2;depth<=41;depth++){
-  const stair=run.tiles.find(t=>t.kind==='exit');assert.ok(stair);stair.revealed=true;
-  run.key=true;
-  const livingElite=run.tiles.find(t=>t.foe&&t.foe.elite&&t.foe.hp>0);
-  if(livingElite){
-   const floorBefore=run.floor;A('descend');
-   assert.equal(run.floor,floorBefore,'Living elite must prevent skipping the encounter');
-   livingElite.foe.hp=0;
-  }
-  A('descend');assert.equal(run.floor,depth);
+  const stair=run.tiles.find(t=>t.kind==='exit');assert.ok(stair);
+  stair.revealed=true;run.key=true;
+  A('descend');assert.equal(run.floor,depth,'Elite must never block an exit');
   const elites=run.tiles.filter(t=>t.foe&&t.foe.elite&&t.foe.hp>0);
-  assert.equal(elites.length,depth%10===0?1:0,'Elite count at floor '+depth);
+  assert.ok(elites.length<=1,'At most one elite on floor '+depth);
+  assert.equal(elites.length,depth%10>=5&&depth%10<=9&&run.eliteSchedule[Math.floor((depth-5)/10)]===depth?1:0,
+   'Elite must appear only on its scheduled floor '+depth);
   if(elites.length){
    locations.push(depth);
    assert.equal(elites[0].kind,'elite');
+   assert.equal(elites[0].hasKey,false,'Elite must not be a mandatory stair keyholder');
+   assert.ok(run.tiles.some(t=>t.hasKey&&t.foe&&!t.foe.elite),'Normal monster retains stair key');
    elites[0].revealed=true;win.Crypt.debug.draw();
-   assert.match(el('content').innerHTML,/class="elite-tag"/,'Elite must have an unmistakable label');
-   assert.match(el('content').innerHTML,/elite-floor-warning/,'Elite floor warning must remain visible');
+   assert.match(el('content').innerHTML,/class="elite-tag"/,'Elite must carry a visible label');
+   assert.match(el('content').innerHTML,/elite-floor-warning/,'Discovered elite must have a warning');
   }
-  if(depth===30||depth===40)assert.equal(run.tiles.filter(t=>t.foe&&t.foe.boss).length,1,
-   'The normal boss remains present alongside the elite on floor '+depth);
+  if(depth===30||depth===40){
+   assert.equal(elites.length,0,'Boss floor must not contain an elite');
+   assert.equal(run.tiles.filter(t=>t.foe&&t.foe.boss).length,1,'Scheduled boss still spawns');
+  }
  }
- assert.deepEqual(locations,[10,20,30,40]);
+ for(let n=0;n<4;n++){
+  const hits=locations.filter(depth=>Math.floor((depth-5)/10)===n);
+  assert.equal(hits.length,1,'Exactly one elite per block '+n);
+  assert.ok(hits[0]>=5+n*10&&hits[0]<=9+n*10);
+ }
+ const guaranteed=DN.acts.flatMap(act=>act.locations.flatMap(loc=>loc.elites));
+ assert.equal(guaranteed.length,150);
+ for(const elite of guaranteed){
+  assert.ok(elite.loot.some(item=>item.chance===100&&item.min>=1),
+   elite.name+' must have a guaranteed material reward');
+ }
 });
 test('Walking takes no turn and cannot cross hidden or occupied cells',()=>{
  A('begin','necromancer');let run=state.run;
