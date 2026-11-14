@@ -118,7 +118,11 @@ function stats(){
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
  }
- function incomingDamage(rawAttack,enemy){var val=TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)));}
+ function incomingDamage(rawAttack,enemy){var val=TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));
+  if(enemy&&enemy.hp>0&&!enemy.ridgeCloakBlocked&&RG.gearBonus(r,'firstHit')){
+   enemy.ridgeCloakBlocked=true;val=Math.ceil(val*(1-RG.gearBonus(r,'firstHit')*.01));
+  }
+  return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)));}
  function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
  function enemyDebuffs(enemy){
   var effects=[['poison','☠','Яд'],['bleed','✣','Кровотечение'],['burn','♨','Горение'],['stun','✸','Оглушение']];
@@ -407,6 +411,7 @@ function startFloor(){
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
  var st=stats();
+ if(RG.gearBonus(r,'cursed')>0){r.hp=Math.max(1,r.hp-RG.gearBonus(r,'cursed'));log('Проклятый шлем отнимает 5 HP.');}
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
  CM.revealHints(r);
