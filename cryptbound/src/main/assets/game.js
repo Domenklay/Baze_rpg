@@ -327,7 +327,7 @@ function distributeTiles(){
   var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite'||kind==='ridge-ether';
   return {id:id,forestId:forestId,t1Id:t1Id,mine:kind==='ore-vein'?CM.newVein(r.floor):kind==='mine-wall'?{type:0,hp:3+Math.floor(r.floor/10)}:null,kind:kind==='ranged'||kind==='ridge-ether'?'enemy':kind,
    spawnIntro:kind==='ranged'?types.slice(0,id+1).filter(function(v){return v==='ranged';}).length:0,
-   revealed:kind==='start'||kind==='ranged',cleared:kind==='start',
+   revealed:kind==='start'||kind==='ranged'||kind==='ridge-ether',cleared:kind==='start',
    foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'||kind==='ridge-ether'):null,
    drops:null,hasKey:false,corpseId:kind==='corpse'?pick(CORPSE_STORIES).id:null,room:null};
  });
@@ -337,7 +337,7 @@ function distributeTiles(){
   if(flags.troll_hunters&&!flags.troll_hunters_used){t.foe.hp=Math.max(1,t.foe.hp-Math.round(t.foe.maxHp*.06));flags.troll_hunters_used=true;}
  }
  if(t.foe&&types[t.id]==='ridge-ether'){
-  t.foe.ethereal=true;t.foe.name='Эфирный '+t.foe.name;t.foe.gold=0;t.foe.ep=0;t.foe.loot=[];
+  t.foe.ethereal=true;t.foe.spawnedByEvent=true;t.foe.name='Эфирный '+t.foe.name;t.foe.gold=0;t.foe.ep=0;t.foe.loot=[];
   var b=RG.ensure(r).bur,mult=1+Math.min(.8,(b.completed||0)*.06);
   if(b.coolant>0){mult=Math.max(1,mult-.15);b.coolant--;}
   t.foe.hp=t.foe.maxHp=Math.ceil(t.foe.maxHp*mult);t.foe.atk=t.foe.baseAtk=Math.ceil(t.foe.atk*mult);
