@@ -118,9 +118,10 @@ function stats(){
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
  }
- function incomingDamage(rawAttack,enemy){var val=TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));
+ function incomingDamage(rawAttack,enemy,apply){var val=TR.incoming(r,enemy,Math.max(1,Math.ceil(rawAttack)-flatDefense()));
   if(enemy&&enemy.hp>0&&!enemy.ridgeCloakBlocked&&RG.gearBonus(r,'firstHit')){
-   enemy.ridgeCloakBlocked=true;val=Math.ceil(val*(1-RG.gearBonus(r,'firstHit')*.01));
+   if(apply)enemy.ridgeCloakBlocked=true;
+   val=Math.ceil(val*(1-RG.gearBonus(r,'firstHit')*.01));
   }
   return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)));}
  function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
@@ -1651,7 +1652,7 @@ function consumeTurn(){
     }
     return;
    }
-   amount=incomingDamage(amount,e); // Player defense only applies to attacks targeting the hero.
+   amount=incomingDamage(amount,e,true); // Player defense only applies to attacks targeting the hero.
    if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
   if(Math.random()*100<stats().dodge){log('Уклонение от '+e.name+'.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -1778,7 +1779,7 @@ function counterBeforeHero(enemy,mainTile,room){
  if(ready)enemy.cooldown=interval+1;
  if(enemy.boss&&mainTile){raw=bossAttack(mainTile,enemy,raw,ready);if(raw==null)return true;}
  else if(ready)raw=monsterSpecial(enemy,raw,room||false);
- var damage=incomingDamage(raw,enemy);
+ var damage=incomingDamage(raw,enemy,true);
  if(FD)FD.actor(enemy,ready?'skill':'attack',ready?(enemy.abilityName||'Особый приём'):'Ответный удар');
  if(Math.random()*100<stats().dodge){log('Уклонение от '+enemy.name+'.');return true;}
  if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
@@ -2715,7 +2716,7 @@ function chamberEnemyPhase(frozen){
     }
     return;
    }
-   damage=incomingDamage(damage,g);
+   damage=incomingDamage(damage,g,true);
   if(Math.random()*100<stats().dodge){log('Вы уклонились от '+g.name+'.');return;}
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит блокирует атаку стража.');return;}
   if(r.ghost&&r.ghost.hp>0&&Math.random()<.35){
