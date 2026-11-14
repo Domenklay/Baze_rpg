@@ -943,7 +943,7 @@ test('Numeric ability costs and generated loot sprites are wired to HUD',()=>{
  t.kind='coin-small';live.debug.draw();
  assert.match(el('content').innerHTML,/ui\/coin-pouch\.png/,'Small coin find uses purse sprite');
  const css=fs.readFileSync(path.join(root,'hud_titles_v082.css'),'utf8');
- assert.match(css,/tile-item-sprite\{[^}]*width:100%/,'Loot art fills its dungeon tile');
+ assert.match(css,/tile-item-sprite\{[^}]*width:70%/,'Loot art is 30% smaller on dungeon tiles');
 });
 
 test('Small floor vials are consumed instantly with HP 5–20 and MP 3–10',()=>{
