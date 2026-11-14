@@ -624,9 +624,13 @@ function activeTileView(t){
   return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
   var access=CR.exploreStatus(t,r.tiles,r.heroTile);
+  var hint=(t.hintKey?'<span class="slab-hint slab-hint-key" title="Разведан ключ">⚿</span>':'')+
+   (t.hintEnemy?'<span class="slab-hint slab-hint-enemy" title="Разведан враг">⚔</span>':'')+
+   (t.hintSpecial?'<span class="slab-hint slab-hint-secret" title="Тайник">✦</span>':'');
+  var description=(t.hintKey?' · ключ':t.hintEnemy?' · враг':t.hintSpecial?' · секрет':'');
   return access.ok?
-   '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">'+(t.hinted?'✦':'✥')+'</span></button>':
-   '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
+   '<button class="tile hidden tile-frontier'+(hint?' tile-scouted':'')+'" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход'+description+'" aria-label="Доступная каменная плита'+description+'"><span class="slab-face">'+(t.hinted&&!hint?'✦':'✥')+'</span>'+hint+'</button>':
+   '<div class="tile hidden tile-locked'+(hint?' tile-scouted':'')+'" title="'+esc(access.reason)+description+'" aria-label="Путь заблокирован'+description+'"><span class="slab-face">◆</span>'+hint+'</div>';
  }
  var marker=alive?'enemy':remains?'remains':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
  var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
@@ -638,7 +642,7 @@ function activeTileView(t){
   damageBadge(t.foe)+enemyDebuffs(t.foe):'';
  return '<button class="tile tile-discovered tile-'+marker+(alive?' tile-danger':'')+(t.forestAlpha?' tile-forest-alpha':'')+(alive&&(r.pendingSpell||r.pendingSkill||r.pendingForestUse)?' spell-target-valid':'')+(alive&&t.foe.ranged?' tile-ranged':'')+(alive&&t.foe.elite?' tile-elite':'')+(alive&&t.foe.boss?' tile-boss':'')+(alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' tile-ranged-emerge':'')+(opening?' tile-auto-open':'')+
   '"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':alive&&t.foe.ranged&&t.spawnIntro&&r.turn===r.floorStartTurn?' style="animation-delay:'+t.spawnIntro*220+'ms"':'')+' data-action="'+action+'" data-id="'+t.id+'"'+(alive?' data-unit="enemy:'+t.id+'"':'')+(alive?' data-hold="enemy"':'')+
-  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+(!alive&&drop&&t.drops.gold?'<span class="loot-coin-badge">'+goldArt('gold-coin-tile')+'<small>'+t.drops.gold+'</small></span>':'')+(alive&&t.foe.elite?'<span class="elite-tag" aria-hidden="true">ЭЛИТА</span>':'')+unit+(t.kind==='trap'?hero:'')+
+  ' aria-label="'+esc(name)+'" title="'+esc(name)+'">'+graphic+(alive&&t.hasKey?'<span class="key-carrier-hint" title="Носит ключ от лестницы">⚿</span>':'')+(!alive&&drop&&t.drops.gold?'<span class="loot-coin-badge">'+goldArt('gold-coin-tile')+'<small>'+t.drops.gold+'</small></span>':'')+(alive&&t.foe.elite?'<span class="elite-tag" aria-hidden="true">ЭЛИТА</span>':'')+unit+(t.kind==='trap'?hero:'')+
   (drop&&t.drops.key?'<span class="tile-number">⚿</span>':'')+(t.kind==='exit'&&!r.key?'<span class="stairs-locked" title="Нужен ключ">'+uiIcon('key')+' ✕</span>':'')+'</button>';
 }
 function inspectUnit(kind,id){
@@ -2345,9 +2349,32 @@ function claimTile(t){
  if(kind==='puzzle'){t.cleared=true;showPuzzle();finishAction();return;}
  if(kind==='event'){t.cleared=true;eventRandom();finishAction();return;}
 }
+/* Trap ambushes add two independent real ranged enemies with their own timers.
+   Never replace a keyholder, story event, loot or the player's trapped tile. */
+function trapArchers(trap){
+ var free=r.tiles.filter(function(t){
+  return t.kind==='empty'&&!t.foe&&!t.drops&&!t.summon&&t.id!==r.heroTile&&t.id!==trap.id;
+ });
+ // Prioritize covered empty cells: the sudden ambush reveals both shooters.
+ free.sort(function(a,b){return Number(a.revealed)-Number(b.revealed)||a.id-b.id;});
+ var spawned=0;
+ for(var i=0;i<2&&i<free.length;i++){
+  var cell=free[i],foe=mkEnemy(false,true,false);
+  foe.summoned=true;foe.trapAmbush=true;
+  foe.attackCooldown=2;foe.attackInterval=2;
+  cell.kind='enemy';cell.revealed=true;cell.cleared=false;
+  cell.foe=foe;cell.spawnIntro=i+1;cell.drops=null;spawned++;
+ }
+ if(spawned){
+  r.floorCleared=false;
+  log('Из засады выходят '+spawned+' дальних противника. Они будут атаковать каждые 2 хода.');
+ }
+ return spawned;
+}
 function triggerTrap(t){
  if(!t||t.kind!=='trap'||t.trapSpent||t.trapActive)return;
  t.trapActive=true;r.trappedTile=t.id;r.heroTile=t.id;
+ trapArchers(t);
  var reduction=clamp(1-(bonus('trapReduce')+hunterStat('trapReduce'))*.01,0,.95);
  var dmg=Math.max(1,Math.floor((6+r.floor*.65+(r.actIndex||0)*5)*reduction*(r.class==='scout'?.55:1)));
  r.hp=Math.max(0,r.hp-dmg);
@@ -2795,6 +2822,7 @@ function gainTalent(id){
  var price=levelCost(t);
  if(lvl(id)>=t.max_level||r.ep<price||!talentUnlocked(t))return;
  r.ep-=price;var n=TR.upgraded(r,t,titleHelpers());
+ TR.refreshHints(r,titleHelpers());
  log('Принято звание «'+t.name+'»: '+n+'/'+t.max_level+'.');
  toast('Развитие: '+t.name);draw();save();
 }
@@ -2829,6 +2857,12 @@ function titleToolDialog(){
   controls='<div class="title-rune-list"><strong>Выберите предмет для улучшения</strong>'+
    (equipped.length?equipped.map(function(it){return '<button data-action="title-tool-use" data-id="'+it.id+'">'+gearArt(it)+'<span>'+esc(it.name)+'</span><small>+'+(it.plus||0)+'</small></button>';}).join(''):'<p class="fine">Нет подходящего надетого предмета.</p>')+'</div>';
  }else if(t)controls='<button class="btn wide" data-action="title-tool-use">Применить · 1 ход</button>';
+ if(t&&t.kind==='lantern'&&(TR.has(r,'adv_explorer')||TR.has(r,'adv_explorationist'))){
+  var stock=TR.curSup(r,'compass');
+  controls+='<div class="nested-compass"><small>Внутри фонаря хранится старый компас исследователя.</small>'+
+   '<button class="btn alt wide" data-action="title-tool-use" data-id="compass"'+(stock>0?'':' disabled')+
+   '>⚙ Компас в фонаре · '+stock+' применений</button></div>';
+ }
  dialog('<h2>'+esc(title)+'</h2><p>'+esc(description)+'</p><p>'+esc(counts)+'</p>'+controls+
  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
@@ -2840,7 +2874,7 @@ function titleToolUse(selected){
 
 function equip(id){
  var i=item(id);if(!i)return;
- r.equip[i.slot]=i.id;r.hp=Math.min(stats().hp,r.hp);r.mp=Math.min(stats().mp,r.mp);
+ r.equip[i.slot]=i.id;TR.refreshHints(r,titleHelpers());r.hp=Math.min(stats().hp,r.hp);r.mp=Math.min(stats().mp,r.mp);
  r.bagSelected=i.id;log('Надето: '+i.name+'.');toast('Снаряжение обновлено.');draw();save();
 }
 function upgrade(id){
@@ -3314,7 +3348,7 @@ window.Crypt={save:save,back:function(){
  },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction}};
 s=load();
 if(!s)fresh();r=s.run;
-if(r&&repairCurrentFloorElite())save();
+if(r){if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());}
 if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();
 // The village is the entry screen. Hero selection opens from «В поход».
