@@ -1022,8 +1022,8 @@ function gearComparison(slot,selectedId){
  '<small class="comparison-caption">Выбрано</small><b>'+esc(candidate?candidate.name:'Нет предмета')+'</b></div></div>'+
  '<div class="gear-compact-stats">'+rows+'</div>'+setInfo+
  '<div class="gear-dialog-actions"><button class="btn small" data-action="modal-equip" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Надеть</button>'+
- '<button class="btn alt small" data-action="modal-upgrade" '+(candidate&&r.gold>=cost&&candidate.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
- '<button class="btn dark small" data-action="modal-scrap" '+(candidate&&!equipped(candidate.id)?'':'disabled')+'>Разобрать</button></div>'+
+ '<button class="btn alt small" data-action="modal-upgrade" '+(candidate&&!candidate.miningPick&&r.gold>=cost&&candidate.plus<9?'':'disabled')+'>Заточить '+cost+' ◈</button>'+
+ '<button class="btn dark small" data-action="modal-scrap" '+(candidate&&!candidate.miningPick&&!equipped(candidate.id)?'':'disabled')+'>Разобрать</button></div>'+
  '<div class="frame-title">Подходящие предметы · '+available.length+'</div><div class="gear-picker">'+(list||'<p>В этом слоте пусто.</p>')+'</div>'+
  '</div><button class="btn alt wide space-top" data-action="ui-panel" data-id="bag">В рюкзак</button>');
 }
@@ -1211,7 +1211,7 @@ function resumeExpedition(){
 function scrapStoredItem(id){
  var exp=s.meta.activeExpedition;if(!exp)return;
  var it=exp.items.find(function(x){return x.id===Number(id);});
- if(!it||Object.values(exp.equip).includes(it.id)){toast('Сначала снимите надетую вещь в экспедиции.');return;}
+ if(!it||it.miningPick||Object.values(exp.equip).includes(it.id)){toast('Кирку рудокопа нельзя разбирать до завершения экспедиции.');return;}
  var n=1+(it.rarity||0)+(it.plus||0);
  s.meta.materials['Металлолом']=(s.meta.materials['Металлолом']||0)+n;
  exp.items=exp.items.filter(function(x){return x.id!==it.id;});
@@ -1666,7 +1666,7 @@ function kill(t){
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
  s.meta.bestiary[e.id]=(s.meta.bestiary[e.id]||0)+1;
  var hunterNotice=HB.gain(s.meta,r,e,t.id);if(hunterNotice)log('КНИГА: '+hunterNotice);
- r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal'));
+ r.hp=Math.min(stats().hp,r.hp+bonus('killHeal')+setBonus('killHeal')+miningBonus('healOnKill'));
  var drop={key:!!t.hasKey,gold:e.gold,gear:null,scroll:null,potion:0,materials:[],soul:null};
  if((e.boss||e.id&&e.elite)&&lvl('magnate')>0)drop.soul={kind:'elite',name:'Душа '+e.name};
  else if(!e.boss&&lvl('merchant')>0&&Math.random()<Math.min(.72,.12*lvl('merchant')))drop.soul={kind:'common',name:'Душа '+e.name};
@@ -1765,20 +1765,21 @@ function counterBeforeHero(enemy,mainTile,room){
 }
 /* Echo is a second physical strike against the same living enemy. The normal
    enemy counterattack and hero's turn are processed only once by the caller. */
-function echoFollowUp(enemy,st){
+function echoFollowUp(enemy,st,fromPick){
  if(!r||!enemy||enemy.hp<=0)return 0;
  if(enemy.evadeCharges>0){
   enemy.evadeCharges--;
-  if(Math.random()<.45){log('Эхо: '+enemy.name+' уклоняется от второго удара.');return 0;}
+  if(Math.random()<Math.max(0,.45-miningBonus('accuracy')*.01)){log('Эхо: '+enemy.name+' уклоняется от второго удара.');return 0;}
  }
  var critical=Math.random()*100<st.crit;
- var damage=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-(enemy.def||0)-(enemy.guard||0));
+ var damage=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,(enemy.def||0)-miningBonus('armorPen'))-(enemy.guard||0));
  enemy.guard=0;
  if(enemy.boss)damage=Math.floor(damage*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
+ if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage'))*.01));
+ damage=Math.max(1,Math.floor(damage*(1+miningBonus('secondDamage')*.01)));
  damage=TR.attack(r,enemy,damage,titleHelpers());
  if(enemy.hp>0)enemy.hp=Math.max(0,enemy.hp-damage);
- log('Эхо — второй удар по '+enemy.name+': '+damage+(critical?' КРИТ!':'')+'. Без контратаки.');
+ log((fromPick?'Кирка — двойной удар по ':'Эхо — второй удар по ')+enemy.name+': '+damage+(critical?' КРИТ!':'')+'. Без контратаки.');
  return damage;
 }
 function strike(tid){
@@ -1789,18 +1790,19 @@ function strike(tid){
  if(t.foe.hp<=0){finishAction();return;}
   provoke(t.foe);
   if(t.foe.evadeCharges>0){
-  t.foe.evadeCharges--;if(Math.random()<.45){
+  t.foe.evadeCharges--;if(Math.random()<Math.max(0,.45-miningBonus('accuracy')*.01)){
    log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
   }
  }
  var echo=TR.consumeEcho(r);
  var critical=Math.random()*100<st.crit;
- var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-t.foe.def-(t.foe.guard||0));
+ var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,t.foe.def-miningBonus('armorPen'))-(t.foe.guard||0));
  t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage'))*.01));
+ if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage'))*.01));
  amount=TR.attack(r,t.foe,amount,titleHelpers());
  t.foe.hp-=amount;
+ if(t.foe.hp>0&&Math.random()*100<miningBonus('stunChance')){t.foe.stun=Math.max(t.foe.stun||0,1);log('Кирка оглушает '+t.foe.name+'.');}
  if(t.foe.hp>0&&Math.random()*100<hunterStat('poisonChance')){t.foe.poison=Math.max(t.foe.poison||0,2);log('Книга: отравление цели.');}
  var glove=equippedItem('gloves');
  if(((glove&&glove.stormCharge)||hasUniqueGear('storm'))&&t.foe.hp>0&&Math.random()<.25){
@@ -1810,8 +1812,40 @@ function strike(tid){
  if(setBonus('burnChance')>0&&Math.random()*100<setBonus('burnChance'))t.foe.burn=Math.max(t.foe.burn||0,2);
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
- else if(echo){echoFollowUp(t.foe,st);if(t.foe.hp<=0)kill(t);}
+ else {var pickDouble=!echo&&Math.random()*100<miningBonus('doubleHit');if(echo||pickDouble){echoFollowUp(t.foe,st,pickDouble);if(t.foe.hp<=0)kill(t);}}
  finishAction();
+}
+function mineReachable(t){
+ var cells=[t.id-5,t.id+5];
+ if(t.id%5!==0)cells.push(t.id-1);
+ if(t.id%5!==4)cells.push(t.id+1);
+ return cells.some(function(n){var neighbor=r.tiles[n];return !!neighbor&&neighbor.revealed&&neighbor.cleared&&!!CR.walkPath(r.tiles,r.heroTile,n);});
+}
+function mineHit(id){
+ if(r.trappedTile!=null){toast('Сперва обезвредьте капкан.');return;}
+ var t=tile(id);
+ if(!t||!t.revealed||t.kind!=='ore-vein'||t.cleared)return;
+ if(!mineReachable(t)){toast('Сначала откройте проход к жиле.');return;}
+ var result=CM.harvest(r,t,Math.random,(s.meta.city||{}).mine||0);
+ if(!result.ok){toast(result.message);return;}
+ log(result.message);finishAction();
+ if(r&&result.finished)floatLoot(t.id,[result.ore+' ×'+result.qty,'Опыт кирки +'+result.xp]);
+}
+function mineDialog(){
+ if(!r||!CM.active(r))return;
+ dialog('<div class="panel-heading"><h2>Кирка рудокопа</h2><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div><div class="mine-dialog">'+CM.render(r,r.mineTab||'level',r.mineSelected||'accuracy')+'</div>');
+}
+function mineUpgrade(id){
+ var result=CM.upgradeNode(r,id);
+ if(!result.ok){toast(result.message);return;}
+ if(id==='maxHp')r.hp=Math.min(stats().hp,r.hp+6);
+ log('Паутинка кирки: '+result.message);
+ save();draw();mineDialog();
+}
+function mineLevelUp(){
+ var result=CM.upgradeTenth(r);
+ if(!result.ok){toast(result.message);return;}
+ log(result.message);save();draw();mineDialog();
 }
 function finishAction(){if(!r)return;if(FD)FD.commit();consumeTurn();if(FD)FD.capture();if(r){draw();save();}}
 function setHeroPose(pose){if(!r)return;r.fx=pose;r.fxUntil=Date.now()+1000;r.poseToken=(r.poseToken||0)+1;}
@@ -2899,7 +2933,7 @@ function equip(id){
  r.bagSelected=i.id;log('Надето: '+i.name+'.');toast('Снаряжение обновлено.');draw();save();
 }
 function upgrade(id){
- var i=item(id);if(!i||i.plus>=9)return;
+ var i=item(id);if(!i||i.miningPick||i.plus>=9)return;
  var cost=upgradeCost(i);if(r.gold<cost){toast('Недостаточно монет.');return;}
  r.gold-=cost;i.plus++;
  // Item improvement should be tied to its actual stats.
@@ -2908,7 +2942,7 @@ function upgrade(id){
  log('Улучшение '+i.name+' до +'+i.plus+' завершено.');draw();save();
 }
 function scrap(id){
- var i=item(id);if(!i||equipped(id))return;
+ var i=item(id);if(!i||i.miningPick||equipped(id))return;
  TR.onScrap(r,i,titleHelpers());
  var coins=8+3*i.rarity+2*i.plus;r.gold+=coins;r.items=r.items.filter(function(x){return x.id!==i.id;});
  r.bagSelected=r.items.length?r.items[0].id:null;
@@ -3247,6 +3281,12 @@ function action(name,id){
  if(r.pendingForestUse&&name!=='battle-log'){toast('Выберите подсвеченного врага либо отмените ловушку.');return;}
  if(name==='cast-target'){if(r.pendingSpell)cast(r.pendingSpell,id);return;}
  if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
+ if(name==='mine-menu'){mineDialog();return;}
+ if(name==='mine-tab'){r.mineTab=id==='web'?'web':'level';mineDialog();return;}
+ if(name==='mine-node'){r.mineSelected=id;mineDialog();return;}
+ if(name==='mine-upgrade'){if(CM.active(r))mineUpgrade(id);return;}
+ if(name==='mine-level-up'){if(CM.active(r))mineLevelUp();return;}
+ if(name==='mine-hit'){mineHit(id);return;}
  if(name==='ui-panel'){panelDialog(['bag','hero','spells','talents'].includes(id)?id:'bag');return;}
  if(name==='gear-sets'){dialog('<div class="panel-heading"><h2>Комплекты и развитие</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="В рюкзак">←</button></div>'+renderHero());return;}
  if(name==='bag-details'){dialog('<div class="panel-heading"><h2>Материалы</h2><button class="panel-close" data-action="ui-panel" data-id="bag" aria-label="Назад в рюкзак">←</button></div>'+renderBag());return;}
