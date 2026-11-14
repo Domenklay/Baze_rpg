@@ -28,7 +28,7 @@ for(const scene of FE.scenes){
   const parts=option.split('|');
   assert.ok(parts[0]&&parts[1], 'Empty forest option '+scene.id);
   for(const effect of parts[1].split(';'))
-   assert.ok(/^(leave|gold:|ep:|heal:|hp:|mana:|shield:|potion:|scroll:|earthgate|item:|take:|flag:|material:|gear:|reveal:|stat:|status:|trophy:|fight:|hunt:)/.test(effect),'Unknown effect '+effect);
+   assert.ok(/^(leave|gold:|ep:|heal:|hp:|mana:|shield:|potion:|scroll:|earthgate|item:|take:|flag:|material:|gear:|reveal:|stat:|status:|trophy:|fight:|hunt:|unique:|home:|buff:)/.test(effect),'Unknown effect '+effect);
  }
 }
 for(const entry of manifest){
