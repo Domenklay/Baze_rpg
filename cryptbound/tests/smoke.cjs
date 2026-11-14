@@ -891,7 +891,7 @@ test('Unlimited backpack displays found items in slots but not equipped gear or 
  assert.match(html,/data-action="active-item-info" data-id="forest:honey"/);
  assert.match(html,/data-action="active-item-info" data-id="soul:99001"/);
  assert.match(html,/data-action="quest-item-info"/);
- assert.match(html,/data-action="note-info"/);
+ assert.doesNotMatch(html,/data-action="note-info"/,'Traveler letters stay in the journal');
  assert.doesNotMatch(html,/data-action="spell-detail"/,'Scrolls belong exclusively in the spellbook');
  assert.match(html,/без ограничения/);
  const free=run.tiles.find(t=>t.kind==='empty'&&!t.foe);assert.ok(free);
