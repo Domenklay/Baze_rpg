@@ -326,7 +326,12 @@ function distributeTiles(){
    foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'||kind==='ridge-ether'):null,
    drops:null,hasKey:false,corpseId:kind==='corpse'?pick(CORPSE_STORIES).id:null,room:null};
  });
- tiles.forEach(function(t){if(t.foe&&types[t.id]==='ridge-ether'){
+ tiles.forEach(function(t){if(t.foe&&t.foe.boss&&RG.active(r)){
+  var flags=RG.ensure(r).flags;
+  if(flags.troll_trap&&!flags.troll_trap_used){t.foe.hp=Math.max(1,Math.round(t.foe.hp*.90));t.foe.def=Math.max(0,t.foe.def-3);flags.troll_trap_used=true;}
+  if(flags.troll_hunters&&!flags.troll_hunters_used){t.foe.hp=Math.max(1,t.foe.hp-Math.round(t.foe.maxHp*.06));flags.troll_hunters_used=true;}
+ }
+ if(t.foe&&types[t.id]==='ridge-ether'){
   t.foe.ethereal=true;t.foe.name='Эфирный '+t.foe.name;t.foe.gold=0;t.foe.ep=0;t.foe.loot=[];
   var b=RG.ensure(r).bur,mult=1+Math.min(.8,(b.completed||0)*.06);
   if(b.coolant>0){mult=Math.max(1,mult-.15);b.coolant--;}
@@ -1827,13 +1832,15 @@ function strike(tid){
    log(t.foe.name+' уходит от удара ложным манёвром.');finishAction();return;
   }
  }
+ var ridgeStrike=RG.strikeBonuses(r,t.foe);
  var echo=TR.consumeEcho(r);
  var critical=Math.random()*100<st.crit;
- var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,t.foe.def-miningBonus('armorPen'))-(t.foe.guard||0));
+ var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,(ridgeStrike.ignoreArmor?0:t.foe.def)-miningBonus('armorPen'))-(t.foe.guard||0));
  t.foe.guard=0;
  if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
  if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  amount=TR.attack(r,t.foe,amount,titleHelpers());
+ if(ridgeStrike.extra)amount=Math.max(1,Math.floor(amount*(1+ridgeStrike.extra*.01)));
  t.foe.hp-=amount;
  if(t.foe.hp>0&&Math.random()*100<miningBonus('stunChance')){t.foe.stun=Math.max(t.foe.stun||0,1);log('Кирка оглушает '+t.foe.name+'.');}
  if(t.foe.hp>0&&Math.random()*100<hunterStat('poisonChance')){t.foe.poison=Math.max(t.foe.poison||0,2);log('Книга: отравление цели.');}
@@ -1845,7 +1852,7 @@ function strike(tid){
  if(setBonus('burnChance')>0&&Math.random()*100<setBonus('burnChance'))t.foe.burn=Math.max(t.foe.burn||0,2);
  log('Удар по '+t.foe.name+': '+amount+(critical?' КРИТ!':'')+'.');
  if(t.foe.hp<=0)kill(t);
- else {var pickDouble=!echo&&Math.random()*100<miningBonus('doubleHit');if(echo||pickDouble){echoFollowUp(t.foe,st,pickDouble);if(t.foe.hp<=0)kill(t);}}
+ else {var pickDouble=!echo&&Math.random()*100<miningBonus('doubleHit');if(echo||pickDouble||ridgeStrike.echo){echoFollowUp(t.foe,st,pickDouble||ridgeStrike.echo);if(t.foe.hp<=0)kill(t);}}
  finishAction();
 }
 function mineReachable(t){
