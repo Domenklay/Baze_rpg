@@ -211,7 +211,7 @@ function isEliteFloor(){
  r.eliteSchedule=r.eliteSchedule||{};r.eliteClears=r.eliteClears||{};
  if(r.eliteSchedule[window]==null)
   r.eliteSchedule[window]=rand(Math.max(start,r.floor),end);
- return r.eliteSchedule[window]===r.floor&&!r.eliteClears[r.floor];
+ return r.eliteSchedule[window]===r.floor;
 }
 function eliteStillAlive(){
  return !!r&&r.tiles&&r.tiles.some(function(t){return t.foe&&t.foe.elite&&t.foe.hp>0;});
@@ -248,6 +248,12 @@ function repairCurrentFloorElite(){
 }
 function distributeTiles(){
  r.floorMonsterTypes=[];
+ if(isBossFloor()&&r.bossClears[r.floor]){
+  var room=Array.from({length:25},function(_,id){return {id:id,kind:'empty',revealed:true,cleared:true,foe:null,drops:null,hasKey:false,mine:null,room:null};});
+  room[12].kind='start';room[11].kind='boss-base-door';room[11].cleared=false;
+  room[13].kind='boss-next-door';room[13].cleared=false;r.heroTile=12;
+  return room;
+ }
  var types=Array.from({length:25},function(){return 'empty';});
  var startId=rand(0,24),indices=[];
  for(var i=0;i<25;i++)if(i!==startId)indices.push(i);
@@ -258,11 +264,14 @@ function distributeTiles(){
  var boss=isBossFloor()&&!r.bossClears[r.floor],elite=isEliteFloor();
  var total=boss?6:Math.min(6,3+Math.floor(r.floor/6));
  insert('exit',1);
+ if(RG.active(r))RG.floorSpecials(r).forEach(function(id){insert('ridge-fixed-'+id,1);});
  if(r.actIndex===0&&r.locationIndex===0&&r.floor===1&&!HB.owned(s.meta))insert('hunter-corpse',1);
  if(r.actIndex===0&&r.locationIndex===0&&!boss&&Math.random()<.25)insert('forest-well',1);
  insert('enemy',boss?3:total-(elite?1:0));
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
+ var etherCount=RG.eliteCount(r);
+ if(etherCount){insert('ridge-ether',etherCount);RG.beginEliteFloor(r,etherCount);}
  if(r.actIndex===0&&r.locationIndex===0&&!boss){
   insert('chest',Math.random()<.14?1:0);
   if(Math.random()<.35)insert('trap',1);
@@ -308,14 +317,21 @@ function distributeTiles(){
  var tiles=types.map(function(kind,id){
   var forestId=null,t1Id=null;
   if(kind==='forest-event'){forestId=FE.pick(r,forestChosen);if(forestId)forestChosen.push(forestId);else kind='empty';}
-  if(kind==='t1-event'){t1Id=RE.pick(r,t1Chosen);if(t1Id)t1Chosen.push(t1Id);else kind='empty';}
-  var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite';
-  return {id:id,forestId:forestId,t1Id:t1Id,mine:kind==='ore-vein'?CM.newVein(r.floor):kind==='mine-wall'?{type:0,hp:3+Math.floor(r.floor/10)}:null,kind:kind==='ranged'?'enemy':kind,
+  if(kind==='t1-event'){t1Id=RG.active(r)?RG.pick(r,t1Chosen):RE.pick(r,t1Chosen);if(t1Id)t1Chosen.push(t1Id);else kind='empty';}
+  if(kind.startsWith('ridge-fixed-')){t1Id=Number(kind.slice(12));kind='t1-event';}
+  var enemy=kind==='enemy'||kind==='boss'||kind==='ranged'||kind==='elite'||kind==='ridge-ether';
+  return {id:id,forestId:forestId,t1Id:t1Id,mine:kind==='ore-vein'?CM.newVein(r.floor):kind==='mine-wall'?{type:0,hp:3+Math.floor(r.floor/10)}:null,kind:kind==='ranged'||kind==='ridge-ether'?'enemy':kind,
    spawnIntro:kind==='ranged'?types.slice(0,id+1).filter(function(v){return v==='ranged';}).length:0,
    revealed:kind==='start'||kind==='ranged',cleared:kind==='start',
-   foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'):null,
+   foe:enemy?mkEnemy(kind==='boss',kind==='ranged',kind==='elite'||kind==='ridge-ether'):null,
    drops:null,hasKey:false,corpseId:kind==='corpse'?pick(CORPSE_STORIES).id:null,room:null};
  });
+ tiles.forEach(function(t){if(t.foe&&types[t.id]==='ridge-ether'){
+  t.foe.ethereal=true;t.foe.name='Эфирный '+t.foe.name;t.foe.gold=0;t.foe.ep=0;t.foe.loot=[];
+  var b=RG.ensure(r).bur,mult=1+Math.min(.8,(b.completed||0)*.06);
+  if(b.coolant>0){mult=Math.max(1,mult-.15);b.coolant--;}
+  t.foe.hp=t.foe.maxHp=Math.ceil(t.foe.maxHp*mult);t.foe.atk=t.foe.baseAtk=Math.ceil(t.foe.atk*mult);
+ }});
  var carrier=tiles.find(function(t){return t.kind==='boss';})||pick(tiles.filter(function(t){return t.foe&&!t.foe.elite&&!t.foe.ranged;}))||tiles.find(function(t){return t.foe&&!t.foe.elite;});
  if(carrier)carrier.hasKey=true;
  r.heroTile=startId;
@@ -382,7 +398,7 @@ function startFloor(){
  r.trappedTile=null;
  r.chamberActive=null;
  r.portalReady=!!(isBossFloor()&&r.bossClears[r.floor]);
- r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=false;r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
+ r.tiles=distributeTiles();if(FD)FD.reset(true);r.floorStartTurn=r.turn;r.key=!!(isBossFloor()&&r.bossClears[r.floor]);r.floorCleared=false;r.shield=bonus('shieldFloor')+setBonus('shieldFloor')+hunterStat('shieldFloor');r.blessed=0;
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
  var st=stats();
