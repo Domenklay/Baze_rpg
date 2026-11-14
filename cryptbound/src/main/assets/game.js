@@ -3008,10 +3008,12 @@ function camp(){
 var BUILDINGS={
  forge:{title:'Кузница',desc:'+2 атаки за уровень для всех героев',icon:'⚒'},
  alchemist:{title:'Алхимическая лаборатория',desc:'Расширяет доступные рецепты зелий.',icon:'⚗'},
+ mine:{title:'Шахтный двор',desc:'За уровень +5% шанс получить дополнительную руду. Требует руду нагорья.',icon:'⚒'},
  barracks:{title:'Казармы',desc:'+12 максимального HP за уровень',icon:'♜'},
  library:{title:'Библиотека',desc:'+8 максимальной маны за уровень',icon:'✣'}
 };
 function materialCount(){return Object.values(s.meta.materials||{}).reduce(function(n,v){return n+Math.max(0,Number(v)||0);},0);}
+function townCommonMaterialCount(){return Object.entries(s.meta.materials||{}).reduce(function(n,p){return n+(CM.isOreName(p[0])?0:Math.max(0,Number(p[1])||0));},0);}
 
 /* Prepared potions live in exactly two slots; no dungeon replenishment. */
 function commonMaterialCount(){
@@ -3132,16 +3134,18 @@ function bestiary(){
    '<div class="crypt-bestiary-list">'+(rows||'<p class="fine muted">Пока не побеждено ни одного существа.</p>')+'</div><button class="btn wide space-top" data-action="close">Назад</button>');
 }
 function town(){
- var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=materialCount();
+ var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=townCommonMaterialCount();
  var builds=Object.keys(BUILDINGS).map(function(id){
-  var b=BUILDINGS[id],level=city[id]||0,cost=6+level*8;
+  var b=BUILDINGS[id],level=city[id]||0,cost=6+level*8,isMine=id==='mine';
+  var need=isMine?CM.houseCost(level):null,canPay=isMine?CM.canBuild(mat,level):available>=cost;
+  var price=isMine?(need?Object.keys(need).map(function(name){return name+' ×'+need[name];}).join(' · '):'МАКС'):cost+' мат.';
   return '<div class="meta-upgrade"><div><strong>'+b.icon+' '+b.title+' · '+level+'/5</strong><small>'+b.desc+'</small></div>'+
   '<button class="btn small" data-action="town-upgrade" data-id="'+id+'" '+
-   (level>=5||available<cost?'disabled':'')+'>'+cost+' мат.</button></div>';
+   (level>=5||!canPay?'disabled':'')+'>'+esc(price)+'</button></div>';
  }).join('');
  var resources=Object.entries(mat).filter(function(v){return v[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,32);
  dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
- '<p>Запас материалов: <b class="golden">'+available+'</b>. Они добываются у врагов шести регионов и остаются после смерти героя. В мастерской используем ресурсы вместо золота.</p>'+
+ '<p>Обычные материалы: <b class="golden">'+available+'</b>. Руда с нагорья учитывается отдельно и расходуется на Шахтный двор. Добычу сдаём на склад при безопасном возвращении.</p>'+
  '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
  '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
  '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
@@ -3153,9 +3157,14 @@ function town(){
 function townUpgrade(id){
  if(!Object.prototype.hasOwnProperty.call(BUILDINGS,id))return;
  var city=s.meta.city,level=city[id]||0,cost=6+level*8;
- if(level>=5||materialCount()<cost)return;
+ if(level>=5)return;
+ if(id==='mine'){
+  if(!CM.build(s.meta.materials,level))return;
+  city.mine=level+1;save();draw();town();return;
+ }
+ if(townCommonMaterialCount()<cost)return;
  var remaining=cost;
- var names=Object.keys(s.meta.materials).sort(function(a,b){return (s.meta.materials[b]||0)-(s.meta.materials[a]||0);});
+ var names=Object.keys(s.meta.materials).filter(function(name){return !CM.isOreName(name);}).sort(function(a,b){return (s.meta.materials[b]||0)-(s.meta.materials[a]||0);});
  for(var key of names){
   var used=Math.min(remaining,s.meta.materials[key]||0);
   s.meta.materials[key]-=used;remaining-=used;
