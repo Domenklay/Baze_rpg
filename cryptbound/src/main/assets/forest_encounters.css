@@ -41,3 +41,15 @@
  .forest-pocket-row b{font-size:11px}
  .forest-pocket-row .btn{font-size:10px;min-width:64px;padding:5px}
 }
+
+/* Forest v2: individually cropped 128px transparent quest portraits and item icons. */
+.forest-gear-art{image-rendering:pixelated;object-fit:contain}
+.forest-event-picture.forest-event-duo .forest-event-image{
+ width:72%;max-height:94%;object-fit:contain;transform:translateX(-18%);
+}
+.forest-event-picture.forest-event-duo .forest-event-character{
+ position:absolute;right:1.5%;bottom:0;z-index:1;display:block;
+ width:46%;height:96%;max-height:100%;transform:none;
+ object-fit:contain;image-rendering:pixelated;pointer-events:none;
+ filter:drop-shadow(0 3px 4px #000a);
+}
