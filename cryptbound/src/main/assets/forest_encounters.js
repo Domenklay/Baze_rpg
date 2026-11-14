@@ -93,7 +93,7 @@ function pickScene(run,exclude){
  var possible=scenes.filter(function(x){
   if(x.id===2||run.floor<x.min||(exclude||[]).indexOf(x.id)>=0)return false;
   if(!x.repeat&&f.seen[x.id]&&[25,29,37,39].indexOf(x.id)<0)return false;
-  if(x.id===1&&f.flags.squirrel_saved)return false;
+  if(x.id===1&&(f.flags.squirrel_saved||run.floor===1))return false;
   if(x.id===25&&f.hunts.wolf&&(f.hunts.wolf.attempts>=2||f.hunts.wolf.completed))return false;
   if(x.id===29&&f.hunts.boar&&(f.hunts.boar.attempts>=2||f.hunts.boar.completed))return false;
   if(x.id===37&&f.hunts.beetle&&(f.hunts.beetle.attempts>=2||f.hunts.beetle.completed))return false;
@@ -101,6 +101,9 @@ function pickScene(run,exclude){
   return !x.need||has(run,x.need);
  });
  if(!possible.length)return null;
+ var upgrade=window.CryptForestRework;
+ var story=upgrade&&upgrade.priority(run,possible);
+ if(story)return story;
  // Explore unfinished one-off discoveries before recurring harvests.
  var first=possible.filter(function(x){return !x.repeat;});
  var pool=first.length&&Math.random()<.87?first:possible;
@@ -127,9 +130,8 @@ function render(run,t){
   (def.id===1&&t.forestPhase==='reward'?'<p class="golden">Три волка побеждены. Рыжуха уже может спуститься с пня.</p>':'')+
   opts.map(function(opt,i){
    // Hidden choices preserve their original index for validation in choose().
-   if(opt[2]&&!has(run,opt[2]))return '';
-   if(opt[1]!=='leave'&&needsCheck(run,opt[1].split(';')))return '';
-   return '<button class="btn wide space-top'+(i?' alt':'')+'" data-action="forest-choice" data-id="'+t.id+':'+i+'">'+e(opt[0])+'</button>';
+   var missing=opt[2]&&!has(run,opt[2])?requirementText(opt[2]):opt[1]!=='leave'?needsCheck(run,opt[1].split(';')):'';
+   return '<button class="btn wide space-top'+(i?' alt':'')+'" data-action="forest-choice" data-id="'+t.id+':'+i+'"'+(missing?' disabled title="'+e(missing)+'"':'')+'>'+e(opt[0])+(missing?'<small> · '+e(missing)+'</small>':'')+'</button>';
   }).join('')+'<button class="btn dark wide space-top" data-action="close">Закрыть</button></div>';
 }
 function requirementText(s){
@@ -138,6 +140,7 @@ function requirementText(s){
  if(a[0]==='item')return itemDefs[a[1]]?itemDefs[a[1]][0]:'Нужен предмет';
  if(a[0]==='flag')return ({fox_freed:'сначала спасти лисицу',map_first:'нужна карта леса',wolf_tracks:'сначала изучить следы волков',boar_tracks:'сначала изучить следы секача',oak_voice:'сначала услышать старый дуб',grove_seal:'восстановить печать рощи',young_treant_healed:'сначала спасти молодого древа'})[a[1]]||'нужно связанное событие';
  if(a[0]==='gold')return a[1]+' золота';
+ if(a[0]==='item')return 'Нужно: '+((itemDefs[a[1]]||[a[1]])[0]);
  return 'сначала выполните условие';
 }
 function needsCheck(run,effects){
@@ -172,6 +175,10 @@ function apply(run,effects,api){
    else{var another=api.rollSpell(4);api.grantScroll(another.id,1,'forest-event');messages.push('Свиток «'+another.name+'»');}
   }else if(kind==='item'){
    f.items[key]=(f.items[key]||0)+num;messages.push((itemDefs[key]?itemDefs[key][0]:key)+' ×'+num);
+   if(window.CryptForestRework&&['mushroom','honey','nectar','forest_moss','herbal_extract','oak_resin','living_seed'].includes(key)){
+    var extra=window.CryptForestRework.forage(run,(itemDefs[key]||[key])[0]);
+    if(extra)messages.push('Сумка травницы: дополнительная добыча ×'+extra);
+   }
   }else if(kind==='take'){
    f.items[key]=Math.max(0,(f.items[key]||0)-num);messages.push('Использовано: '+(itemDefs[key]?itemDefs[key][0]:key));
   }else if(kind==='flag'){f.flags[key]=true;}
@@ -181,6 +188,9 @@ function apply(run,effects,api){
   }else if(kind==='gear'){
    var gear=api.addItem(key,Number(p[2])||2);
    if(gear)messages.push('Снаряжение: '+gear.name);
+  }else if(kind==='unique'||kind==='home'||kind==='buff'){
+   var message=window.CryptForestRework&&window.CryptForestRework.apply(run,op,api);
+   if(message)messages.push(message);
   }else if(kind==='reveal'){
    var count=Math.max(1,Math.min(4,Number(key)||1)),opened=api.revealSafe(count);
    messages.push('Открыто клеток: '+opened);
@@ -200,7 +210,9 @@ function apply(run,effects,api){
 }
 function choose(run,meta,t,index,api){
  var def=scene(t&&t.forestId);if(!def||!t.revealed||t.cleared)return {ok:false,message:'Находка уже исследована'};
- var f=ensure(run),list=choicesFor(run,t),choice=list[index];
+ var f=ensure(run);
+ if(f.seen[def.id]&&!def.repeat)return {ok:false,message:'Уникальное событие уже завершено'};
+ var list=choicesFor(run,t),choice=list[index];
  if(!choice)return {ok:false,message:'Неверный вариант'};
  if(choice[2]&&!has(run,choice[2]))return {ok:false,message:requirementText(choice[2])};
  if(choice[1]==='leave')return {ok:true,leave:true,turn:false,message:'Вы проходите мимо',finish:false};
@@ -243,7 +255,7 @@ function onKill(run,enemy,api){
   return 'Вожак побеждён! Трофей записан в книгу и закрепится при безопасном возвращении на базу.';
  }
  var reward={
-  trap:'gold:20;potion:1',tracks:'material:Волчья шкура:1',burrow:'gold:14;material:Дикий корень:1',
+  trap:'gold:20;potion:1',tracks:'flag:wolf_tracks;material:Волчья шкура:1',herbalist:'flag:herbalist_saved;item:healing_salve:2',burrow:'gold:14;material:Дикий корень:1',
   boar_path:'gold:24;material:Кабаний клык:1',cocoon:'item:spore:1;shield:7',fungal:'material:Грибная эссенция:2;scroll:3'
  }[task.reward]||'gold:14';
  var msgs=apply(run,reward.split(';'),api);
@@ -255,6 +267,7 @@ function safeReturn(run,meta,book){
   if(trophyMap[k]&&book.grantTrophy(meta,trophyMap[k]))count++;
  });
  f.pendingTrophies={};
+ if(window.CryptForestRework)window.CryptForestRework.homeReturn(run,meta);
  return count;
 }
 function inventory(run){
@@ -262,12 +275,13 @@ function inventory(run){
  return Object.keys(f.items).filter(function(k){return f.items[k]>0;}).map(function(k){
   var info=itemDefs[k]||[k,'F02_001'];
   return '<div class="forest-pocket-row">'+image(info[1],'forest-pocket-icon')+'<span><b>'+e(info[0])+'</b><small>×'+f.items[k]+'</small></span>'+
-    (['bleed_trap','stun_trap','honey','mushroom','water'].indexOf(k)>=0?
+    (['bleed_trap','stun_trap','honey','mushroom','water'].indexOf(k)>=0||(window.CryptForestRework&&window.CryptForestRework.itemUsedDescription(k))?
     '<button class="btn small" data-action="active-item-info" data-id="forest:'+e(k)+'">Описание / использовать</button>':'')+'</div>';
  }).join('')||'<p class="fine muted">Лесные находки ещё не собраны.</p>';
 }
 function use(run,id,api){
  var f=ensure(run);if(!itemDefs[id]||!f.items[id])return {ok:false,message:'Предмет закончился'};
+ if(window.CryptForestRework&&window.CryptForestRework.itemUsedDescription(id))return window.CryptForestRework.use(run,id,api);
  var foe=api.target();
  if(id==='bleed_trap'||id==='stun_trap'){
   if(!foe)return {ok:false,message:'Сначала обнаружьте врага'};
