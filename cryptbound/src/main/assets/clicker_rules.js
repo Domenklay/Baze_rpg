@@ -6,9 +6,9 @@ var DB=window.ClickerData;
 /* Dungeon gear has only 3/4 slots and situational triggers.
    Original Clicker item artwork/names are retained; big 2/4/6 bonuses are not. */
 var ROLES=[
-{id:'stone_oath',slots:['helm','armor','bracer','boots'],two:{entryShield:12},complete:{def:2,entryShield:10}},
-{id:'hunters_trail',slots:['helm','ring','boots'],two:{lootChance:8},complete:{bossDamage:10}},
-{id:'mana_whisper',slots:['ring','amulet','cloak','gloves'],two:{pow:3},complete:{scrollFloor:1}},
+{id:'stone_oath',slots:['helm','armor','bracer','boots'],two:{entryShield:12},complete:{def:2,entryShield:10},borrowTitle:'war_novice'},
+{id:'hunters_trail',slots:['helm','ring','boots'],two:{lootChance:8},complete:{bossDamage:10},borrowTitle:'adv_seeker'},
+{id:'mana_whisper',slots:['ring','amulet','cloak','gloves'],two:{pow:3},complete:{scrollFloor:1},borrowTitle:'mag_apprentice'},
 {id:'roots_of_life',slots:['helm','armor','bracer','boots'],two:{healFloor:9},complete:{healFloor:9}},
 {id:'ancestors_fury',slots:['armor','gloves','boots'],two:{crit:4},complete:{bossDamage:10}},
 {id:'swamp_seals',slots:['ring','amulet','cloak','gloves'],two:{mp:8},complete:{entryShield:18}},
@@ -80,7 +80,9 @@ function bonuses(equip,items){
 function descriptions(id){
  var spec=setRules(id);if(!spec)return [];
  return [{min:2,data:spec.two},{min:spec.slots.length,data:spec.complete}].map(function(stage){
-  return stage.min+' предмета: '+Object.entries(stage.data).map(function(x){return (ATTR[x[0]]||x[0])+(x[1]===1?'':' +'+x[1]);}).join(', ');
+  var effects=Object.entries(stage.data).map(function(x){return (ATTR[x[0]]||x[0])+(x[1]===1?'':' +'+x[1]);}).join(', ');
+  if(stage.min===spec.slots.length&&spec.borrowTitle){var title=(window.CryptTitles||[]).find(function(x){return x.id===spec.borrowTitle;});effects+=(effects?', ':'')+'Временное звание «'+(title?title.name:spec.borrowTitle)+'» (пока комплект надет)';}
+  return stage.min+' предмета: '+effects;
  });
 }
 function near(id){var x=id%5,y=Math.floor(id/5),r=[];
