@@ -251,6 +251,9 @@ rewrite(50,'Сердце древнего дуба','Древнее сердце
  'Стать защитником рощи и получить благословение до конца похода|stat:hp:15;stat:def:2;buff:shelter:4:18;flag:grove_heart',
  'Вернуться к сердцу позже|leave'],'flag:young_treant_healed');
 
+/* Named one-off rescues and oaths cannot be farmed as ordinary encounters. */
+FE.scene(6).repeat=false;
+FE.scene(44).repeat=false;
 /* Approved art remains attached to the original scene IDs. Every item has visible inventory art. */
 var extraItems={
  snare_wire:['Проволока силка','F02_010'],healing_salve:['Лечебная мазь','F02_043'],
@@ -377,6 +380,14 @@ function use(run,id,api){
  f.items[id]--;if(!f.items[id])delete f.items[id];
  return {ok:true,turn:true,message:(FE.itemDefs[id]||[id])[0]+': '+useNames[id]};
 }
+/* Entry points remain tied to their floors until the player resolves the quest. */
+var MILESTONES={3:5,6:11,10:20,14:30,18:31};
+function milestone(run,candidates){
+ if(!run||run.actIndex!==0||run.locationIndex!==0)return null;
+ var id=MILESTONES[run.floor],f=FE.ensure(run);
+ if(id&&!f.seen[id]&&(candidates||[]).some(function(s){return s.id===id;}))return id;
+ return null;
+}
 function priority(run,candidates){
  var f=FE.ensure(run),steps=[
   ['fox_freed',16],['map_first',12],['ranger_badge',19],['caravan_tracks',17],
@@ -391,10 +402,10 @@ function priority(run,candidates){
 }
 function nextQuest(run){
  var f=FE.ensure(run),list=FE.scenes.filter(function(z){return run.floor>=z.min&&!f.seen[z.id]&&(!z.need||FE.has(run,z.need));});
- return priority(run,list);
+ return milestone(run,list)||priority(run,list);
 }
 function itemUsedDescription(id){return useNames[id]||null;}
 window.CryptForestRework={unique:unique,useNames:useNames,extra:extra,bonus:getBonus,apply:applyEffect,
  homeReturn:homeReturn,forage:forage,onFloor:onFloor,firstStrikeBonus:firstStrikeBonus,trapBonus:trapBonus,
- use:use,priority:priority,nextQuest:nextQuest,itemUsedDescription:itemUsedDescription};
+ use:use,milestone:milestone,priority:priority,nextQuest:nextQuest,itemUsedDescription:itemUsedDescription};
 })();
