@@ -44,7 +44,7 @@ let choice=RG.choose(second,bag,1,add);assert.equal(choice.ok,true);
 assert.equal(second.items[0].name,'Сумка шахтёра');
 assert.equal(RG.gearBonus(second,'mineExtra'),0,'not equipped');
 second.equip.armor=501;assert.equal(RG.gearBonus(second,'mineExtra'),20);
-assert.equal(RG.choose(second,event(4),1,add).ok,true,'repeat choice safe');
+assert.equal(RG.choose(second,event(4),1,add).ok,false,'one-off scene cannot be repeated');
 assert.equal(second.items.length,1,'no duplicates');
 second.ridge.items.healing_salt=1;let medicine=RG.useItem(second,'healing_salt');assert(medicine.ok);assert.equal(second.ridge.items.healing_salt,undefined);
 second.ridge.items.rail_key=1;let listed=RG.inventory(second);assert(listed.some(x=>x.id==='rail_key'&&!x.usable));
