@@ -243,6 +243,7 @@ function choose(r,t,index,api){
  if(choice.reward==='leave')return {ok:true,leave:true,turn:false};
  if(!meets(r,choice.need)||!costsOk(r,choice.cost))return {ok:false,message:'Не выполнено условие или недостаточно материалов'};
  if([1,11,21].includes(id))return chooseShaft(r,id,choice);
+ if(id!==12&&![1,11,21].includes(id)&&!def.repeat&&ensure(r).seen[id])return {ok:false,message:'Уникальное событие уже завершено'};
  if(id===12){var choiceResult=chooseBur(r,choice);
   if(choiceResult.ok&&!choiceResult.leave){t.cleared=true;ensure(r).seen[12]=true;}
   return choiceResult;
