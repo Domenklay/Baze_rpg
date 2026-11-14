@@ -50,6 +50,41 @@ passage.kind='empty';passage.drops={gold:7};
 foe.hp=120;foe.deathProcessed=false;run.floorCleared=false;passage.revealed=false;passage.drops=null;passage.cleared=false;
 const blocked=run.turn;A('strike',enemy.id);
 assert.equal(foe.hp,120);assert.equal(run.turn,blocked,'Hidden intervening slab blocks attack');
+// Ranged magic and ranged class skills can hit any discovered foe even when
+// the enemy is surrounded by unopened stone; ordinary melee still cannot.
+const spellBefore=run.turn;foe.hp=foe.maxHp=1000;run.mp=5000;
+assert.equal(passage.revealed,false);
+A('cast','bolt');assert.equal(run.pendingSpell,'bolt');
+A('cast-target',enemy.id);
+assert.ok(foe.hp<1000,'Targeted spell ignores unexcavated corridor');
+assert.equal(run.turn,spellBefore+1,'Ranged spell takes exactly one turn');
+const rangedSkillHp=foe.hp,rangedTurn=run.turn;
+run.skillUsed=-100;A('skill');
+assert.ok(foe.hp<rangedSkillHp,'Scout double shot ignores unexcavated corridor');
+assert.equal(run.turn,rangedTurn+1,'Ranged class skill spends one turn');
+// Enemy reinforcements and story spawns can be trapped by the closed grid.
+const rule=window.ClickerRules;
+for(const id of [15,16]){run.tiles[id].revealed=true;run.tiles[id].cleared=true;run.tiles[id].kind='empty';run.tiles[id].foe=null;}
+run.tiles[17].kind='empty';run.tiles[17].revealed=false;run.tiles[17].cleared=false;
+foe.hp=foe.maxHp=1000;
+assert.equal(rule.exploreStatus(run.tiles[17],run.tiles,run.heroTile).ok,false,
+ 'Regular adjacent melee enemy still blocks digging');
+foe.t1Task='event-regression';
+assert.equal(rule.exploreStatus(run.tiles[17],run.tiles,run.heroTile).ok,true,
+ 'An isolated event enemy must allow digging its neighboring slab');
+const spawnedHp=foe.hp,spawnedTurn=run.turn;
+A('strike',enemy.id);
+assert.ok(foe.hp<spawnedHp,'An event enemy trapped behind slabs can be attacked');
+assert.equal(run.turn,spawnedTurn+1);
+A('reveal',17);
+assert.equal(run.tiles[17].revealed,true,'Neighboring slab can open to free the isolated spawn');
+assert.equal(rule.attackReachable(run.tiles,run.heroTile,[enemy.id]),true,
+ 'Once the slab opens, the enemy gets an ordinary combat route');
+run.tiles[18].kind='empty';run.tiles[18].revealed=true;run.tiles[18].cleared=true;
+assert.equal(rule.exploreStatus(run.tiles[23],run.tiles,run.heroTile).ok,false,
+ 'Once the spawn has a path, it again blocks neighboring research');
+for(const id of [15,16,17,18]){run.tiles[id].kind='empty';run.tiles[id].revealed=false;run.tiles[id].cleared=false;}
+delete foe.t1Task;foe.hp=120;foe.deathProcessed=false;
 // Revealed objects and even another revealed creature do not count as closed slabs.
 passage.revealed=true;passage.kind='enemy';
 passage.foe={name:'Попутный противник',hp:300,maxHp:300,atk:1,def:0,ranged:false,
