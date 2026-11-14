@@ -26,3 +26,8 @@
 /* New compact loot icons: keep vial and pouch inside one dungeon tile. */
 .dungeon-board .maze .tile .tile-item-sprite{display:block;width:70%;height:70%;object-fit:contain;flex:none;pointer-events:none;filter:drop-shadow(0 2px 3px #000b)}
 .dungeon-board .maze .tile-vial-hp .tile-item-sprite,.dungeon-board .maze .tile-vial-mp .tile-item-sprite{width:62%;height:62%}
+
+/* Elites are unmistakable on the tiny 5x5 mobile board. */
+.dungeon-board .maze .tile.tile-elite{outline:2px solid #d7a84b!important;outline-offset:-2px;box-shadow:inset 0 0 10px #c57a303d,0 0 7px #c9924147}
+.dungeon-board .maze .tile-elite .elite-tag{position:absolute;top:0;right:0;z-index:14;font:700 7px/1.2 Arial,sans-serif;letter-spacing:.1px;padding:1px 2px;color:#fff1b4;background:#5a2d18;border:1px solid #d7a84b;pointer-events:none}
+.elite-floor-warning{width:100%;max-width:100%;text-align:center;color:#e8c17f;font:700 9px/1.2 Arial,sans-serif;letter-spacing:.35px;background:#20140e;border:1px solid #92642e;padding:3px 4px;box-sizing:border-box}
