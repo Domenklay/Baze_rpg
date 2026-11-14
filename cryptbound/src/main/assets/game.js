@@ -109,7 +109,7 @@ function stats(){
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
  hp=Math.round(hp*(1+hunterStat('hunterHpPct')*.01));
- a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)+CM.damagePct(r)*.01));
+ a=Math.round(a*(1+hunterStat('hunterAttackPct')*.01+(lvl('war_fighter')>0?.05+.05*lvl('war_fighter'):0)+(CM.damagePct(r)+(CM.equipped(r)&&RG.gearBonus(r,'mineExtra')>=15&&Object.values(r.equip).some(function(id){var it=item(id);return it&&it.ridgeUniqueId==='mountain_heart';})?5:0))*.01));
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
@@ -547,7 +547,7 @@ function load(){
     else v.run.key=true;
   }
  }
- if(v.run&&CM.active(v.run)){RG.ensure(v.run);CM.ensure(v.run);if(!CM.pickItem(v.run))CM.grantPick(v.run,++v.seq);}
+ if(v.run&&CM.active(v.run)){RG.ensure(v.run).perks=Object.assign({},meta.ridgePerks||{});CM.ensure(v.run);if(!CM.pickItem(v.run))CM.grantPick(v.run,++v.seq);}
  if(v.run)TR.init(v.run);
   if(meta.activeExpedition)TR.init(meta.activeExpedition);
   return v;}catch(e){return null;}
@@ -1232,7 +1232,7 @@ function resumeExpedition(){
  r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);grantTestResearch(r);
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
- if(CM.active(r)){RG.ensure(r);if(!CM.pickItem(r)){CM.grantPick(r,++s.seq);log('Найдена кирка рудокопа. Оружие установлено в слот.');}else CM.ensure(r);}
+ if(CM.active(r)){RG.ensure(r).perks=Object.assign({},s.meta.ridgePerks||{});if(!CM.pickItem(r)){CM.grantPick(r,++s.seq);log('Найдена кирка рудокопа. Оружие установлено в слот.');}else CM.ensure(r);}
  r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
  fillPreparedPotions(r);r.chamberActive=null;r.fx=null;
  r.hp=Math.min(stats().hp,Math.max(1,r.hp+Math.floor(stats().hp*.35)));
@@ -2208,7 +2208,7 @@ function t1Spawn(mobId,count,task){
  return count;
 }
 function t1Api(){return {stats:stats,rollSpell:rollSpell,grantScroll:grantScroll,addItem:addItem,
- revealSafe:forestReveals,spawn:t1Spawn};}
+ revealSafe:forestReveals,spawn:t1Spawn,homeStorage:function(){return s.meta.materials;}};}
 function t1EventDialog(t){if(t&&t.kind==='t1-event'&&!t.cleared&&t.revealed)dialog(RG.active(r)?RG.render(r,t):RE.render(r,t));}
 function ridgeTravel(offset){
  if(!RG.active(r))return;
