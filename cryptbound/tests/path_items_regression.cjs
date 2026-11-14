@@ -48,11 +48,17 @@ for(const kind of ['chest','corpse','trap','altar','vial-hp','vial-mp']){
 passage.kind='empty';passage.drops={gold:7};
 // An actually closed slab still blocks the same enemy.
 foe.hp=120;foe.deathProcessed=false;run.floorCleared=false;passage.revealed=false;passage.drops=null;passage.cleared=false;
+run.class='executioner';
 const blocked=run.turn;A('strike',enemy.id);
 assert.equal(foe.hp,120);assert.equal(run.turn,blocked,'Hidden intervening slab blocks attack');
 // Ranged magic and ranged class skills can hit any discovered foe even when
 // the enemy is surrounded by unopened stone; ordinary melee still cannot.
-const spellBefore=run.turn;foe.hp=foe.maxHp=1000;run.mp=5000;
+run.class='scout';
+const bowBefore=run.turn;foe.hp=foe.maxHp=1000;
+A('strike',enemy.id);
+assert.ok(foe.hp<1000,'Archer ordinary arrow is a ranged attack despite hidden slabs');
+assert.equal(run.turn,bowBefore+1);
+const spellBefore=run.turn;foe.hp=1000;run.mp=5000;
 assert.equal(passage.revealed,false);
 A('cast','bolt');assert.equal(run.pendingSpell,'bolt');
 A('cast-target',enemy.id);
@@ -72,6 +78,7 @@ assert.equal(rule.exploreStatus(run.tiles[17],run.tiles,run.heroTile).ok,false,
 foe.t1Task='event-regression';
 assert.equal(rule.exploreStatus(run.tiles[17],run.tiles,run.heroTile).ok,true,
  'An isolated event enemy must allow digging its neighboring slab');
+run.class='executioner';
 const spawnedHp=foe.hp,spawnedTurn=run.turn;
 A('strike',enemy.id);
 assert.ok(foe.hp<spawnedHp,'An event enemy trapped behind slabs can be attacked');
@@ -85,6 +92,8 @@ assert.equal(rule.exploreStatus(run.tiles[23],run.tiles,run.heroTile).ok,false,
  'Once the spawn has a path, it again blocks neighboring research');
 for(const id of [15,16,17,18]){run.tiles[id].kind='empty';run.tiles[id].revealed=false;run.tiles[id].cleared=false;}
 delete foe.t1Task;foe.hp=120;foe.deathProcessed=false;
+trap.kind='trap';trap.revealed=false;trap.cleared=false;trap.trapSpent=false;trap.trapActive=false;
+run.class='scout';
 // Revealed objects and even another revealed creature do not count as closed slabs.
 passage.revealed=true;passage.kind='enemy';
 passage.foe={name:'Попутный противник',hp:300,maxHp:300,atk:1,def:0,ranged:false,
