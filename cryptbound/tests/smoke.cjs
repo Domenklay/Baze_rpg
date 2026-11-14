@@ -1172,15 +1172,12 @@ test('500ms held-finger sweep reveals hidden enemies, fights and collects loot w
   gold:7,loot:[],ep:1,stun:100,guard:0,evadeCharges:0,
   ranged:false,cooldown:100,skill:{name:'Удар',every:100,kind:'bite'}};
  turns=run.turn;
- assert.equal(api.debug.quickSweep(enemy.id),false,'Enemy is not magically attacked before being revealed');
- // The enemy's slab is currently covered; it must still be opened first.
- assert.equal(enemy.revealed,false);
- // Make its corridor safe: the neighboring revealed floor is already open.
- const covered=run.tiles[targets[0]];
- covered.kind='empty';covered.revealed=true;covered.cleared=true;
+ assert.equal(enemy.revealed,false,'The monster starts hidden under the slab');
+ const hiddenHp=enemy.foe.hp;
  assert.equal(CR.exploreStatus(enemy,run.tiles,run.heroTile).ok,true);
- assert.equal(api.debug.quickSweep(enemy.id),true,'Long hold opens the enemy slab');
+ assert.equal(api.debug.quickSweep(enemy.id),true,'Long hold opens the monster slab');
  assert.equal(enemy.revealed,true,'Enemy becomes visible after a paid reveal');
+ assert.equal(enemy.foe.hp,hiddenHp,'The reveal cannot damage an undiscovered enemy');
  assert.equal(run.turn,turns+1);
  turns=run.turn;const enemyHp=enemy.foe.hp;
  assert.equal(api.debug.quickSweep(enemy.id),true,'The same held gesture now attacks the revealed enemy');
