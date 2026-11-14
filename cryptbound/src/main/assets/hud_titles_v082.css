@@ -62,3 +62,20 @@
  filter:drop-shadow(0 2px 2px #0008);
 }
 #overlay .inventory-grid .bag-extra-item>svg{width:75%;height:75%;max-width:75%;max-height:75%}
+
+/* Precise clues from actual exploration titles, with no premature tile reveal. */
+.dungeon-board .maze{touch-action:none;user-select:none;-webkit-user-select:none}
+.dungeon-board .maze .tile{touch-action:none}
+.dungeon-board .maze .tile.tile-scouted{box-shadow:inset 0 0 9px #997a3e70,0 0 0 1px #b99048aa}
+.dungeon-board .maze .slab-hint{
+ position:absolute;z-index:3;bottom:5%;right:5%;width:38%;height:38%;
+ display:flex;align-items:center;justify-content:center;font:900 clamp(11px,2.7vw,21px)/1 Arial,sans-serif;
+ color:#f8d887;text-shadow:1px 2px 2px #000,0 0 4px #111;
+ background:#19120ccd;border:1px solid #b08b51;border-radius:4px;pointer-events:none;
+}
+.dungeon-board .maze .slab-hint-enemy{color:#ffc6b5;background:#421b1bd8;border-color:#c56c5e}
+.dungeon-board .maze .slab-hint-key{color:#f8e69c;background:#41300cd8;border-color:#d7b460;top:5%;bottom:auto}
+.dungeon-board .maze .slab-hint-secret{color:#d7b9ff;background:#392446d8;border-color:#aa7ddd}
+.dungeon-board .maze .key-carrier-hint{position:absolute;z-index:10;top:3px;right:3px;min-width:15px;text-align:center;border-radius:3px;background:#281b07ed;color:#ffe4a3;font:bold 11px/1.1 Arial,sans-serif;pointer-events:none}
+.nested-compass{display:grid;gap:5px;margin-top:10px;padding:7px;border:1px solid #806b46;background:#1c160d}
+.nested-compass small{color:#d5bb8c;font:11px/1.3 Arial,sans-serif}
