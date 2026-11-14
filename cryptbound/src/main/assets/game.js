@@ -275,6 +275,9 @@ function distributeTiles(){
  insert('enemy',boss?3:total-(elite?1:0));
  if(elite)insert('elite',1);
  if(boss)insert('boss',1);
+ if(RG.active(r)&&RG.ensure(r).flags.kalt_deal&&!RG.ensure(r).flags.kalt_ambush_spent&&!boss){
+  insert('elite',1);RG.ensure(r).flags.kalt_ambush_spent=true;
+ }
  var etherCount=RG.eliteCount(r);
  if(etherCount){insert('ridge-ether',etherCount);RG.beginEliteFloor(r,etherCount);}
  if(r.actIndex===0&&r.locationIndex===0&&!boss){
@@ -412,6 +415,11 @@ function startFloor(){
  r.summonTile=null;
  if(r.summon&&r.summon.hp>0)placeSummon();
  var st=stats();
+ if(r.actIndex===0&&r.locationIndex===2&&r.floor===1&&r.ridge&&r.ridge.flags){
+  if(r.ridge.flags.seal_restored||r.ridge.flags.mountain_heart_safe){r.shield+=25;log('Сохранённая печать горы защищает от болотного тумана: +25 щита.');}
+  if(r.ridge.flags.seal_broken){r.poisonTurns=Math.max(2,r.poisonTurns||0);log('Разрушенная печать распространяет болотное проклятие.');}
+  if(r.ridge.flags.bog_clue)r.mp=Math.min(st.mp,r.mp+10);
+ }
  if(RG.gearBonus(r,'cursed')>0){r.hp=Math.max(1,r.hp-RG.gearBonus(r,'cursed'));log('Проклятый шлем отнимает 5 HP.');}
  r.mp=Math.min(st.mp,r.mp+7+bonus('manaFloor')+hunterStat('manaFloor'));r.ep+=bonus('epFloor')+(s.meta.diamondUpgrades?.wisdom||0);
  r.poisonTurns=0;
