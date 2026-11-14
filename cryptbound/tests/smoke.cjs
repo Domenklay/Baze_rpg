@@ -904,6 +904,24 @@ test('Unlimited backpack displays found items in slots but not equipped gear or 
  }finally{Math.random=random;}
 });
 
+test('Compact ability costs and generated loot sprites are wired to HUD',()=>{
+ const live=win.Crypt;live.debug.action('begin','necromancer');
+ const html=el('content').innerHTML;
+ assert.match(html,/class="quick-mana-cost">8<\/small>/,'Class ability shows only the number');
+ assert.doesNotMatch(html,/class="quick-mana-cost">[^<]*МН/,'No mana suffix on ability');
+ for(const name of ['vial-hp','vial-mp','loot-pouch']){
+  const img=path.join(root,'ui',name+'.png');
+  assert.ok(fs.statSync(img).size>400,name+' must have an actual PNG file');
+ }
+ const run=live.state().run,t=run.tiles.find(x=>x.kind==='empty'&&!x.foe);
+ t.kind='vial-hp';t.revealed=true;t.cleared=false;live.debug.action('wait');
+ assert.match(el('content').innerHTML,/ui\/vial-hp\.png/);
+ t.kind='vial-mp';live.debug.action('wait');
+ assert.match(el('content').innerHTML,/ui\/vial-mp\.png/);
+ t.drops={materials:[{name:'Дерево',qty:1}],gold:1};live.debug.action('wait');
+ assert.match(el('content').innerHTML,/ui\/loot-pouch\.png/);
+});
+
 test('Small floor vials are consumed instantly with HP 5–20 and MP 3–10',()=>{
  const live=win.Crypt;live.debug.action('begin','necromancer');
  const run=live.state().run,st=live.debug.stats();
@@ -936,7 +954,24 @@ test('Summon retaliation hits the summon, while targeted magic causes no melee c
   live.debug.action('wait');
   assert.equal(run.hp,1000,'Summon-initiated retaliation must not hit the hero');
   assert.equal(run.summon.hp,111,'The monster deals its retaliation to the summoned creature');
+  // Special abilities on a summon-targeted counter must not affect the hero.
+  for(const ability of ['manaburn','burn','poison','shatter','silence']){
+   foeTile.foe.ability=ability;foeTile.foe.abilityName='Special '+ability;
+   foeTile.foe.cooldown=1;foeTile.foe.skill={name:'Test ability',every:1,kind:'none'};
+   run.summon.hp=120;run.summon.specialCooldown=4;
+   run.mp=500;run.hp=1000;run.shield=100;
+   run.burnTurns=0;run.poisonTurns=0;run.silenceTurns=0;
+   live.debug.action('wait');
+   assert.equal(run.hp,1000,ability+': hero must not take summon retaliation HP damage');
+   assert.equal(run.mp,500,ability+': hero must not lose mana');
+   assert.equal(run.shield,100,ability+': hero shield must stay intact');
+   assert.equal(run.burnTurns,0,ability+': hero must not burn');
+   assert.equal(run.poisonTurns,0,ability+': hero must not be poisoned');
+   assert.equal(run.silenceTurns,0,ability+': hero must not be silenced');
+   assert.ok(run.summon.hp<120,ability+': summon must take the retaliation');
+  }
   run.summon=null;run.summonTile=null;foeTile.foe.provoked=false;foeTile.foe.provokedBy=null;
+  foeTile.foe.cooldown=100;foeTile.foe.ability=null;foeTile.foe.skill={name:'Удар',every:100,kind:'none'};
   run.scrolls.bolt=1;
   const hp=run.hp,foeHp=foeTile.foe.hp;
   standNextTo(run,foeTile);
