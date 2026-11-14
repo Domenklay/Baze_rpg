@@ -946,6 +946,30 @@ test('Numeric ability costs and generated loot sprites are wired to HUD',()=>{
  assert.match(css,/tile-item-sprite\{[^}]*width:70%/,'Loot art is 30% smaller on dungeon tiles');
 });
 
+test('All floor pickup icons have valid PNG chunks, checksums and compressed pixels',()=>{
+ const zlib=require('node:zlib');
+ function crc32(b){
+  let c=0xffffffff;
+  for(const x of b){c^=x;for(let i=0;i<8;i++)c=(c>>>1)^((c&1)?0xedb88320:0);}
+  return (c^0xffffffff)>>>0;
+ }
+ for(const name of ['vial-hp.png','vial-mp.png','loot-pouch.png','coin-pouch.png','gold_coin.png','remains_atlas.png']){
+  const data=fs.readFileSync(path.join(root,'ui',name));let offset=8,compressed=[],end=false;
+  assert.equal(data.subarray(0,8).toString('hex'),'89504e470d0a1a0a',name+' missing PNG header');
+  while(offset+12<=data.length){
+   const size=data.readUInt32BE(offset),kind=data.toString('ascii',offset+4,offset+8);
+   assert.ok(offset+size+12<=data.length,name+': truncated chunk '+kind);
+   const bytes=data.subarray(offset+4,offset+8+size);
+   assert.equal(crc32(bytes),data.readUInt32BE(offset+8+size),name+': invalid CRC in '+kind);
+   if(kind==='IDAT')compressed.push(data.subarray(offset+8,offset+8+size));
+   offset+=12+size;
+   if(kind==='IEND'){end=true;break;}
+  }
+  assert.ok(end&&compressed.length>0,name+': missing IDAT/IEND');
+  assert.ok(zlib.inflateSync(Buffer.concat(compressed)).length>0,name+': corrupt compressed pixel data');
+ }
+});
+
 test('Gold coin image, matching backpack elixir art and 64 semantic corpse sprites',()=>{
  const live=win.Crypt;live.debug.action('begin','executioner');
  const run=live.state().run;
