@@ -23,6 +23,7 @@ for(const loc of [1,2]){
     const need=parts[2].split(':');
     if(need[0]==='item')assert.ok(items.has(need[1]),'Never obtainable item '+need[1]);
     else if(need[0]==='flag')assert.ok(flags.has(need[1]),'Never obtainable flag '+need[1]);
+    else if(need[0]==='gold')assert.ok(Number(need[1])>0,'Invalid coin cost');
     else assert.fail('Unknown event requirement '+parts[2]);
    }
    for(const op of parts[1].split(';')){
