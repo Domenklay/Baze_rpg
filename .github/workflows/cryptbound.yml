@@ -86,8 +86,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.5-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.5-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.6-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.6-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +100,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.5 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.5 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.5 — редкие элитники и гарантированная добыча" --notes "Офлайн Android APK. Исправлено ошибочное размещение элитных монстров на этажах 10, 20, 30 и 40. Возвращено изначальное правило: по одному случайному элитнику на этажах 5–9, 15–19, 25–29, 35–39 и далее. Боссы остаются только на 30, 40, 50 и последующих десятых этажах. Элитники опасные, но необязательные: они не держат ключ лестницы и не блокируют выход либо портал. Их можно узнать по золотой рамке, надписи ЭЛИТА и предупреждению при обнаружении. С каждого элитника гарантированно выпадают материалы. Сохранения v0.8.4 автоматически приводятся к правильному расписанию без сброса прогресса."
+          if ! gh release view cryptbound-v0.8.6 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.6 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.6 — крупные склянки, мешочки и монеты" --notes "Офлайн APK Android. Увеличены спрайты малых склянок HP и MP и мешочков с добычей: убраны лишние прозрачные поля и иконки заполняют клетки лабиринта. Добавлен новый пиксельный кошель с золотыми монетами для обычных и маленьких денежных находок. Сохранены механики элитников, боссов и исправления предыдущих версий; игровой прогресс не сбрасывается."
           fi
-          gh release upload cryptbound-v0.8.5 dist/Cryptbound-v0.8.5-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.6 dist/Cryptbound-v0.8.6-offline-Android.apk dist/SHA256SUMS.txt --clobber
