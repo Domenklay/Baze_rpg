@@ -73,7 +73,7 @@ assert.equal(wolves.length,3,'Exactly 3 wolves must spawn');
 for(const wolf of wolves){
  wolf.foe.hp=1;wolf.foe.evadeCharges=0;wolf.foe.stun=2;wolf.foe.guard=0;wolf.foe.def=0;wolf.revealed=true;
  // The hero must be adjacent, not attack through undiscovered cells.
- const near=window.ClickerRules.near(wolf.id).find(id=>r.tiles[id]&&!r.tiles[id].foe);
+ const near=window.ClickerRules.near(wolf.id).find(id=>r.tiles[id]&&!r.tiles[id].foe&&r.tiles[id].id!==squirrel.id&&r.tiles[id].kind!=='forest-event');
  assert.notEqual(near,undefined,'A navigable spot beside the quest wolf is required');
  const land=r.tiles[near];land.kind='empty';land.revealed=true;land.cleared=true;land.drops=null;
  r.heroTile=near;
