@@ -40,9 +40,15 @@ assert.equal(run.turn,prevTurn+1,'Successful attack must cost exactly one turn')
 foe.hp=120;foe.deathProcessed=false;run.floorCleared=false;passage.revealed=false;passage.drops=null;passage.cleared=false;
 const blocked=run.turn;A('strike',enemy.id);
 assert.equal(foe.hp,120);assert.equal(run.turn,blocked,'Hidden intervening slab blocks attack');
-// An intervening living creature also blocks, even if it does not block exploration.
-passage.revealed=true;passage.kind='enemy';passage.foe={hp:10,ranged:true};passage.cleared=false;
-A('strike',enemy.id);assert.equal(run.turn,blocked,'Another monster is not a walkable corridor');
+// Revealed objects and even another revealed creature do not count as closed slabs.
+passage.revealed=true;passage.kind='enemy';
+passage.foe={name:'Попутный противник',hp:300,maxHp:300,atk:1,def:0,ranged:false,
+ cooldown:99,skill:{every:99,name:'Без навыка'},loot:[],ep:0,gold:0};
+passage.cleared=false;
+const openTurn=run.turn,openHp=foe.hp;
+A('strike',enemy.id);
+assert.ok(foe.hp<openHp,'Only a closed tile may block a route; revealed creatures are not slabs');
+assert.equal(run.turn,openTurn+1);
 passage.kind='empty';passage.foe=null;passage.cleared=true;
 // Full-floor victory automatically and safely disarms every trap.
 foe.hp=1;foe.stun=1;
