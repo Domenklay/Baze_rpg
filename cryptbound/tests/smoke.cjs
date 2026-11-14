@@ -959,11 +959,11 @@ test('Summon retaliation hits the summon, while targeted magic causes no melee c
    foeTile.foe.ability=ability;foeTile.foe.abilityName='Special '+ability;
    foeTile.foe.cooldown=1;foeTile.foe.skill={name:'Test ability',every:1,kind:'none'};
    run.summon.hp=120;run.summon.specialCooldown=4;
-   run.mp=40;run.hp=1000;run.shield=100;
+   run.mp=live.debug.stats().mp;const manaBefore=run.mp;run.hp=1000;run.shield=100;
    run.burnTurns=0;run.poisonTurns=0;run.silenceTurns=0;
    live.debug.action('wait');
    assert.equal(run.hp,1000,ability+': hero must not take summon retaliation HP damage');
-   assert.equal(run.mp,40,ability+': hero must not lose mana');
+   assert.equal(run.mp,manaBefore,ability+': hero must not lose mana');
    assert.equal(run.shield,100,ability+': hero shield must stay intact');
    assert.equal(run.burnTurns,0,ability+': hero must not burn');
    assert.equal(run.poisonTurns,0,ability+': hero must not be poisoned');
