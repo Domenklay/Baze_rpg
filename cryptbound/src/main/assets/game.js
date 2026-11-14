@@ -736,12 +736,12 @@ function backpackExtraSlots(){
    (qty!=null?'<b class="bag-item-count">×'+qty+'</b>':'')+
    '<span>'+esc(name)+'</span></button>');
  };
- if(r.potions>0)add('active-item-info','potion','Целебный эликсир',uiIcon('potion'),r.potions);
+ if(r.potions>0)add('active-item-info','potion','Целебный эликсир',icon('potion'),r.potions);
  (r.preparedPotions||[]).forEach(function(id,index){
-  var p=SYS.byPotion[id];if(p)add('active-item-info','prepared:'+index,p.name,uiIcon('potion'),1);
+  var p=SYS.byPotion[id];if(p)add('active-item-info','prepared:'+index,p.name,icon('potion'),1);
  });
  (r.lootBag||[]).filter(function(x){return x.qty>0&&x.kind!=='trinket';}).forEach(function(x){
-  add('active-item-info','pocket:'+x.id,x.name,uiIcon('potion'),x.qty);
+  add('active-item-info','pocket:'+x.id,x.name,'<img class="bag-vial-art" src="ui/'+(x.kind==='vial-mp'?'vial-mp':'vial-hp')+'.png" alt=""/>',x.qty);
  });
  var forest=FE.ensure(r).items;
  Object.keys(forest).filter(function(id){return forest[id]>0;}).forEach(function(id){
@@ -1024,7 +1024,7 @@ function compareStat(it,other,key){
 function renderBag(){
  var materials=Object.entries(r.materials||{}).filter(function(x){return x[1]>0;});
  var sections=[['Материалы',materials.map(function(x){return '<div class="supply-material">'+SP.materialIcon(x[0])+'<span>'+esc(x[0])+'</span><b>×'+x[1]+'</b></div>';}).join('')||'<p>Материалов пока нет.</p>']];
- return '<div class="supply-ledger"><div class="supply-totals"><span>'+uiIcon('coin')+r.gold+'</span><span>'+uiIcon('scroll')+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</span><span>'+uiIcon('potion')+r.potions+'</span></div>'+sections.map(function(x){return '<section><h3>'+x[0]+'</h3>'+x[1]+'</section>';}).join('')+'</div>';
+ return '<div class="supply-ledger"><div class="supply-totals"><span>'+goldArt('gold-coin-inline')+r.gold+'</span><span>'+uiIcon('scroll')+Object.values(r.scrolls).reduce(function(a,b){return a+b;},0)+'</span><span>'+uiIcon('potion')+r.potions+'</span></div>'+sections.map(function(x){return '<section><h3>'+x[0]+'</h3>'+x[1]+'</section>';}).join('')+'</div>';
 }
 function renderMenu(){
  if(!r)return '<h2>Пограничный привал</h2><button class="btn gold wide space-top" data-action="choose">В поход</button><button class="btn alt wide space-top" data-action="camp">Герои и развитие</button><button class="btn alt wide space-top" data-action="chronicles">Хроники и реликвии</button><button class="btn dark wide space-top" data-action="close">Вернуться в деревню</button>';
@@ -2062,7 +2062,7 @@ function floatLoot(tileId,labels){
  var pop=document.createElement('div');pop.className='pickup-float';
  pop.style.left=((Number(tileId)%5+.5)*20)+'%';
  pop.style.top=((Math.floor(Number(tileId)/5)+.48)*20)+'%';
- pop.textContent=labels.join('  ·  ');maze.appendChild(pop);
+ pop.innerHTML=labels.map(function(value){var v=String(value),gold=v.slice(0,1)==='◈';return '<span class="float-pickup-entry">'+(gold?goldArt('gold-coin-float'):'')+esc(gold?v.slice(1).trim():v)+'</span>';}).join('  ·  ');maze.appendChild(pop);
  setTimeout(function(){if(pop.parentNode)pop.parentNode.removeChild(pop);},1650);
 }
 function hunterBookDialog(){
@@ -2262,7 +2262,7 @@ function claimTile(t){
  if(kind==='forest-alpha-block')return;
  if(pending){
   if(pending.key){r.key=true;lines.push('<strong>⚿ Ключ от лестницы</strong>');labels.push('⚿ Ключ');}
-  if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>◈ '+found+' монет</strong>');labels.push('◈ +'+found);}
+  if(pending.gold){var found=addGold(pending.gold);lines.push('<strong>'+goldArt('gold-coin-inline')+' '+found+' монет</strong>');labels.push('◈ +'+found);}
   if(pending.potion){r.potions+=pending.potion;lines.push('<strong>✚ '+pending.potion+' эликсир</strong>');labels.push('✚ Эликсир ×'+pending.potion);}
   if(pending.diamonds){r.diamonds=(r.diamonds||0)+pending.diamonds;labels.push('◇ Алмазы ×'+pending.diamonds);}
   if(pending.materials)for(var mat of pending.materials){
@@ -2290,7 +2290,7 @@ function claimTile(t){
  }
  if(kind==='chest'){
   var money=addGold(Math.round((rand(6,14)+r.floor*2)*(1+(r.actIndex||0)*.16)*(1+(bonus('chestGold')+hunterStat('chestGold'))*.01)));
-  lines.push('<strong>◈ '+money+' монет</strong>');labels.push('◈ +'+money);
+  lines.push('<strong>'+goldArt('gold-coin-inline')+' '+money+' монет</strong>');labels.push('◈ +'+money);
   var treasureRoll=Math.random();
    if(treasureRoll<.28){
     var i=addItem(pick(Object.keys(SLOT)),null);
