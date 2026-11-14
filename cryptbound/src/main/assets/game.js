@@ -375,7 +375,7 @@ function startFloor(){
  activateEntranceEquipment(false);
  var revealCount=Math.floor(bonus('revealFloor'))+(s.meta.diamondUpgrades?.scouting||0);
  for(var i=0;i<revealCount;i++){
-  var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+  var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles,r.heroTile).ok;});
   if(!available.length)break;
   var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='trap')triggerTrap(chosen);if(chosen.kind==='empty')chosen.cleared=true;
  }
@@ -522,10 +522,12 @@ function hiddenEnemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.h
  * corpses and decorations are not barriers to the connectivity check. */
 function reachableEnemy(t){
  if(!r||!t||!t.foe||t.foe.hp<=0||!t.revealed)return false;
- // Opened objects, corpses, enemies and uncollected drops are traversable for combat.
- return CR.attackReachable(r.tiles,Number(r.heroTile),t.forestAlphaSquare||[t.id]);
+ // Melee normally requires a route through opened slabs. Event/summoned foes
+ // are the exception: a trapped spawn must remain attackable.
+ return CR.attackReachable(r.tiles,Number(r.heroTile),t.forestAlphaSquare||[t.id])||
+   CR.specialSpawned(t.foe);
 }
-
+function rangedTarget(){return enemies()[0]||null;}
 function target(){return enemies().find(reachableEnemy)||null;}
 function tile(n){return r.tiles[Number(n)]||null;}
 function icon(kind,foe){return window.CryptArt.tile(kind,foe);}
@@ -569,7 +571,7 @@ function activeTileView(t){
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
   return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
  if(!t.revealed){
-  var access=CR.exploreStatus(t,r.tiles);
+  var access=CR.exploreStatus(t,r.tiles,r.heroTile);
   return access.ok?
    '<button class="tile hidden tile-frontier" data-action="reveal" data-id="'+t.id+'" title="Открыть плиту · 1 ход" aria-label="Доступная каменная плита"><span class="slab-face">'+(t.hinted?'✦':'✥')+'</span></button>':
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
@@ -731,7 +733,7 @@ function activeItemDetails(token){
   var stock=FE.ensure(r).items,def=FE.itemDefs[id];if(!Object.prototype.hasOwnProperty.call(usable,id)||!def||!stock[id])return null;
   var attack=id==='bleed_trap'||id==='stun_trap',healing=id==='honey'||id==='mushroom';
   return {name:def[0],description:usable[id],qty:stock[id],action:'forest-use',id:id,
-   disabled:attack?!enemies().some(reachableEnemy):healing&&r.hp>=st.hp,
+   disabled:attack?!enemies().length:healing&&r.hp>=st.hp,
    reason:attack?'Нет доступного врага.':healing?'Здоровье уже полное.':''};
  }
  if(kind==='panther'){
@@ -876,8 +878,8 @@ function spellValid(sp){
  if(r.mp<manaCost(sp))return 'Недостаточно маны';
  if((r.scrolls[sp.id]||0)<1)return 'Нет свитков';
  if(sp.id==='earthgate'&&r.floor<=1)return 'Нет нижних этажей для возвращения';
- if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().some(reachableEnemy)&&!livingRoomGuards().length)return 'Нет пути к врагам';
- if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles).ok;}))return 'Нет доступных плит';
+ if(['attack','burn','stun','chain','drain','aoe','burnall','freezeall','holy','weakness','drainall','sunfall','soulcovenant'].indexOf(sp.kind)>=0&&!enemies().length&&!livingRoomGuards().length)return 'Нет обнаруженных врагов';
+ if(['reveal','earthquake'].indexOf(sp.kind)>=0&&!r.tiles.some(function(t){return CR.exploreStatus(t,r.tiles,r.heroTile).ok;}))return 'Нет доступных плит';
  return null;
 }
 
@@ -1290,7 +1292,7 @@ function bossCallsBackup(e){
  var cells=r.tiles.filter(function(t){return t.kind==='empty'&&!t.foe&&!t.drops&&!t.summon&&t.id!==r.heroTile;});
  if(!cells.length){log('Нет места для подкрепления босса.');return;}
  var cell=pick(cells);cell.kind='enemy';cell.revealed=true;cell.cleared=false;
- cell.foe=mkEnemy(false,false,false);
+ cell.foe=mkEnemy(false,false,false);cell.foe.summoned=true;
  cell.foe.hp=Math.max(5,Math.round(cell.foe.hp*.6));cell.foe.maxHp=cell.foe.hp;
  cell.foe.atk=Math.max(2,Math.round(cell.foe.atk*.6));cell.foe.baseAtk=cell.foe.atk;
  e.bossAdds++;log('Босс призывает подкрепление: '+cell.foe.name+'.');
@@ -1753,7 +1755,8 @@ function useSkill(chosenTarget){
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
  var cave=activeRoom();
  var caveGuards=cave?livingRoomGuards():null;
- var available=cave?caveGuards:enemies().filter(reachableEnemy);
+ var rangedSkill=r.class==='scout'||r.class==='sorceress';
+ var available=cave?caveGuards:rangedSkill?enemies():enemies().filter(reachableEnemy);
  var single=['executioner','guardian','assassin','scout'].includes(r.class);
  if(single&&available.length>1&&chosenTarget==null){
   r.pendingSkill=r.class;close();draw();save();toast('Выберите врага для «'+skill.name+'».');return;
@@ -1762,12 +1765,12 @@ function useSkill(chosenTarget){
  if(chosenTarget!=null){
   if(cave){var fragments=String(chosenTarget).split(':');
    if(Number(fragments[0])===cave.id)selected=caveGuards.find(function(g){return g.slot===Number(fragments[1]);});}
-  else{var chosen=tile(chosenTarget);if(chosen&&reachableEnemy(chosen))selected=chosen;}
+  else{var chosen=tile(chosenTarget);if(chosen&&(rangedSkill?!!chosen.revealed&&!!chosen.foe&&chosen.foe.hp>0:reachableEnemy(chosen)))selected=chosen;}
   if(!selected){toast('Эта цель недоступна.');return;}
  }
  r.pendingSkill=null;
- var t=cave?(selected?{foe:selected,roomGuard:true}:caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):selected||target(),st=stats(),damage=0;
- if(r.class==='scout'&&!t){toast('Нет доступной цели. Сначала откройте путь к врагу.');return;}
+ var t=cave?(selected?{foe:selected,roomGuard:true}:caveGuards.length?{foe:caveGuards[0],roomGuard:true}:null):selected||(rangedSkill?rangedTarget():target()),st=stats(),damage=0;
+ if(r.class==='scout'&&!t){toast('Нужен обнаруженный враг.');return;}
  if(t&&['executioner','guardian','assassin','scout'].includes(r.class)){
   if(r.class==='scout')r.scoutDodgeTurns=1;
   if(!counterBeforeHero(t.foe,t.roomGuard?null:t,cave&&cave.room)||!r)return;
@@ -1795,7 +1798,7 @@ function useSkill(chosenTarget){
    if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
  }else if(r.class==='sorceress'){
-  var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().filter(reachableEnemy).slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
+  var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
   targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
     enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
@@ -1855,7 +1858,7 @@ function advancedCast(sp,chosenTarget){
  var key=sp.kind;
  if(!['blessing','earthgate','aoe','burnall','freezeall','drainall','earthquake','healshield','holy','weakness','lastlight','timestop','sunfall','oceanrewind','worldrewrite','timeloop','firstlight','soulcovenant'].includes(key))return false;
  var st=stats(),magic=spellPower(sp,st);
- var foes=enemies().filter(reachableEnemy);
+ var foes=enemies();
  var heal=function(v){r.hp=Math.min(st.hp,r.hp+Math.ceil(v*(1+bonus('healPower')*.01)));};
  var hit=function(t,dmg,capBoss){
    if(!t||!t.foe||t.foe.hp<=0)return;
@@ -1865,7 +1868,7 @@ function advancedCast(sp,chosenTarget){
   if(t.foe.hp<=0)kill(t);
  };
  function revealConnected(n){
-  var count=0;for(var i=0;i<n;i++){var cells=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+  var count=0;for(var i=0;i<n;i++){var cells=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles,r.heroTile).ok;});
    if(!cells.length)break;var t=pick(cells);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;count++;}
   return count;
  }
@@ -1894,7 +1897,7 @@ function advancedCast(sp,chosenTarget){
   if(key==='earthquake')log('Землетрясение открыло '+revealConnected(3)+' соседних клеток.');
  }else if(key==='healshield'){heal(magic);r.shield+=Math.ceil(magic*.7*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.poisonTurns=0;
  }else if(key==='holy'||key==='weakness'){
-  var t=chosenTarget!=null?tile(chosenTarget):target();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
+  var t=chosenTarget!=null?tile(chosenTarget):rangedTarget();if(t){hit(t,magic*(key==='holy'&&/нежит|скел|мертв|лич|зомб/i.test(t.foe.name)?1.8:1),false);
    if(key==='weakness'&&t.foe.hp>0)t.foe.guard=-Math.min(12,Math.floor(st.pow*.5));}
  }else if(key==='lastlight'){heal(magic);r.shield+=Math.floor(magic*.65);r.resurrection=(r.resurrection||0)+1;
  }else if(key==='timestop'){r.timeStopTurns=Math.max(r.timeStopTurns||0,5+bonus('timeBonus')+TR.rank5(r,'mag_legendary','mp'));
@@ -1954,7 +1957,7 @@ function cast(id,chosenTarget){
   var room=activeRoom(),parts=String(chosenTarget).split(':'),valid=room?
    Number(parts[0])===room.id&&livingRoomGuards().some(function(g){return g.slot===Number(parts[1]);}):
    parts.length===1&&!!tile(parts[0])&&tile(parts[0]).revealed&&!!tile(parts[0]).foe&&tile(parts[0]).foe.hp>0;
-  if(!valid||(!room&&!reachableEnemy(tile(parts[0])))){toast('Нет прохода к выбранному противнику.');return;}
+  if(!valid){toast('Выберите живого обнаруженного противника.');return;}
  }
  r.pendingSpell=null;
  setHeroPose('skill');
@@ -1966,21 +1969,21 @@ function cast(id,chosenTarget){
  }
  if(activeRoom()){castInSideRoom(sp,chosenTarget);return;}
  if(advancedCast(sp,chosenTarget))return;
- var tar=chosenTarget!=null?tile(chosenTarget):target(),st=stats();
+ var tar=chosenTarget!=null?tile(chosenTarget):rangedTarget(),st=stats();
  var magic=spellPower(sp,st);
  if(sp.kind==='heal'){magic=Math.ceil(magic*(1+bonus('healPower')*.01));r.hp=Math.min(st.hp,r.hp+magic);log(sp.name+': восстановлено '+magic+' HP.');}
  else if(sp.kind==='shield'){magic=Math.ceil(magic*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));r.shield+=magic;log((r.titleAuroraTriggered?'Барьер Авроры: ':'Магическая защита: ')+magic+' щита.');}
  else if(sp.kind==='reveal'){
   var count=0;
   for(var j=0;j<sp.base;j++){
-   var covered=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+   var covered=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles,r.heroTile).ok;});
    if(!covered.length)break;
    var t=pick(covered);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;count++;
   }
   log('Око забвения открыло '+count+' скрытых клеток.');
  }else if(sp.kind==='chain'){
-  var first=chosenTarget!=null?tile(chosenTarget):target();
-   var victims=[first].concat(enemies().filter(function(t){return t!==first&&reachableEnemy(t);})).filter(function(t){return t&&reachableEnemy(t);}).slice(0,3+bonus('chainTargets'));
+  var first=chosenTarget!=null?tile(chosenTarget):rangedTarget();
+   var victims=[first].concat(enemies().filter(function(t){return t!==first;})).filter(function(t){return t&&t.foe&&t.foe.hp>0;}).slice(0,3+bonus('chainTargets'));
   victims.forEach(function(t){var dmg=Math.max(1,magic+bonus('chainDamage')-t.foe.def);
     t.foe.hp-=dmg;if(t.foe.hp<=0)kill(t);});
   log('Раскаты грома поражают '+victims.length+' врагов.');
@@ -2032,7 +2035,7 @@ function t1Spawn(mobId,count,task){
   foe.role=role;foe.roleName=BAL.roles[role].name;foe.ability=ability.id;
   foe.abilityName=ability.name;foe.abilityDescription=ability.description;
   foe.skill={name:src.skillName||ability.name,every:scaled.cooldown,description:src.role||ability.description,kind:ability.id};
-  foe.cooldown=scaled.cooldown;foe.loot=src.loot||[];foe.t1Task=task;
+  foe.cooldown=scaled.cooldown;foe.loot=src.loot||[];foe.t1Task=task;foe.spawnedByEvent=true;
   t.kind='enemy';t.revealed=true;t.cleared=false;t.foe=foe;t.drops=null;
  }
  return count;
@@ -2060,7 +2063,7 @@ function forestEventDialog(t){
 function forestReveals(count){
  var opened=0;
  for(var i=0;i<count;i++){
-  var valid=r.tiles.filter(function(t){return !t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&t.kind!=='trap'&&CR.exploreStatus(t,r.tiles).ok;});
+  var valid=r.tiles.filter(function(t){return !t.revealed&&t.kind!=='secret'&&t.kind!=='chamber'&&t.kind!=='trap'&&CR.exploreStatus(t,r.tiles,r.heroTile).ok;});
   if(!valid.length)break;
   var t=pick(valid);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;opened++;
  }
@@ -2103,7 +2106,7 @@ function forestSpawn(type,count,task,alpha,origin){
   foe.id=alpha?'forest-alpha-'+type:source?source.id:'forest-'+type;
   foe.visual=CR.visualId(creature);foe.loot=source&&source.loot||foe.loot;
   foe.roleName=alpha?'Особая охота':source&&source.role||'Лесной зверь';
-  foe.forestTask=task;foe.forestAlpha=!!alpha;
+  foe.forestTask=task;foe.forestAlpha=!!alpha;foe.spawnedByEvent=true;
   if(alpha){foe.maxHp=Math.round(foe.maxHp*4);foe.hp=foe.maxHp;foe.atk=Math.ceil(foe.atk*1.7);foe.def+=3;}
   spot.kind='enemy';spot.cleared=false;spot.revealed=true;spot.foe=foe;
   spot.drops=null;spot.hasKey=false;spot.forestId=null;
@@ -2142,11 +2145,11 @@ function forestPackDialog(){if(!r)return;dialog('<h2>Походный карма
 function forestUse(id,chosenTarget){
  if(id==='bleed_trap'||id==='stun_trap'){
   if(chosenTarget==null){
-   if(!target()){toast('Сначала откройте хотя бы одного противника.');return;}
+   if(!enemies().length){toast('Сначала откройте хотя бы одного противника.');return;}
    r.pendingForestUse=id;close();draw();save();toast('Выберите цель для охотничьего капкана.');return;
   }
   var selected=tile(chosenTarget);
-  if(!selected||!reachableEnemy(selected)){toast('Капкан можно применить только на живого обнаруженного врага.');return;}
+  if(!selected||!selected.revealed||!selected.foe||selected.foe.hp<=0){toast('Капкан можно применить только на живого обнаруженного врага.');return;}
  }
  var provider=forestApi(null);
  if(chosenTarget!=null)provider.target=function(){return tile(chosenTarget);};
@@ -2302,7 +2305,7 @@ function triggerTrap(t){
  function reveal(id){
  if(r.trappedTile!=null){toast('Сперва обезвредьте капкан.');return;}
  var t=tile(id);if(!t||t.revealed)return;
- var access=CR.exploreStatus(t,r.tiles);
+ var access=CR.exploreStatus(t,r.tiles,r.heroTile);
  if(!access.ok){toast(access.reason);return;}
  t.revealed=true;r.ep+=8;
  var k=t.kind;
@@ -2727,12 +2730,12 @@ function titleHelpers(){
  provoke:provoke,
  hiddenTargets:function(){return activeRoom()?[]:hiddenEnemies();},reachable:reachableEnemy,kill:kill,
  hit:function(t,amount){if(!t||!t.foe||t.foe.hp<=0)return;var value=Math.max(1,Math.floor(amount)-(t.foe.def||0));t.foe.hp-=value;if(t.foe.hp<=0)kill(t);},
- flash:function(amount){enemies().filter(reachableEnemy).slice().forEach(function(t){
+ flash:function(amount){enemies().slice().forEach(function(t){
   if(t.foe.hp<=0)return;var hit=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=hit;if(t.foe.hp<=0)kill(t);});},
  cross:function(source,amount){
   var origin=r.tiles.find(function(t){return t.foe===source;});if(!origin)return;
   var row=Math.floor(origin.id/5),col=origin.id%5;
-  enemies().filter(function(t){return t.foe!==source&&(Math.floor(t.id/5)===row||t.id%5===col)&&reachableEnemy(t);}).slice().forEach(function(t){var damage=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=damage;if(t.foe.hp<=0)kill(t);});
+  enemies().filter(function(t){return t.foe!==source&&(Math.floor(t.id/5)===row||t.id%5===col);}).slice().forEach(function(t){var damage=Math.max(1,Math.floor(amount)-t.foe.def);t.foe.hp-=damage;if(t.foe.hp<=0)kill(t);});
  }};
 }
 function gainTalent(id){
@@ -2766,7 +2769,7 @@ function titleToolDialog(){
   controls='<div class="title-rune-list"><strong>'+(holy?'Объединить два одинаковых свитка':'Разобрать один свиток')+'</strong>'+
    (eligible.length?eligible.map(function(sp){return '<button data-action="title-tool-use" data-id="'+sp.id+'">'+uiIcon(schoolIcon(sp.school))+'<span>'+esc(sp.name)+' · '+sp.rank+'★</span><small>×'+r.scrolls[sp.id]+'</small></button>';}).join(''):'<p class="fine">Нет подходящих свитков</p>')+'</div>';
  }else if(t&&t.kind==='bow'){
-  var victims=enemies().filter(reachableEnemy);
+  var victims=enemies();
   controls='<div class="title-rune-list"><strong>Выберите цель выстрела</strong>'+
    (victims.length?victims.map(function(tile){return '<button data-action="title-tool-use" data-id="'+tile.id+'">'+uiIcon('crossbow')+'<span>'+esc(tile.foe.name)+'</span><small>♥ '+tile.foe.hp+'</small></button>';}).join(''):'<p class="fine">Доступных противников нет.</p>')+'</div>';
  }else if(t&&t.kind==='forge'&&(TR.has(r,'adv_great_enchanter')||TR.has(r,'adv_great_swordsmith'))){
@@ -2955,7 +2958,7 @@ function usePreparedPotion(index){
  }else if(id==='cleanse'){r.poisonTurns=0;r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.2));
  }else if(id==='fury'){r.rageTurns=Math.max(r.rageTurns||0,11);
  }else if(id==='insight'){
-  for(var i=0;i<5;i++){var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles).ok;});
+  for(var i=0;i<5;i++){var available=r.tiles.filter(function(t){return CR.exploreStatus(t,r.tiles,r.heroTile).ok;});
    if(!available.length)break;var t=pick(available);t.revealed=true;if(t.kind==='trap')triggerTrap(t);if(t.kind==='empty')t.cleared=true;}
  }else if(id==='phoenix'){r.resurrection=(r.resurrection||0)+1;
  }else if(id==='reflection'){r.reflectionTurns=Math.max(r.reflectionTurns||0,6);
