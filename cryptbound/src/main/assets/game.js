@@ -487,18 +487,8 @@ function hiddenEnemies(){return r.tiles.filter(function(t){return t.foe&&t.foe.h
  * corpses and decorations are not barriers to the connectivity check. */
 function reachableEnemy(t){
  if(!r||!t||!t.foe||t.foe.hp<=0||!t.revealed)return false;
- var origin=Number(r.heroTile),body=t.forestAlphaSquare||[t.id];
- if(!r.tiles[origin]||!r.tiles[origin].revealed)return false;
- var seen=new Set([origin]),queue=[origin];
- while(queue.length){
-  var here=queue.shift();
-  for(var next of CR.near(here)){
-   if(body.indexOf(next)>=0)return true;
-   if(seen.has(next)||!r.tiles[next]||!r.tiles[next].revealed)continue;
-   seen.add(next);queue.push(next);
-  }
- }
- return false;
+ // Opened objects, corpses, enemies and uncollected drops are traversable for combat.
+ return CR.attackReachable(r.tiles,Number(r.heroTile),t.forestAlphaSquare||[t.id]);
 }
 
 function target(){return enemies().find(reachableEnemy)||null;}
@@ -550,7 +540,7 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked" title="'+esc(access.reason)+'" aria-label="Путь заблокирован"><span class="slab-face">◆</span></div>';
  }
  var marker=alive?'enemy':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?uiIcon('bag'):['vial-hp','vial-mp'].includes(marker)?uiIcon('potion'):marker==='coin-small'?uiIcon('coin'):marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var graphic=marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':marker==='coin-small'?uiIcon('coin'):marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).art):marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('F01_018'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
  var name=alive?t.foe.name:marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':'pickup';
  var delay=alive?(t.foe.cooldown==null?((t.foe.skill&&t.foe.skill.every)||EX.monster(t.foe.visual||t.foe.id).every):t.foe.cooldown):0;
@@ -619,7 +609,7 @@ function renderMaze(){
  var artPair=[0,2,4,6,0,4,6,2,6,10][r.actIndex||0];
  var room=activeRoom();
  var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
- var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+' · '+skill.cost+' маны" title="'+esc(skill.name)+' · '+skill.cost+' МН" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small class="quick-mana-cost">◈'+skill.cost+' МН</small><small class="quick-cooldown">'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
+ var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+' · '+skill.cost+' маны" title="'+esc(skill.name)+' · '+skill.cost+'" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small class="quick-mana-cost">'+skill.cost+'</small><small class="quick-cooldown">'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
  var adventurerTool=TR.toolOf(r);
  quick+='<button class="quick-spell adventurer-tool '+(adventurerTool?'':'ability-empty')+'" data-action="title-tool" aria-label="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста — не открыт')+'" title="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста')+'">'+(adventurerTool?uiIcon(adventurerTool.icon):'<span>+</span>')+'<small>'+(adventurerTool?(TR.curSup(r,adventurerTool.kind==='lantern'?'wick':adventurerTool.kind==='bow'?'arrow':adventurerTool.kind==='compass'?'compass':adventurerTool.kind==='rune'?'rune':'quench')||''):'')+'</small></button>';
  var focus=room?null:target(),foe=focus&&focus.foe;
@@ -1271,25 +1261,27 @@ function bossCallsBackup(e){
  e.bossAdds++;log('Босс призывает подкрепление: '+cell.foe.name+'.');
 }
 
-function applyRegionalBossAbility(e,spec,damage){
+function applyRegionalBossAbility(e,spec,damage,attackTarget){
  if(!spec)return damage;
+ var hitHero=attackTarget==null||attackTarget==='hero';
  log('Босс применяет '+spec.name+'.');
  var v=spec.value;
  if(spec.kind==='guard'){e.guard=Math.max(e.guard||0,v);return damage;}
  if(spec.kind==='summon'){for(var i=0;i<v;i++)bossCallsBackup(e);return damage;}
- if(spec.kind==='poison'){hunterPoison(v);return damage;}
- if(spec.kind==='bleed'){r.bleedTurns=Math.max(r.bleedTurns||0,v);return damage;}
- if(spec.kind==='burn'){r.burnTurns=Math.max(r.burnTurns||0,v);return damage;}
- if(spec.kind==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,v);return damage;}
- if(spec.kind==='mana'){r.mp=Math.max(0,r.mp-v);return damage;}
+ if(spec.kind==='poison'){if(hitHero)hunterPoison(v);return damage;}
+ if(spec.kind==='bleed'){if(hitHero)r.bleedTurns=Math.max(r.bleedTurns||0,v);return damage;}
+ if(spec.kind==='burn'){if(hitHero)r.burnTurns=Math.max(r.burnTurns||0,v);return damage;}
+ if(spec.kind==='silence'){if(hitHero)r.silenceTurns=Math.max(r.silenceTurns||0,v);return damage;}
+ if(spec.kind==='mana'){if(hitHero)r.mp=Math.max(0,r.mp-v);return damage;}
  if(spec.kind==='heal'){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*v/100));return damage;}
- if(spec.kind==='drain'){r.hp=Math.max(0,r.hp-v);e.hp=Math.min(e.maxHp,e.hp+v);return damage;}
- if(spec.kind==='shatter'){r.shield=Math.max(0,r.shield-v);r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-v);return Math.ceil(damage*1.5);}
+ if(spec.kind==='drain'){if(hitHero)r.hp=Math.max(0,r.hp-v);e.hp=Math.min(e.maxHp,e.hp+v);return damage;}
+ if(spec.kind==='shatter'){if(hitHero)r.shield=Math.max(0,r.shield-v);if(hitHero)r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-v);return Math.ceil(damage*1.5);}
  if(spec.kind==='frenzy'){return Math.ceil(damage*v);}
  return damage;
 }
 
-function bossAttack(t,e,damage,ready){
+function bossAttack(t,e,damage,ready,attackTarget){
+ var hitHero=attackTarget==null||attackTarget==='hero';
  var phase=e.hp<=e.maxHp*.35?3:e.hp<=e.maxHp*.70?2:1;
  var style=e.bossStyle==null?((r.actIndex||0)*3+(r.locationIndex||0))%6:e.bossStyle;
  e.phaseTurn=(e.phaseTurn||0)+1;
@@ -1301,13 +1293,13 @@ function bossAttack(t,e,damage,ready){
  if(e.telegraph){
   var move=e.telegraph.phase;e.telegraph=null;
   var scenario=BS.get(r.actIndex||0,r.locationIndex||0);
-  if(scenario&&scenario.phases[move-2])return applyRegionalBossAbility(e,scenario.phases[move-2],Math.ceil(damage*(move===3?2.1:1.3)));
+  if(scenario&&scenario.phases[move-2])return applyRegionalBossAbility(e,scenario.phases[move-2],Math.ceil(damage*(move===3?2.1:1.3)),attackTarget);
   log('Особый приём босса: '+e.name+'!');
   if(style===0||style===3)bossCallsBackup(e);
   if(style===1)e.guard=4+Math.floor(r.floor/7);
-  if(style===2)hunterPoison(move+1);
+  if(style===2&&hitHero)hunterPoison(move+1);
   if(style===4){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.045));log('Босс поглощает жизненную силу.');}
-  if(style===5)r.shield=Math.max(0,r.shield-(10+move*5));
+  if(style===5&&hitHero)r.shield=Math.max(0,r.shield-(10+move*5));
   return Math.max(2,Math.round(damage*(move===3?2.4:1.75)));
  }
  if(ready&&phase>=2&&(e.phaseTurn%6===0)){
@@ -1318,7 +1310,7 @@ function bossAttack(t,e,damage,ready){
  if(ready){
   if(style===0&&phase>=2&&e.bossAdds<4&&e.phaseTurn%5===0)bossCallsBackup(e);
   if(style===1)e.guard=Math.max(e.guard||0,2+phase);
-  if(style===2&&phase>=2)hunterPoison(2);
+  if(style===2&&phase>=2&&hitHero)hunterPoison(2);
   if(style===3&&phase>=2&&e.phaseTurn%4===0)bossCallsBackup(e);
   if(style===4&&phase>=2)e.hp=Math.min(e.maxHp,e.hp+Math.max(1,Math.round(e.maxHp*.012)));
   if(style===5&&phase>=2)damage*=2;
@@ -1343,8 +1335,9 @@ function callMonsterMinion(e){
  e.summons++;log(e.name+' призывает прислужника: '+cell.foe.name+'.');
  return true;
 }
-function monsterSpecial(e,damage,room){
+function monsterSpecial(e,damage,room,attackTarget){
  var k=e.ability;if(!k)return damage;
+ var hitHero=attackTarget==null||attackTarget==='hero';
  var level=r.actIndex||0,shieldDamage=Math.max(2,Math.ceil(e.atk*.65));
  var allies=room?room.guards.filter(function(g){return g.hp>0;})
   :enemies().map(function(t){return t.foe;}).filter(function(g){return g.hp>0;});
@@ -1352,33 +1345,33 @@ function monsterSpecial(e,damage,room){
   .sort(function(a,b){return a.hp/a.maxHp-b.hp/b.maxHp;})[0]||e;
  log(e.name+' применяет «'+(e.abilityName||e.skill.name)+'».');
  if(k==='crush')return Math.ceil(damage*1.65);
- if(k==='bleed'){r.bleedTurns=Math.max(r.bleedTurns||0,2+(level>=6?1:0));return damage;}
- if(k==='shatter'){r.shield=Math.max(0,r.shield-shieldDamage);
-  r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-shieldDamage);return Math.ceil(damage*1.18);}
+ if(k==='bleed'){if(hitHero)r.bleedTurns=Math.max(r.bleedTurns||0,2+(level>=6?1:0));return damage;}
+ if(k==='shatter'){if(hitHero)r.shield=Math.max(0,r.shield-shieldDamage);
+  if(hitHero)r.setShieldRemaining=Math.max(0,(r.setShieldRemaining||0)-shieldDamage);return Math.ceil(damage*1.18);}
  if(k==='fortify'){e.guard=Math.max(e.guard||0,2+Math.ceil(e.atk*.23));e.guardTurns=3;return Math.ceil(damage*.6);}
- if(k==='shieldbash'){r.shield=Math.max(0,r.shield-shieldDamage);return Math.ceil(damage*1.28);}
+ if(k==='shieldbash'){if(hitHero)r.shield=Math.max(0,r.shield-shieldDamage);return Math.ceil(damage*1.28);}
  if(k==='guardally'){
   target.guard=Math.max(target.guard||0,2+Math.ceil(e.atk*.28));target.guardTurns=3;
   return Math.ceil(damage*.65);
  }
  if(k==='flurry')return Math.ceil(damage*1.50);
  if(k==='evade'){e.evadeCharges=1;return Math.ceil(damage*.85);}
- if(k==='poison'){hunterPoison(2+(level>=4?1:0));return damage;}
+ if(k==='poison'){if(hitHero)hunterPoison(2+(level>=4?1:0));return damage;}
  if(k==='corrode'){
-  r.armorBreakPower=Math.max(r.armorBreakPower||0,1+Math.floor((level+2)/3));
-  r.armorBreakTurns=Math.max(r.armorBreakTurns||0,3);return damage;
+  if(hitHero)r.armorBreakPower=Math.max(r.armorBreakPower||0,1+Math.floor((level+2)/3));
+  if(hitHero)r.armorBreakTurns=Math.max(r.armorBreakTurns||0,3);return damage;
  }
- if(k==='toxicmana'){hunterPoison(2);
-  r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.55)));return Math.ceil(damage*.8);}
- if(k==='manaburn'){r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.75)));return Math.ceil(damage*.7);}
- if(k==='silence'){r.silenceTurns=Math.max(r.silenceTurns||0,level>=6?2:1);return Math.ceil(damage*.75);}
- if(k==='burn'){r.burnTurns=Math.max(r.burnTurns||0,level>=4?3:2);return damage;}
+ if(k==='toxicmana'){if(hitHero)hunterPoison(2);
+  if(hitHero)r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.55)));return Math.ceil(damage*.8);}
+ if(k==='manaburn'){if(hitHero)r.mp=Math.max(0,r.mp-Math.max(2,Math.ceil(e.atk*.75)));return Math.ceil(damage*.7);}
+ if(k==='silence'){if(hitHero)r.silenceTurns=Math.max(r.silenceTurns||0,level>=6?2:1);return Math.ceil(damage*.75);}
+ if(k==='burn'){if(hitHero)r.burnTurns=Math.max(r.burnTurns||0,level>=4?3:2);return damage;}
  if(k==='healally'){target.hp=Math.min(target.maxHp,target.hp+Math.max(3,Math.ceil(target.maxHp*.15)));
   log('Восстановлено здоровье: '+target.name+'.');return Math.ceil(damage*.45);}
  if(k==='regenerate'){e.hp=Math.min(e.maxHp,e.hp+Math.ceil(e.maxHp*.12));return Math.ceil(damage*.6);}
  if(k==='pierce')return Math.max(Math.ceil(e.atk*1.12),Math.ceil(damage*1.3));
- if(k==='venomshot'){hunterPoison(2);return Math.ceil(damage*1.05);}
- if(k==='silenceshot'){r.silenceTurns=Math.max(r.silenceTurns||0,1);return damage;}
+ if(k==='venomshot'){if(hitHero)hunterPoison(2);return Math.ceil(damage*1.05);}
+ if(k==='silenceshot'){if(hitHero)r.silenceTurns=Math.max(r.silenceTurns||0,1);return damage;}
  if(k==='call'){if(!room)callMonsterMinion(e);return Math.ceil(damage*.65);}
  return damage;
 }
@@ -1472,6 +1465,7 @@ function consumeTurn(){
   if(frozen){log('Время замерло: '+e.name+' пропускает действие.');return;}
    // All revealed enemies act autonomously when their ability timer hits zero.
    var ready=e.cooldown===0,attacks=provoked||ready;
+   var attackTarget=provoked?retaliationTarget:'hero';
    if(e.ranged){
     var shotClock=e.attackCooldown==null?2:e.attackCooldown;
     shotClock=Math.max(0,shotClock-1);
@@ -1482,8 +1476,8 @@ function consumeTurn(){
    if(ready)e.cooldown=interval;
    var amount=Math.max(1,e.atk);
    if(e.boss){
-    amount=bossAttack(t,e,amount,ready);if(amount==null)return;
-   }else if(ready){amount=monsterSpecial(e,amount,false);}
+    amount=bossAttack(t,e,amount,ready,attackTarget);if(amount==null)return;
+   }else if(ready){amount=monsterSpecial(e,amount,false,attackTarget);}
    if(provoked&&retaliationTarget==='summon'){
     if(r.summon&&r.summon.hp>0){
      var summonHit=Math.max(1,Math.ceil(amount)-(r.summon.def||0));
@@ -2434,6 +2428,7 @@ function chamberEnemyPhase(frozen){
    if(g.stun>0){g.stun--;return;}
    if(frozen)return;
    var ready=g.cooldown===0,attacks=provoked||ready;
+   var attackTarget=provoked?retaliationTarget:'hero';
    if(g.ranged){
     var clock=g.attackCooldown==null?2:g.attackCooldown;
     clock=Math.max(0,clock-1);
@@ -2444,7 +2439,7 @@ function chamberEnemyPhase(frozen){
    if(ready)g.cooldown=interval;
    if(FD)FD.actor(g,ready?'skill':'attack',ready?(g.abilityName||g.skill.name):'Удар');
    var damage=Math.max(1,g.atk);
-   if(ready)damage=monsterSpecial(g,damage,room);
+   if(ready)damage=monsterSpecial(g,damage,room,attackTarget);
    if(provoked&&retaliationTarget==='summon'){
     if(r.summon&&r.summon.hp>0){
      var summonHit=Math.max(1,Math.ceil(damage)-(r.summon.def||0));
