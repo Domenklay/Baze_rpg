@@ -24,7 +24,7 @@ for(let i=0;i<3;i++)assert.equal(RG.choose(r,t,1,api()).ok,true);
 assert.equal(state.shaft.middle,3);
 r.floor=state.shaft.base+20;t=event(21);
 for(let i=0;i<3;i++)assert.equal(RG.choose(r,t,0,api()).ok,true);
-const jump=RG.choose(r,t,1,api());assert.equal(jump.navigate,20);assert.equal(state.shaft.jumped,true);
+const jump=RG.choose(r,t,0,api());assert.equal(jump.navigate,20);assert.equal(state.shaft.jumped,true);
 assert.equal(RG.choose(r,t,1,api()).navigate,undefined,'jump cannot be reissued');
 r.floor=state.bur.floor;t=event(12);assert(RG.floorSpecials(r).includes(12));
 let start=RG.choose(r,t,0,api());assert(start.ok&&start.turn&&t.cleared);
