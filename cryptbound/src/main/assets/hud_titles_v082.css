@@ -1,0 +1,24 @@
+/* Compact illustrated dungeon HUD: EP, newly painted money and live spell power. */
+.expedition-top{grid-template-columns:minmax(0,1fr) minmax(33px,max-content) 45px minmax(37px,max-content) 33px;column-gap:5px;align-items:center}
+.expedition-ep{min-width:34px;max-width:76px;height:42px;padding:1px 3px;border:1px solid #7b6341;background:radial-gradient(ellipse at 50% 18%,#382d22,#191714 72%);border-radius:5px;box-shadow:inset 0 0 4px #111;color:#e2c18b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.expedition-ep>.ui-icon{height:14px;width:14px;color:#c4ab7a;flex:none}
+.expedition-ep>span{font:bold 12px/1.2 Georgia,serif;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.expedition-ep>small{font:7px/1 Arial,sans-serif;letter-spacing:.2px;color:#a48f6a}
+.expedition-money{gap:3px;min-width:37px}
+.expedition-money span{white-space:nowrap;gap:3px}
+.gold-coin-icon{width:17px;height:17px;min-width:17px;object-fit:contain;filter:drop-shadow(0 1px 2px #000a)}
+.quick-spell.class-ability{overflow:visible}
+.quick-spell.class-ability .quick-mana-cost{right:auto!important;left:-2px!important;bottom:-2px!important;top:auto!important;padding:0 2px!important;color:#99bde1!important;background:#111b28dd!important;font:7px/1 Arial,sans-serif!important;white-space:nowrap;border:1px solid #39475a55;border-radius:2px}
+.quick-spell.class-ability .quick-cooldown{top:-3px!important;bottom:auto!important;right:-2px!important;padding:0 2px!important;color:#ead5ac!important;font:7px/1 Arial,sans-serif!important;background:#17150fda!important;border-radius:2px}
+.book-spell-power{font:10px/1.1 Georgia,serif;font-style:normal;font-weight:bold;color:#63371d;display:block;margin:1px 0}
+.spell-detail-preview{margin:9px 0 0;padding:8px 9px;border:1px solid #96714666;background:#c5a67426;color:#4b2f17;display:flex;flex-direction:column;gap:4px;text-align:center}
+.spell-detail-preview strong{font:17px/1.2 Georgia,serif;color:#58351c}
+.spell-detail-preview small{font:10px/1.35 Arial,sans-serif;color:#705033}
+@media(max-width:390px){
+ .expedition-top{grid-template-columns:minmax(0,1fr) minmax(31px,max-content) 43px minmax(33px,max-content) 30px;column-gap:3px}
+ .expedition-ep{min-width:31px;height:39px;padding:1px}
+ .expedition-ep>span{font-size:10px}
+ .expedition-money{font-size:10px}
+ .gold-coin-icon{width:15px;height:15px;min-width:15px}
+ .quick-spell.class-ability .quick-mana-cost,.quick-spell.class-ability .quick-cooldown{font-size:6px!important}
+}
