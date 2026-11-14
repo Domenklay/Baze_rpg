@@ -19,6 +19,8 @@ var sceneSprites={
  46:'herbalist_mara',47:'forest_lantern',48:'fungal_colony',
  49:'forest_earth_portal',50:'grove_altar'
 };
+/* Small portrait layered over a corresponding scenery sprite in quest dialogs. */
+var characterSprites={23:'herbal_apprentice',31:'poacher',32:'poacher_captain'};
 var itemSprites={
  snare_wire:'snare_wire',healing_salve:'healing_salve',
  herbal_recipe:'herbal_recipe',ration:'ration',cart_token:'cart_token',
@@ -60,10 +62,13 @@ if(FE){
  for(var id in sceneSprites){
   var def=FE.scene(Number(id));if(def)def.sprite=scene(Number(id));
  }
+ for(var id in characterSprites){
+  var npcDef=FE.scene(Number(id));if(npcDef)npcDef.characterSprite=pathOf(characterSprites[id]);
+ }
  for(var name in itemSprites){
   if(FE.itemDefs[name])FE.itemDefs[name][1]=item(name);
  }
 }
-window.CryptForestV2Art={ROOT:ROOT,sceneSprites:sceneSprites,itemSprites:itemSprites,gearSprites:gearSprites,
+window.CryptForestV2Art={ROOT:ROOT,sceneSprites:sceneSprites,characterSprites:characterSprites,itemSprites:itemSprites,gearSprites:gearSprites,
  scene:scene,item:item,gear:gear,pathOf:pathOf};
 })();
