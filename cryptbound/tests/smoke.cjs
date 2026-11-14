@@ -904,11 +904,10 @@ test('Unlimited backpack displays found items in slots but not equipped gear or 
  }finally{Math.random=random;}
 });
 
-test('Compact ability costs and generated loot sprites are wired to HUD',()=>{
+test('Mana-labelled ability costs and generated loot sprites are wired to HUD',()=>{
  const live=win.Crypt;live.debug.action('begin','necromancer');
  const html=el('content').innerHTML;
- assert.match(html,/class="quick-mana-cost">8<\/small>/,'Class ability shows only the number');
- assert.doesNotMatch(html,/class="quick-mana-cost">[^<]*МН/,'No mana suffix on ability');
+ assert.match(html,/class="quick-mana-cost">◈8 МН<\/small>/,'Class ability displays an explicit mana cost');
  for(const name of ['vial-hp','vial-mp','loot-pouch']){
   const img=path.join(root,'ui',name+'.png');
   assert.ok(fs.statSync(img).size>400,name+' must have an actual PNG file');
