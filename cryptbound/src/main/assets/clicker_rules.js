@@ -86,6 +86,22 @@ function descriptions(id){
 function near(id){var x=id%5,y=Math.floor(id/5),r=[];
  if(x>0)r.push(id-1);if(x<4)r.push(id+1);if(y>0)r.push(id-5);if(y<4)r.push(id+5);return r;
 }
+/* Combat routes cross any revealed floor: items, drops, traps and even other
+   discovered enemies. Only unopened slabs/walls interrupt connectivity. */
+function attackReachable(tiles,from,targets){
+ if(!tiles||!tiles[from]||!tiles[from].revealed)return false;
+ var goals=new Set(Array.isArray(targets)?targets.map(Number):[Number(targets)]);
+ var seen=new Set([from]),queue=[from];
+ while(queue.length){
+  var here=queue.shift();
+  for(var next of near(here)){
+   if(goals.has(next))return true;
+   if(seen.has(next)||!tiles[next]||!tiles[next].revealed)continue;
+   seen.add(next);queue.push(next);
+  }
+ }
+ return false;
+}
 function openPath(tiles){
  var start=tiles.find(function(t){return t.kind==='start';});
  if(!start)return new Set();
@@ -149,5 +165,5 @@ function rangedSource(){
 }
 window.ClickerRules={region:region,regionIndex:regionIndex,group:group,setDefinition:setDefinition,gear:gearFromCatalog,
  counts:counts,bonuses:bonuses,descriptions:descriptions,thresholds:thresholds,setRules:setRules,near:near,openPath:openPath,exploreStatus:exploreStatus,
- summonSpot:summonSpot,walkPath:walkPath,visualId:visualId,rangedSource:rangedSource};
+ summonSpot:summonSpot,walkPath:walkPath,attackReachable:attackReachable,visualId:visualId,rangedSource:rangedSource};
 })();
