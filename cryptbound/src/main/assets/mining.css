@@ -1,0 +1,54 @@
+/* T1 — Каменистое нагорье: доступ к кирке, рудные жилы, шестилучевая паутинка. */
+.mine-hud-access{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:0;position:relative}
+.mine-hud-pick{font-size:25px;color:#d8b77c;line-height:1}
+.mine-hud-access small{font-size:10px;line-height:1;color:#f8e8bf;font-weight:700}
+.mine-gear-art{width:100%;height:100%;min-height:38px;display:grid;place-items:center;font-size:31px;color:#ceb083;text-shadow:1px 2px 0 #2a211e}
+.mine-vein-art{position:relative;display:grid;place-items:center;margin:auto;width:62%;height:66%;font-size:31px;line-height:1;color:#aaaeb3;text-shadow:-3px 2px #4f5358,2px 4px #30333a;filter:drop-shadow(0 2px 0 #17151a)}
+.mine-vein-art:before,.mine-vein-art:after{content:"";position:absolute;background:currentColor;clip-path:polygon(22% 0,100% 24%,82% 100%,0 78%);z-index:-1}
+.mine-vein-art:before{width:47%;height:60%;left:7%;top:10%;opacity:.5;transform:rotate(-15deg)}
+.mine-vein-art:after{width:44%;height:67%;right:4%;bottom:0;opacity:.35;transform:rotate(22deg)}
+.mine-vein-art small{position:absolute;right:-12px;bottom:-6px;padding:1px 3px;font-size:11px;color:#f8eed8;background:#302622;border:1px solid #9c886d;border-radius:3px;text-shadow:none}
+.mine-vein-art.ore-steel,.mine-ore-dot.ore-steel{color:#d3c9a7}
+.mine-vein-art.ore-quartz,.mine-ore-dot.ore-quartz{color:#75b5d9}
+.mine-vein-art.ore-rune,.mine-ore-dot.ore-rune{color:#b991ed}
+.tile-ore-vein{border-color:#826b4f!important;background:linear-gradient(145deg,#4b4039,#26292e)!important}
+.mine-dialog{font-size:13px;max-width:100%;display:grid;gap:13px}
+.mine-summary{display:flex;align-items:center;gap:12px;border:1px solid #7b684e;background:#2e2825;padding:10px;border-radius:7px}
+.mine-summary .mine-emblem{display:grid;place-items:center;width:50px;height:50px;flex:none;background:#40372c;border:2px solid #b18c51;border-radius:6px;color:#efcd8a;font-size:29px}
+.mine-summary b{display:block;color:#e7d3ac;font-size:15px}
+.mine-summary small{display:block;color:#c8bdab;margin-top:3px}
+.mine-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mine-tabs button{padding:11px 6px;border:1px solid #7a6852;background:#332d28;color:#d9c8aa;border-radius:6px;cursor:pointer;font-weight:700}
+.mine-tabs button.selected{background:#685037;border-color:#d4b47b;color:#fff4d7}
+.mine-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mine-stat-grid span{background:#27252a;border:1px solid #6b5d4c;border-radius:6px;padding:10px 4px;text-align:center}
+.mine-stat-grid strong{display:block;font-size:21px;color:#e5c48c}
+.mine-stat-grid small{display:block;font-size:10px;color:#bdb4a7;margin-top:4px}
+.mine-xp{display:grid;gap:5px}
+.mine-xp>b{color:#dccbaa}
+.mine-xp>div{height:9px;border:1px solid #786852;background:#211f24;border-radius:5px;overflow:hidden}
+.mine-xp i{display:block;background:linear-gradient(90deg,#908258,#e0c181);height:100%}
+.mine-ore-list{display:grid;gap:5px}
+.mine-ore-list>div{display:flex;align-items:center;gap:9px;padding:6px 9px;border:1px solid #625744;background:#2c2928;border-radius:5px}
+.mine-ore-list>div>span:nth-child(2){flex:1;color:#eee0c6}
+.mine-ore-list small{display:block;color:#a9a399;font-size:10px}
+.mine-ore-list b{font-variant-numeric:tabular-nums;color:#e5c48c}
+.mine-ore-dot{width:23px;height:23px;flex:none;background:currentColor;clip-path:polygon(22% 3%,72% 0,100% 36%,78% 100%,8% 86%,0 38%);color:#9198a1;box-shadow:inset 3px 3px #e7e0dc}
+.mine-web{position:relative;width:min(100%,340px);aspect-ratio:1;margin:0 auto;border-radius:50%;background:radial-gradient(circle,#55483a 0 17%,#322f30 18% 30%,#302c2b 31% 60%,#221f22 62% 100%);border:2px solid #7b6345;box-shadow:inset 0 0 22px #100e0c}
+.mine-web:before,.mine-web:after{content:"";position:absolute;border:1px dashed #77674e;border-radius:50%;left:17%;top:17%;width:66%;height:66%;pointer-events:none}
+.mine-web:after{left:7%;top:7%;width:86%;height:86%}
+.mine-ray{position:absolute;left:50%;top:50%;height:2px;width:43%;background:#8f7853;transform-origin:0 50%;transform:rotate(var(--ray-angle));pointer-events:none}
+.mine-web-core{position:absolute;z-index:1;top:50%;left:50%;transform:translate(-50%,-50%);width:53px;height:53px;border:2px solid #d4b17b;border-radius:50%;background:#483b2f;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f5d89a;font-size:22px}
+.mine-web-core small{font-size:10px}
+.mine-web-node{position:absolute;z-index:2;transform:translate(-50%,-50%);width:38px;height:38px;border:2px solid #b39a68;border-radius:50%;background:#544536;color:#fff0c5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0;cursor:pointer;box-shadow:0 1px 4px #15110e}
+.mine-web-node>span{font-weight:700;font-size:15px;line-height:17px}
+.mine-web-node>small{font-size:9px;line-height:11px}
+.mine-web-node.locked{filter:grayscale(1);opacity:.7}
+.mine-web-node.selected{border-color:#f4e8ae;background:#856a3f;box-shadow:0 0 0 3px #a8813e88}
+.mine-web-node.maxed{border-color:#8ac9bb;color:#d9fff1}
+.mine-node-detail{display:grid;gap:7px;background:#2d2928;border:1px solid #83704f;border-radius:8px;padding:12px}
+.mine-node-detail b{font-size:15px;color:#f6d7a4}
+.mine-node-detail small,.mine-node-detail p{color:#d6c8b7;margin:0}
+.mine-branch-legend{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:center}
+.mine-branch-legend span{font-size:10px;color:#b7a98e;padding:3px;background:#2a2522;border-radius:4px}
+@media (max-width:360px){.mine-web{width:min(100%,304px)}.mine-web-node{width:34px;height:34px}.mine-web-core{width:47px;height:47px}.mine-branch-legend{grid-template-columns:repeat(2,1fr)}}
