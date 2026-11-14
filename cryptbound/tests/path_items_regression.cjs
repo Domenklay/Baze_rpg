@@ -36,6 +36,16 @@ const prevHp=foe.hp,prevTurn=run.turn;
 A('strike',enemy.id);
 assert.ok(foe.hp<prevHp,'Opened floor and uncollected loot must not block melee reachability');
 assert.equal(run.turn,prevTurn+1,'Successful attack must cost exactly one turn');
+// All revealed objects are attack-passable even if uncollected.
+for(const kind of ['chest','corpse','trap','altar','vial-hp','vial-mp']){
+ passage.kind=kind;passage.revealed=true;passage.cleared=false;passage.drops=null;
+ foe.hp=120;foe.deathProcessed=false;
+ const old=foe.hp,turn=run.turn;
+ A('strike',enemy.id);
+ assert.ok(foe.hp<old,kind+' must not block attacking a visible enemy');
+ assert.equal(run.turn,turn+1,kind+' must not cancel the attack turn');
+}
+passage.kind='empty';passage.drops={gold:7};
 // An actually closed slab still blocks the same enemy.
 foe.hp=120;foe.deathProcessed=false;run.floorCleared=false;passage.revealed=false;passage.drops=null;passage.cleared=false;
 const blocked=run.turn;A('strike',enemy.id);
