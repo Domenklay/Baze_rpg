@@ -22,7 +22,7 @@ let html=el('content').innerHTML;
 assert.match(html,/class="expedition-ep"/);
 assert.match(html,/data-id="talents"[^>]*title="Очки исследования[^"]*"[^>]*aria-label="Очки исследования: 41"/);
 assert.match(html,/class="gold-coin-icon" src="ui\/gold_coin\.png"/);
-assert.match(html,/class="quick-mana-cost">◈8 МН/);
+assert.match(html,/class="quick-mana-cost">8<\/small>/,"Class ability displays mana cost numerically");
 assert.match(html,/class="quick-cooldown"/);
 r.journalNotes=['Запись путешественника — это текст, не предмет'];
 HB.acquire(state.meta);
