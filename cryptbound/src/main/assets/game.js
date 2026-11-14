@@ -2,6 +2,15 @@
 (function(){
 'use strict';
 var KEY='cryptbound_local_v1',s=null,toastTimer=0,heroMoveToken=0;
+/* TEMPORARY PLAYTEST BOOST. Remove this constant and grantTestResearch()
+   when finishing the title/talent testing phase. */
+var TEST_START_RESEARCH_POINTS=100000;
+function grantTestResearch(run){
+ if(!run||run.testResearchGranted)return false;
+ run.ep=(Number(run.ep)||0)+TEST_START_RESEARCH_POINTS;
+ run.testResearchGranted=true;
+ return true;
+}
 var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,RE=window.CryptT1Encounters;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
@@ -393,6 +402,7 @@ function begin(hero){
     potions:3,lootBag:[],pendingSkill:null,trappedTile:null,summon:null,shield:0,blessed:0,poisonTurns:0,tiles:[],log:[],tab:'maze',soulBag:[],journalNotes:[],uniqueFinds:{},hunterCounted:{},forestWellStats:{},forestWellUses:0,forest:{seen:{},flags:{},items:{},battles:{},hunts:{},pendingTrophies:{},uses:{}},
     skillUsed:-100,skillTurns:0,eventIndex:0,floorFlags:[],mastered:0,summonTile:null,fx:null,fxUntil:0};
  TR.init(r);
+ grantTestResearch(r);
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
  fillPreparedPotions(r);
@@ -1180,7 +1190,7 @@ function resumeExpedition(){
  var carry=s.meta.activeExpedition;
  if(r||!carry)return;
  if(!DN.location(carry.actIndex,carry.locationIndex)){toast('Ошибка следующей локации.');return;}
- r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);
+ r=s.run=carry;s.meta.activeExpedition=null;TR.init(r);grantTestResearch(r);
  r.floor=1;r.portalReady=false;r.bossClears={};r.eliteSchedule={};r.eliteClears={};r.rangerType=null;r.key=false;r.summon=null;r.summonTile=null;
  r.materials={};r.diamonds=0;r.tiles=[];
  r.earthGateFound=false;r.earthGateTitleGranted=false;r.sixStarFound=false;r.spellHistory=[];
@@ -3305,44 +3315,92 @@ function action(name,id){
  if(name==='buy'){buy(id);return;}
  if(name==='puzzle-answer'){puzzleAnswer(id);return;}
 }
-/* Hold a normal maze tile, then trace neighboring tiles with the same finger.
-   Each valid reveal or pickup costs its ordinary turn; no free loot or attacks.
-   The gesture stops on traps, event dialogs and any unsafe/blocked square. */
+/* Hold and trace to reveal, fight, and loot: every action keeps the normal
+   game turn, counterattack, key, and reachability rules. No free combat.
+   The rate is limited to one action per 500 ms. Touching several cells queues
+   them in order; enemies are fought until dead before advancing to the next. */
+var QUICK_SWEEP_INTERVAL_MS=500;
 function quickSweepTile(id){
- if(!r||activeRoom()||r.trappedTile!=null||r.pendingSpell||r.pendingSkill||r.pendingForestUse||
+ if(!r||activeRoom()||r.pendingSpell||r.pendingSkill||r.pendingForestUse||
   $('overlay').innerHTML)return false;
- var t=tile(id);if(!t||t.foe&&t.foe.hp>0||t.summon)return false;
- var allowed=false,verb=null;
+ var t=tile(id);
+ if(!t||t.summon||r.trappedTile!=null&&Number(r.trappedTile)!==Number(t.id))return false;
+ var verb=null;
  if(!t.revealed){
-  allowed=CR.exploreStatus(t,r.tiles,r.heroTile).ok;verb='reveal';
- }else if(!t.cleared&&(t.drops||
-  ['coin','coin-small','potion','vial-hp','vial-mp','chest'].indexOf(t.kind)>=0)){
-  allowed=true;verb='pickup';
+  if(!CR.exploreStatus(t,r.tiles,r.heroTile).ok)return false;
+  verb='reveal';
+ }else if(t.foe&&t.foe.hp>0){
+  if(r.class!=='scout'&&!reachableEnemy(t))return false;
+  verb='strike';
+ }else if(!t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block'){
+  // Includes corpses, keys, treasure, events, and active traps.
+  verb='pickup';
  }
- if(!allowed)return false;
- var started=r.turn,run=r;
+ if(!verb)return false;
+ var run=r,turn=r.turn;
  action(verb,t.id);
- return !!r&&r===run&&r.turn>started;
+ return !!r&&r===run&&r.turn>turn;
 }
-var quickSweep=null,quickSweepTimer=null,quickSweepSuppressUntil=0;
+function sweepTilePending(t){
+ if(!t)return false;
+ if(!t.revealed)return true;
+ if(t.foe&&t.foe.hp>0)return true;
+ return !t.cleared&&t.kind!=='exit'&&t.kind!=='start'&&t.kind!=='forest-alpha-block';
+}
+var quickSweep=null,quickSweepTimer=null,quickSweepClock=null,quickSweepSuppressUntil=0;
 function cancelQuickSweep(){
- clearTimeout(quickSweepTimer);quickSweepTimer=null;
- if(quickSweep&&quickSweep.started)quickSweepSuppressUntil=Date.now()+550;
+ clearTimeout(quickSweepTimer);clearInterval(quickSweepClock);
+ quickSweepTimer=null;quickSweepClock=null;
+ if(quickSweep&&quickSweep.started)quickSweepSuppressUntil=Date.now()+800;
+ if(quickSweep&&quickSweep.capture&&$('app').releasePointerCapture){
+  try{$('app').releasePointerCapture(quickSweep.pointerId);}catch(ignore){}
+ }
  quickSweep=null;
+}
+function sweepQueueCell(entry,id){
+ if(id==null)return;
+ id=String(id);
+ if(entry.queue.indexOf(id)<0)entry.queue.push(id);
+}
+function quickSweepTick(entry){
+ if(quickSweep!==entry||!entry.started)return;
+ if(!r||activeRoom()||$('overlay').innerHTML){cancelQuickSweep();return;}
+ // Being caught is not bypassed: the trap must be disarmed as the next turn.
+ if(r.trappedTile!=null)sweepQueueCell(entry,r.trappedTile);
+ if(r.trappedTile!=null){
+  const trapped=String(r.trappedTile),index=entry.queue.indexOf(trapped);
+  if(index>0){entry.queue.splice(index,1);entry.queue.unshift(trapped);}
+ }
+ if(!entry.queue.length)return;
+ var id=entry.queue[0],did=quickSweepTile(id);
+ quickSweepSuppressUntil=Date.now()+800;
+ if(!r||$('overlay').innerHTML){cancelQuickSweep();return;}
+ var t=tile(id);
+ if(!sweepTilePending(t)||!did){
+  // Inaccessible tiles never become free actions and do not freeze the gesture.
+  entry.queue.shift();
+ }
+ if(r.trappedTile!=null)sweepQueueCell(entry,r.trappedTile);
 }
 document.addEventListener('pointerdown',function(e){
  if(!r||$('overlay').innerHTML||activeRoom()||e.button>0)return;
  var target=e.target.closest('.maze .tile');
- if(!target||target.dataset.hold||!['reveal','pickup','move-hero'].includes(target.dataset.action))return;
+ if(!target||target.dataset.id==null)return;
  cancelQuickSweep();
- var entry={pointerId:e.pointerId,x:e.clientX||0,y:e.clientY||0,startId:target.dataset.id,started:false,last:null};
+ var entry={pointerId:e.pointerId,x:e.clientX||0,y:e.clientY||0,
+  queue:[String(target.dataset.id)],started:false,capture:false};
  quickSweep=entry;
  quickSweepTimer=setTimeout(function(){
   if(quickSweep!==entry||!r)return;
-  entry.started=true;entry.last=entry.startId;
-  quickSweepSuppressUntil=Date.now()+550;
-  quickSweepTile(entry.startId);
- },280);
+  entry.started=true;quickSweepTimer=null;
+  quickSweepSuppressUntil=Date.now()+800;
+  // Capture on the stable root, not on tiles that redraw after every turn.
+  if($('app').setPointerCapture){
+   try{$('app').setPointerCapture(entry.pointerId);entry.capture=true;}catch(ignore){}
+  }
+  quickSweepTick(entry);
+  if(quickSweep===entry)quickSweepClock=setInterval(function(){quickSweepTick(entry);},QUICK_SWEEP_INTERVAL_MS);
+ },QUICK_SWEEP_INTERVAL_MS);
 });
 document.addEventListener('pointermove',function(e){
  var entry=quickSweep;if(!entry||entry.pointerId!==e.pointerId)return;
@@ -3352,15 +3410,13 @@ document.addEventListener('pointermove',function(e){
   return;
  }
  if(e.cancelable)e.preventDefault();
- if(!r||r.trappedTile!=null||$('overlay').innerHTML){cancelQuickSweep();return;}
+ if(!r||$('overlay').innerHTML){cancelQuickSweep();return;}
  var under=document.elementFromPoint&&document.elementFromPoint(e.clientX,e.clientY);
  var cell=under&&under.closest&&under.closest('.maze .tile');
- if(!cell||cell.dataset.id==null||cell.dataset.id===entry.last)return;
- entry.last=cell.dataset.id;
- quickSweepTile(entry.last);
- quickSweepSuppressUntil=Date.now()+550;
+ if(cell&&cell.dataset.id!=null)sweepQueueCell(entry,cell.dataset.id);
+ quickSweepSuppressUntil=Date.now()+800;
 });
-['pointerup','pointercancel'].forEach(function(type){
+['pointerup','pointercancel','lostpointercapture'].forEach(function(type){
  document.addEventListener(type,function(e){
   if(quickSweep&&quickSweep.pointerId===e.pointerId)cancelQuickSweep();
  });
@@ -3380,6 +3436,8 @@ var holdStart=null;
 document.addEventListener('pointerdown',function(e){
  if(!r)return;
  var t=e.target.closest('[data-hold]');if(!t)return;
+ // Long-press attacks now own enemy tiles; the summoned hero still has details.
+ if(t.closest('.maze .tile')&&t.dataset.hold==='enemy')return;
  clearTimeout(holdTimeout);
  holdStart={x:e.clientX||0,y:e.clientY||0};
  var kind=t.dataset.hold,id=t.dataset.id;
@@ -3407,10 +3465,10 @@ window.Crypt={save:save,back:function(){
  if(activeRoom()){r.chamberActive=null;draw();save();return;}
  if(r&&r.tab!=='maze'){r.tab='maze';draw();return;}
  toast('Лабиринт хранит ваши следы.');
- },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction,quickSweep:quickSweepTile}};
+ },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction,quickSweep:quickSweepTile,quickSweepInterval:QUICK_SWEEP_INTERVAL_MS,testResearch:TEST_START_RESEARCH_POINTS}};
 s=load();
 if(!s)fresh();r=s.run;
-if(r){if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());}
+if(r){grantTestResearch(r);if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());save();}
 if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();
 // The village is the entry screen. Hero selection opens from «В поход».
