@@ -129,7 +129,7 @@ function render(run,t){
  var def=scene(t.forestId);if(!def)return '';
  var opts=choicesFor(run,t);
  return '<div class="forest-event-dialog"><div class="sheet-kicker">ЛЕСНАЯ ОКРАИНА · НАХОДКА '+String(def.id).padStart(2,'0')+'/50</div>'+
-  '<h2>'+e(def.title)+'</h2><div class="forest-event-picture">'+image(def.sprite||def.art)+'</div><p>'+e(def.text)+'</p>'+
+  '<h2>'+e(def.title)+'</h2><div class="forest-event-picture'+(def.characterSprite?' forest-event-duo':'')+'">'+image(def.sprite||def.art)+(def.characterSprite?image(def.characterSprite,'forest-event-character'):'')+'</div><p>'+e(def.text)+'</p>'+
   (def.id===1&&t.forestPhase==='reward'?'<p class="golden">Три волка побеждены. Рыжуха уже может спуститься с пня.</p>':'')+
   opts.map(function(opt,i){
    // Hidden choices preserve their original index for validation in choose().
