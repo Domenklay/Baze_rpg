@@ -12,7 +12,18 @@ var spellRewards={
  mag_bishop:['iceshield',3],mag_fire:['fireball',5],mag_dark:['deathripple',4],
  mag_earth:['gravity',2],mag_air:['lightningbolt',5],mag_light:['holybolt',4],mag_water:['icicle',3]
 };
-function level(r,id){return r&&r.talents?Math.max(0,Number(r.talents[id])||0):0;}
+function ownedLevel(r,id){return r&&r.talents?Math.max(0,Number(r.talents[id])||0):0;}
+/* Complete original equipment sets temporarily lend rank-I titles.
+   They never persist in the title tree or unlock permanent branches. */
+function borrowedTitle(r,id){
+ if(!r||!window.ClickerRules)return false;
+ var count=window.ClickerRules.counts(r.equip||{},r.items||[]);
+ return Object.keys(count).some(function(setId){
+  var spec=window.ClickerRules.setRules(setId);
+  return spec&&spec.borrowTitle===id&&count[setId]>=spec.slots.length;
+ });
+}
+function level(r,id){return Math.max(ownedLevel(r,id),borrowedTitle(r,id)?1:0);}
 function has(r,id){return level(r,id)>0;}
 var TITLE_SUITS={
  adv_magic_bandit:{id:'noble',pieces:[['bracer','Лента дворянина'],['ring','Кольцо этикета'],['cloak','Бархатный плащ']]},
@@ -87,6 +98,10 @@ function init(r){
  if(!r.titleMastery)r.titleMastery={};
  if(!r.titleSupplies)r.titleSupplies={};
  if(!r.titleFlags)r.titleFlags={};
+ // Earlier saves never granted the night-walker's lantern wicks.
+ if(ownedLevel(r,'adv_night_walker')>0&&!r.titleFlags.lanternKitGranted){
+  supply(r,'wick',2);r.titleFlags.lanternKitGranted=true;
+ }
  if(!r.titleFloorAtk)r.titleFloorAtk=0;
  if(!r.titleHealAtk)r.titleHealAtk=0;
  if(!r.titleTurnTick)r.titleTurnTick=0;
@@ -96,14 +111,14 @@ function init(r){
  if(has(r,'war_paladin')&&r.titlePaladinFlat==null)r.titlePaladinFlat=Math.max(1,Math.round((r.hp||1)*.10));
 }
 function pathConflict(r,t){
- return data.some(function(x){return x.tree===t.tree&&x.rank===t.rank&&x.id!==t.id&&has(r,x.id);});
+ return data.some(function(x){return x.tree===t.tree&&x.rank===t.rank&&x.id!==t.id&&ownedLevel(r,x.id)>0;});
 }
 function unlocked(r,t){
  if(pathConflict(r,t))return false;
- return t.rank===1||(t.parents||[]).some(function(id){return has(r,id);});
+ return t.rank===1||(t.parents||[]).some(function(id){return ownedLevel(r,id)>0;});
 }
 function cost(r,t){
- var n=level(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
+ var n=ownedLevel(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
  var main=(r.class==='necromancer'||r.class==='sorceress')?1:(r.class==='guardian'||r.class==='executioner')?0:2;
  if(t.tree!==main)raw*=2;
  var noble=titleSetEquipped(r,'noble');
@@ -115,6 +130,7 @@ function reward(r,t,levelNum,h){
  var got=spellRewards[t.id];if(got)h.grant(got[0],got[1],'title');
  if(t.id==='mag_planar')h.grant('earthgate',1,'title');
  if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',3);
+ if(t.id==='adv_night_walker')supply(r,'wick',levelNum+1);
  grantTitlePiece(r,t,levelNum,h);
  if(t.id==='adv_weapon_master'){supply(r,'license',1);}
  if(t.id==='adv_elven_ranger')supply(r,'leopard',1);
@@ -129,7 +145,7 @@ function reward(r,t,levelNum,h){
  if(t.id==='adv_legendary_hunter'&&levelNum===1)supply(r,'arrow',3);
 }
 function upgraded(r,t,h){
- var old=h.stats(),n=level(r,t.id);
+ var old=h.stats(),n=ownedLevel(r,t.id);
  r.talents[t.id]=n+1;
  reward(r,t,n+1,h);
  var now=h.stats();
@@ -184,10 +200,47 @@ function floor(r,h){
  if(r.floor>1&&titleSetEquipped(r,'hunter')>0)r.ep+=3*titleSetEquipped(r,'hunter');
  if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'rune')===3)supply(r,'rune',1);
  if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'smith')===3)supply(r,'quench',1);
- if(has(r,'adv_night_walker')&&Math.random()<.2+.17*level(r,'adv_night_walker')){var key=r.tiles.find(function(t){return t.hasKey||t.drops&&t.drops.key;});if(key){key.hinted=true;h.log('Фонарь указывает на камень, за которым спрятан ключ.');}}
- if(has(r,'adv_seeker')){var mobs=r.tiles.filter(function(t){return t.foe&&t.foe.hp>0;});for(var i=0;i<Math.min(mobs.length,2+level(r,'adv_seeker'));i++){mobs[i].hinted=true;}}
- if(has(r,'adv_god_thieves')){r.tiles.filter(function(t){return t.kind==='chamber'||t.kind==='secret';}).forEach(function(t){t.hinted=true;});}
+ refreshHints(r,h);
  if(has(r,'adv_elf_king')&&has(r,'adv_demon_hunter'))autoShot(r,h,25+10*rank5(r,'adv_elf_king','atk'),true);
+}
+/* Real clues identify what is hidden without opening a tile or allowing attacks.
+   Recalculate on floor entry, title purchases, gear changes and save loading. */
+function refreshHints(r,h){
+ if(!r||!Array.isArray(r.tiles))return;
+ r.tiles.forEach(function(t){t.hintEnemy=false;t.hintKey=false;t.hintSpecial=false;});
+ if(has(r,'adv_seeker')){
+  var foes=r.tiles.filter(function(t){return !t.revealed&&t.foe&&t.foe.hp>0;});
+  foes.sort(function(a,b){return ((a.id*17+(r.floor||1)*13)%101)-((b.id*17+(r.floor||1)*13)%101);});
+  var quota=2+level(r,'adv_seeker');
+  for(var i=0;i<Math.min(quota,foes.length);i++)foes[i].hintEnemy=true;
+ }
+ if(has(r,'adv_night_walker')){
+  r.titleFlags=r.titleFlags||{};
+  var floorId=(r.actIndex||0)+':'+(r.locationIndex||0)+':'+(r.floor||1);
+  if(r.titleFlags.keyHintFloor!==floorId){
+   r.titleFlags.keyHintFloor=floorId;
+   var chance=Math.min(1,.5+.25*(level(r,'adv_night_walker')-1));
+   r.titleFlags.keyHintSuccess=Math.random()<chance;
+   r.titleFlags.keyHintAnnounced=false;
+  }
+  if(r.titleFlags.keyHintSuccess){
+   var key=r.tiles.find(function(t){return !t.revealed&&(t.hasKey||(t.drops&&t.drops.key));});
+   if(key){
+    key.hintKey=true;
+    if(h&&h.log&&!r.titleFlags.keyHintAnnounced){
+     h.log('Фонарь отметил ключ знаком ⚿ на закрытой плите.');
+     r.titleFlags.keyHintAnnounced=true;
+    }
+   }
+  }
+ }
+ if(has(r,'adv_god_thieves')){
+  r.tiles.filter(function(t){return !t.revealed&&(t.kind==='secret'||t.kind==='chamber');}).forEach(function(t){t.hintSpecial=true;});
+ }
+ r.tiles.forEach(function(t){
+  if(t.lanternHintKey)t.hintKey=true;
+  if(t.lanternHintSpecial)t.hintSpecial=true;
+ });
 }
 function autoShot(r,h,power,hidden){
  var target=(hidden&&h.hiddenTargets?h.hiddenTargets():h.targets()).find(function(t){return t.foe&&t.foe.hp>0&&(hidden||h.reachable(t));});if(!target)return false;
@@ -349,6 +402,10 @@ function onScrap(r,it,h){
 }
 function useTool(r,h,selected){
  var tool=toolOf(r);
+ // The initial compass stays nested inside the later lantern.
+ if(selected==='compass'&&tool&&tool.kind==='lantern'&&
+  (has(r,'adv_explorer')||has(r,'adv_explorationist')))
+  tool={name:'Компас в фонаре',icon:'compass',kind:'compass'};
  function ok(message){return {ok:true,message:message};}
  function no(message){return {ok:false,message:message};}
  if(!tool)return no('Сначала изучите звание авантюриста, выдающее инструмент.');
@@ -370,9 +427,11 @@ function useTool(r,h,selected){
  }
  if(tool.kind==='lantern'){
   if(curSup(r,'wick')<=0)return no('Нужен фитиль фонаря.');
-  var t=r.tiles.find(function(t){return !t.revealed&&!t.hinted&&(t.kind==='secret'||t.kind==='chamber'||t.hasKey);});
+  var t=r.tiles.find(function(t){return !t.revealed&&t.hasKey&&!t.hintKey;})||r.tiles.find(function(t){return !t.revealed&&!t.hintSpecial&&(t.kind==='secret'||t.kind==='chamber');});
   if(!t)return no('Скрытых особых плит не осталось.');
-  supply(r,'wick',-1);t.hinted=true;return ok('Фонарь отметил необычную плиту.');
+  supply(r,'wick',-1);
+  if(t.hasKey){t.lanternHintKey=true;t.hintKey=true;return ok('Фонарь обнаружил ключ за закрытой плитой ⚿.');}
+  t.lanternHintSpecial=true;t.hintSpecial=true;return ok('Фонарь указал на скрытый тайник ✦.');
  }
  if(tool.kind==='bow'){
   if(curSup(r,'arrow')<=0)return no('Не хватает стрел.');
@@ -422,5 +481,5 @@ function useTool(r,h,selected){
  return no('Этот инструмент действует автоматически.');
 }
 
-window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,ownedLevel:ownedLevel,borrowedTitle:borrowedTitle,refreshHints:refreshHints,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
 })();
