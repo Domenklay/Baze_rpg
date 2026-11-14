@@ -35,3 +35,30 @@
 .dungeon-board .maze .tile.tile-elite{outline:2px solid #d7a84b!important;outline-offset:-2px;box-shadow:inset 0 0 10px #c57a303d,0 0 7px #c9924147}
 .dungeon-board .maze .tile-elite .elite-tag{position:absolute;top:0;right:0;z-index:14;font:700 7px/1.2 Arial,sans-serif;letter-spacing:.1px;padding:1px 2px;color:#fff1b4;background:#5a2d18;border:1px solid #d7a84b;pointer-events:none}
 .elite-floor-warning{width:100%;max-width:100%;text-align:center;color:#e8c17f;font:700 9px/1.2 Arial,sans-serif;letter-spacing:.35px;background:#20140e;border:1px solid #92642e;padding:3px 4px;box-sizing:border-box}
+
+/* One sprite atlas stores all 64 approved corpse remains as 8x8 indexed tiles. */
+.dungeon-board .maze .tile.tile-remains{position:relative}
+.dungeon-board .maze .tile-remains-art{
+ display:block;flex:none;width:90%;height:90%;max-height:90%;max-width:90%;
+ background-image:url("ui/remains_atlas.png");background-repeat:no-repeat;
+ background-size:800% 800%;image-rendering:pixelated;pointer-events:none;
+ filter:drop-shadow(0 2px 2px #000b);
+}
+.dungeon-board .maze .loot-coin-badge{
+ position:absolute;bottom:2px;right:1px;z-index:10;
+ display:inline-flex;align-items:center;justify-content:center;gap:1px;
+ padding:1px 2px;border-radius:2px;background:#100d09da;
+ color:#ffe6a8;font:700 9px/1 Arial,sans-serif;
+ box-shadow:0 1px 3px #000b;pointer-events:none;
+}
+.dungeon-board .maze .loot-coin-badge .gold-coin-tile{
+ width:12px;height:12px;object-fit:contain;flex:none;
+}
+.gold-coin-inline{display:inline-block;vertical-align:-.23em;width:1.12em;height:1.12em;object-fit:contain;margin-right:2px}
+.gold-coin-float{width:16px;height:16px;vertical-align:middle;object-fit:contain;flex:none}
+.float-pickup-entry{display:inline-flex;align-items:center;gap:3px}
+#overlay .inventory-grid .bag-extra-item>.bag-vial-art{
+ width:66%;height:76%;object-fit:contain;image-rendering:pixelated;
+ filter:drop-shadow(0 2px 2px #0008);
+}
+#overlay .inventory-grid .bag-extra-item>svg{width:75%;height:75%;max-width:75%;max-height:75%}
