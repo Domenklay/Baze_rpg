@@ -654,6 +654,8 @@ function activeTileView(t){
    summonVisual()+'<span class="unit-corner unit-hp">♥'+r.summon.hp+'</span>'+
    '<span class="unit-corner unit-cd">◷'+(r.summon.specialCooldown||4)+'</span>'+
    '<span class="unit-corner unit-atk">⚔'+r.summon.atk+'</span></button>';
+ if(t.kind==='boss-base-door')return '<button class="tile boss-choice-door" data-action="safe-portal" data-id="'+t.id+'" aria-label="Дверь на базу">'+uiIcon('home')+'<span>НА БАЗУ</span></button>';
+ if(t.kind==='boss-next-door')return '<button class="tile boss-choice-door" data-action="descend" data-id="'+t.id+'" aria-label="Дверь дальше">'+uiIcon('door-open')+'<span>ДАЛЬШЕ</span></button>';
  if(t.kind==='trap'&&t.trapSpent)return '<button class="tile tile-discovered tile-trap trap-spent" data-action="move-hero" data-id="'+t.id+'" title="Обезвреженный капкан">'+icon('trap')+hero+'</button>';
  if(t.revealed&&!alive&&!drop&&(t.cleared||t.kind==='empty'))
   return '<button class="tile tile-bare'+(opening?' tile-auto-open':'')+'"'+(opening?' style="animation-delay:'+(t.autoOpened*35-clearAge)+'ms"':'')+' data-action="move-hero" data-id="'+t.id+'" aria-label="Открытая пустая клетка"><span class="stone-joint"></span>'+hero+'</button>';
@@ -790,6 +792,7 @@ function backpackExtraSlots(){
   add(usable?'active-item-info':'forest-item-info',(usable?'forest:':'')+id,def[0],FE.image(def[1],'bag-item-image'),forest[id]);
  });
  RE.inventory(r).forEach(function(entry){add('t1-item-info',entry.id,entry.name,uiIcon('key'),entry.qty);});
+ RG.inventory(r).forEach(function(entry){add(entry.usable?'active-item-info':'ridge-item-info',(entry.usable?'ridge:':'')+entry.id,entry.name,uiIcon(entry.usable?'potion':'key'),entry.qty);});
  if(TR.curSup(r,'leopard')>0)add('active-item-info','panther','Статуэтка чёрной пантеры',uiIcon('paw'),TR.curSup(r,'leopard'));
  (r.soulBag||[]).forEach(function(x){add('active-item-info','soul:'+x.id,'Собранные души: '+x.name,uiIcon('skull'),null);});
  (r.questItems||[]).forEach(function(x){add('quest-item-info',x,x,uiIcon('key'),null);});
@@ -801,6 +804,7 @@ function backpackExtraSlots(){
 function activeItemDetails(token){
  if(!r)return null;
  var parts=String(token||'').split(':'),kind=parts[0],id=parts.slice(1).join(':'),st=stats();
+ if(kind==='ridge')return RG.itemDetails(r,id);
  if(kind==='potion'&&r.potions>0)return {
   name:'Целебный эликсир',description:'Восстанавливает 45% максимального здоровья. Расходует один эликсир и один ход.',
   qty:r.potions,action:'potion',id:null,disabled:r.hp>=st.hp,reason:'Здоровье уже полное.'};
@@ -1673,6 +1677,12 @@ function consumeTurn(){
 function kill(t){
  if(FD)FD.capture();
  var e=t.foe;if(!e||e.hp>0||e.deathProcessed)return;
+ if(e.ethereal){
+  e.deathProcessed=true;e.hp=0;t.foe=null;t.cleared=true;t.drops=null;t.kind='empty';
+  var drillNotice=RG.onEtherealKill(r);
+  log(drillNotice||'Эфирный элитник рассеялся без трофеев.');
+  return;
+ }
  e.deathProcessed=true;e.hp=0;t.cleared=false;t.remainsId=remainsId(e);r.kills++;r.ep+=e.ep*12;
  if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
   t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
@@ -1681,7 +1691,7 @@ function kill(t){
  }
  var forestMessage=FE.onKill(r,e,forestApi(null));
  if(forestMessage)log(forestMessage);
- var t1Message=RE.onKill(r,e,t1Api());
+ var t1Message=RG.active(r)?RG.onKill(r,e,t1Api()):RE.onKill(r,e,t1Api());
  if(t1Message)log(t1Message);
  if(e.elite){r.eliteClears[r.floor]=true;log('Элитный противник повержен: '+e.name+'.');localAchievement('elite',1,'Опасная добыча');fairyRemark('elite');}
  if(hasUniqueGear('devour')){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.09));r.shield+=5;}
@@ -2183,16 +2193,25 @@ function t1Spawn(mobId,count,task){
 }
 function t1Api(){return {stats:stats,rollSpell:rollSpell,grantScroll:grantScroll,addItem:addItem,
  revealSafe:forestReveals,spawn:t1Spawn};}
-function t1EventDialog(t){if(t&&t.kind==='t1-event'&&!t.cleared&&t.revealed)dialog(RE.render(r,t));}
+function t1EventDialog(t){if(t&&t.kind==='t1-event'&&!t.cleared&&t.revealed)dialog(RG.active(r)?RG.render(r,t):RE.render(r,t));}
+function ridgeTravel(offset){
+ if(!RG.active(r))return;
+ var to=r.floor+offset;if(to<1){toast('Нельзя подняться выше первого этажа.');return;}
+ RG.onFloorTransition(r,to);
+ r.turn++;r.floor=to;r.shield=0;startFloor();save();draw();
+ toast('Штольня: этаж '+to+'.');
+}
 function t1Choose(id){
  var a=String(id||'').split(':'),t=tile(a[0]),i=Number(a[1]);
  if(!t||t.kind!=='t1-event'||!Number.isInteger(i))return;
- var result=RE.choose(r,t,i,t1Api());
+ var result=RG.active(r)?RG.choose(r,t,i,t1Api()):RE.choose(r,t,i,t1Api());
  if(!result.ok){toast(result.message||'Действие недоступно');return;}
  close();if(result.leave){toast('Находку можно исследовать позже.');return;}
  if(result.message)log(result.message);
+ if(result.navigate){ridgeTravel(result.navigate);return;}
  if(result.turn)finishAction();
- if(r&&!result.combat&&result.message)dialog('<div class="forest-reward-summary"><h2>'+esc((RE.scene(r,t.t1Id)||{}).title||'Находка')+'</h2><p>'+esc(result.message)+'</p><button class="btn wide" data-action="close">Продолжить</button></div>');
+ if(r&&result.keep){t1EventDialog(tile(a[0]));return;}
+ if(r&&!result.combat&&result.message)dialog('<div class="forest-reward-summary"><h2>'+esc(((RG.active(r)?RG.scene(r,t.t1Id):RE.scene(r,t.t1Id))||{}).title||'Находка')+'</h2><p>'+esc(result.message)+'</p><button class="btn wide" data-action="close">Продолжить</button></div>');
  if(result.combat)toast(result.message||'Начался бой');
 }
 
@@ -2510,6 +2529,9 @@ function inspectTile(id){
  if(t.drops||!t.cleared){claimTile(t);return;}
 }
 function descend(){
+ if(isBossFloor()&&r.bossClears[r.floor]){
+  r.floor++;r.turn++;r.shield=0;startFloor();save();draw();toast('Дверь дальше: этаж '+r.floor);return;
+ }
  var exit=r.tiles.find(function(t){return t.kind==='exit';});
  if(!exit||!exit.revealed){toast('Сначала найдите лестницу.');return;}
  if(!r.key){toast('Нужен ключ. Найдите ключника среди врагов.');return;}
@@ -3323,6 +3345,21 @@ function action(name,id){
  if(r.pendingForestUse&&name!=='battle-log'){toast('Выберите подсвеченного врага либо отмените ловушку.');return;}
  if(name==='cast-target'){if(r.pendingSpell)cast(r.pendingSpell,id);return;}
  if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
+ if(name==='ridge-use'){
+  var effect=RG.useItem(r,id);if(!effect.ok){toast(effect.message);return;}
+  r.hp=Math.min(stats().hp,r.hp);r.mp=Math.min(stats().mp,r.mp);
+  log(effect.message);close();finishAction();return;
+ }
+ if(name==='ridge-item-info'){
+  var entry=RG.inventory(r).find(function(x){return x.id===id;});
+  if(entry)dialog('<h2>'+esc(entry.name)+'</h2><p>'+esc(entry.description)+'</p><p>Количество: '+entry.qty+'</p><button class="btn wide" data-action="ui-panel" data-id="bag">Рюкзак</button>');
+  return;
+ }
+ if(name==='ridge-bur'){ridgeBurDialog();return;}
+ if(name==='ridge-bur-stop'){
+  if(RG.stopBur(r)){log('Грохочущий бур отключён. Повторного запуска не будет.');save();draw();}
+  close();return;
+ }
  if(name==='mine-menu'){mineDialog();return;}
  if(name==='mine-tab'){r.mineTab=id==='web'?'web':'level';mineDialog();return;}
  if(name==='mine-node'){r.mineSelected=id;mineDialog();return;}
