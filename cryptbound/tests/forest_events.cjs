@@ -8,7 +8,7 @@ const window={addEventListener(){}},document={hidden:false,getElementById:el,que
 const ctx={window,document,Date,Math,setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]}};
 vm.createContext(ctx);
-for(const name of ['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','game.js'])
+for(const name of ['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','t1_encounters.js','game.js'])
  {if(name==='gumballs_titles_reference.js')window.CryptLegacyTitles=window.CryptTitles;
  vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx,{filename:name,timeout:16000});
 }
