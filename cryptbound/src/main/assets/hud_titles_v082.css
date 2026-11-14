@@ -22,3 +22,7 @@
  .gold-coin-icon{width:15px;height:15px;min-width:15px}
  .quick-spell.class-ability .quick-mana-cost,.quick-spell.class-ability .quick-cooldown{font-size:6px!important}
 }
+
+/* New compact loot icons: keep vial and pouch inside one dungeon tile. */
+.dungeon-board .maze .tile .tile-item-sprite{display:block;width:70%;height:70%;object-fit:contain;flex:none;pointer-events:none;filter:drop-shadow(0 2px 3px #000b)}
+.dungeon-board .maze .tile-vial-hp .tile-item-sprite,.dungeon-board .maze .tile-vial-mp .tile-item-sprite{width:62%;height:62%}
