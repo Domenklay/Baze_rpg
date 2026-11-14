@@ -176,7 +176,7 @@ function apply(run,effects,api){
   }else if(kind==='item'){
    f.items[key]=(f.items[key]||0)+num;messages.push((itemDefs[key]?itemDefs[key][0]:key)+' ×'+num);
    if(window.CryptForestRework&&['mushroom','honey','nectar','forest_moss','herbal_extract','oak_resin','living_seed'].includes(key)){
-    var extra=window.CryptForestRework.forage(run,(itemDefs[key]||[key])[0]);
+    var extra=window.CryptForestRework.forage(run,key);
     if(extra)messages.push('Сумка травницы: дополнительная добыча ×'+extra);
    }
   }else if(kind==='take'){
