@@ -986,7 +986,8 @@ test('Gold coin image, matching backpack elixir art and 64 semantic corpse sprit
   ep:1,gold:7,loot:[],ranged:false,stun:5,guard:0,evadeCharges:0,poison:0,burn:0,bleed:0,
   skill:{name:'Укус',every:99,kind:'bite'},cooldown:99};
  cell.kind='enemy';cell.foe=e;cell.revealed=true;cell.cleared=false;cell.drops=null;
- standNextTo(run,cell);const beforeGold=run.gold;live.debug.action('strike',cell.id);
+ standNextTo(run,cell);const beforeGold=run.gold;
+ const oldRandom=Math.random;try{Math.random=()=>.999;live.debug.action('strike',cell.id);}finally{Math.random=oldRandom;}
  assert.ok(cell.drops,'Corpse with only gold must keep a pickup');
  assert.equal(cell.drops.materials.length,0);
  assert.equal(cell.remainsId,9,'A slain wolf uses the wolf-remains icon from the 64-sprite set');
