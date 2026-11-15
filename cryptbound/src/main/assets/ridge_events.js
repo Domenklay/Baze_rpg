@@ -153,7 +153,7 @@ function effects(r,ops,api){
    if(current>0&&current<5){m.nodes[v]=current+1;log.push('Паутинка: '+v+' +1 ранг');}
    else {r.materials[ORE.steel]=(r.materials[ORE.steel]||0)+2;log.push('Испытание заменено двумя стальными рудами');}
   }else if(p[0]==='home'){
-   if(v==='transfer'){var left=20,amount=0,storage=api.homeStorage();for(var id of ['rune','quartz','steel','iron']){var k=ORE[id],take=Math.min(left,r.materials[k]||0);if(take>0){r.materials[k]-=take;storage[k]=(storage[k]||0)+take;amount+=take;left-=take;}}log.push('На базу отправлено руды: '+amount);}
+   if(v==='transfer'){var left=20,amount=0,storage=api.homeStorage();for(var id of ['rune','quartz','steel','iron']){var k=ORE[id],take=Math.min(left,r.materials[k]||0);if(take>0){r.materials[k]-=take;storage[ORE[id]]=(storage[ORE[id]]||0)+take;amount+=take;left-=take;}}log.push('На базу отправлено руды: '+amount);}
    else{x.pendingHome[v]=true;log.push('Открыто улучшение для деревни: '+v);}
   }
  }

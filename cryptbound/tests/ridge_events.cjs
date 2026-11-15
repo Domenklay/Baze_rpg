@@ -59,6 +59,14 @@ assert(listed.every(x=>x.qty>0));
 second.ridge.pendingHome.artel=true;let meta={};
 assert(RG.homeRewards(second,meta).includes('artel'));assert(meta.ridgePerks.artel);
 assert.equal(RG.homeRewards(second,meta).length,0,'no repeat base achievements');
+// A transferred ore stack must land under the same localized resource key as mining/warehouse.
+const bankRun=hero(),bankStorage={};bankRun.floor=40;
+bankRun.materials['Железная руда']=25;
+const bankApi={...api(),homeStorage:()=>bankStorage};
+assert.equal(RG.choose(bankRun,event(45),0,bankApi).ok,true);
+assert.equal(bankStorage['Железная руда'],20);
+assert.equal(bankRun.materials['Железная руда'],5);
+assert.equal(bankStorage.iron,undefined);
 const saved=JSON.parse(JSON.stringify(second));assert.equal(RG.ensure(saved).unique.miner_bag,true);
 const src=fs.readFileSync(path.join(__dirname,'../src/main/assets/game.js'),'utf8');
 assert(src.includes("room[11].kind='boss-base-door'")&&src.includes("room[13].kind='boss-next-door'"));
