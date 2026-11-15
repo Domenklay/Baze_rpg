@@ -67,7 +67,9 @@ const save=JSON.parse(JSON.stringify(run));assert.equal(FE.ensure(save).storyV2.
 assert.equal(FE.ensure(save).flags.grove_seal,true,'quest decisions survive reload');
 const game=fs.readFileSync(path.join(root,'game.js'),'utf8');
 assert(game.includes('forest-fixed-1'),'squirrel quest guaranteed on first floor');
-assert(game.includes('FW.nextQuest(r)'),'chain should get priority slot');
+assert(game.includes("insert('forest-event',1);"),'every regular forest floor has a discovery slot');
+const picker=fs.readFileSync(path.join(root,'forest_encounters.js'),'utf8');
+assert(picker.includes('upgrade.milestone(run,possible)||upgrade.priority(run,possible)'),'chain and milestone priority stays in event selection');
 assert(game.includes('FW.bonus(r,\'dodge\')'),'forest unique gear active in combat');
 const gatherRun=hero(),gatherBag=FE.ensure(gatherRun);
 FW.extra(gatherRun).unique.forager_bag=true;
