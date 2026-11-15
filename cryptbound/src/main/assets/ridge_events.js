@@ -354,15 +354,17 @@ function mined(r){
 function inventory(r){if(!active(r))return [];var x=ensure(r);
  return Object.keys(x.items).filter(function(k){return x.items[k]>0;}).map(function(id){return {id:id,name:(ITEMS[id]||[id])[0],description:(ITEMS[id]||['', ''])[1],qty:x.items[id],usable:!!USE[id]};});
 }
-function useItem(r,id){
+function useItem(r,id,limits){
  var x=ensure(r);if(!USE[id]||!x.items[id])return {ok:false,message:'Предмет закончился'};
  if(id==='emergency_fuse'&&x.bur.status!=='active')return {ok:false,message:'Бур уже остановлен'};
  x.items[id]--;if(!x.items[id])delete x.items[id];
+ var hpLimit=limits&&Number.isFinite(limits.hp)?Math.max(1,limits.hp):Infinity;
+ var mpLimit=limits&&Number.isFinite(limits.mp)?Math.max(0,limits.mp):Infinity;
  var st=null;
  if(id==='whetstone')x.whetstone=(x.whetstone||0)+3;
- else if(id==='healing_salt'){r.hp+=25;r.bleedTurns=0;}
- else if(id==='recovery_crystal'){r.hp+=10000;r.mp+=10000;}
- else if(id==='miner_ration'){r.hp+=20;r.shield+=10;}
+ else if(id==='healing_salt'){r.hp=Math.min(hpLimit,(Number(r.hp)||0)+25);r.bleedTurns=0;}
+ else if(id==='recovery_crystal'){r.hp=Math.min(hpLimit,(Number(r.hp)||0)+10000);r.mp=Math.min(mpLimit,(Number(r.mp)||0)+10000);}
+ else if(id==='miner_ration'){r.hp=Math.min(hpLimit,(Number(r.hp)||0)+20);r.shield=(r.shield||0)+10;}
  else if(id==='guardian_seal'){r.shield+=45;}
  else if(id==='bell_fragment'){(r.tiles||[]).forEach(function(t){if(t.foe&&!t.foe.boss&&t.foe.hp>0)t.foe.stun=Math.max(t.foe.stun||0,1);});}
  else if(id==='mirror_chisel')x.nextVeinBonus=(x.nextVeinBonus||0)+1;
@@ -372,7 +374,7 @@ function useItem(r,id){
  else if(id==='armor_wedge')x.ignoreArmor=(x.ignoreArmor||0)+1;
  else if(id==='troll_tip')x.bossStrike=(x.bossStrike||0)+50;
  else if(id==='drill_charge')x.instantOre=(x.instantOre||0)+1;
- else if(id==='rune_accumulator')r.mp+=45;
+ else if(id==='rune_accumulator')r.mp=Math.min(mpLimit,(Number(r.mp)||0)+45);
  else if(id==='bog_ward'){r.poisonTurns=0;r.shield+=25;}
  else if(id==='drill_coolant'){if(x.bur.status==='active')x.bur.coolant=(x.bur.coolant||0)+1;else r.shield+=20;}
  else if(id==='emergency_fuse')stopBur(r);

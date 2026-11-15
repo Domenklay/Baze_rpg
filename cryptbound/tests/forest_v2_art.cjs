@@ -18,6 +18,7 @@ for(const name of ['forest_encounters.js','forest_rework.js','forest_v2_art.js']
 }
 const FE=ctx.window.CryptForestEvents,FA=ctx.window.CryptForestV2Art,FW=ctx.window.CryptForestRework;
 assert.equal(FE.scenes.length,50);
+assert.deepEqual(Object.keys(FA.sceneSprites).map(Number).sort((a,b)=>a-b),Array.from({length:48},(_,i)=>i+3));
 function check(src,key){assert(src&&src.startsWith('forest_v2/'),'asset path for '+key);assert(fs.existsSync(path.join(root,src)),'missing asset '+src);}
 for(const [id,name] of Object.entries(FA.sceneSprites)){
  assert.equal(FE.scene(Number(id)).sprite,FA.scene(Number(id)));

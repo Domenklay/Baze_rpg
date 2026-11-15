@@ -32,6 +32,12 @@ for(const [id,src] of Object.entries(sandbox.window.CryptEquipmentIcons))assert.
 assert.equal(Object.keys(sandbox.window.CryptEquipmentIcons).length,132);
 assert.equal(spr.monster({id:'r99_0'},'idle'),null);
 assert.equal(spr.materialStem('Шкура животного'),'animal_hide');
+for(const [name,stem] of [['Стальная руда','mining_steel_ore'],['Кварцевая руда','mining_quartz_ore'],['Рунная руда','mining_rune_ore']]){
+ assert.equal(spr.materialStem(name),stem);
+ assert.ok(fs.existsSync(path.join(assetDir,'imported/materials/'+stem+'.svg')));
+ assert.match(spr.materialIcon(name),new RegExp(stem+'\\.svg'));
+}
+assert.ok(fs.existsSync(path.join(assetDir,'ui/mining_pick.svg')));
 assert.equal(spr.canonicalMaterial('animal_hide, game_meat (при уместности)'),'Шкура животного');
 for(const id of spr.materialIds){
  const file=path.join(assetDir,'imported/materials',id+'.svg');

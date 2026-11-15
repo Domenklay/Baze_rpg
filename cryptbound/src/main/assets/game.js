@@ -286,7 +286,7 @@ function distributeTiles(){
   if(Math.random()<.35)insert('trap',1);
   if(Math.random()<.13)insert('altar',1);
   if(Math.random()<.14)insert('shop',1);
-  if(FW.nextQuest(r)||Math.random()<.86)insert('forest-event',1);
+  insert('forest-event',1); // Regional encounter on each non-boss forest floor.
   if(r.floor>=4&&Math.random()<.22)insert('forest-event',1);
   if(Math.random()<.22)insert('secret',1);
   if(Math.random()<.38)insert('coin',1);
@@ -300,7 +300,7 @@ function distributeTiles(){
  if(!boss&&Math.random()<.16)insert('shop',1);
  if(!boss&&Math.random()<.65&&!RE.active(r))insert('event',1);
  if(!boss&&RE.active(r)){
-  if((RG.active(r)&&RG.chainPriority(r))||Math.random()<.86)insert('t1-event',1);
+  insert('t1-event',1); // Regional encounter on each non-boss ridge floor.
   if(r.floor>=4&&Math.random()<.22)insert('t1-event',1);
  }
  if(!boss&&Math.random()<.55)insert('puzzle',1);
@@ -699,8 +699,8 @@ function activeTileView(t){
    '<div class="tile hidden tile-locked'+(hint?' tile-scouted':'')+'" title="'+esc(access.reason)+description+'" aria-label="Путь заблокирован'+description+'"><span class="slab-face">◆</span>'+hint+'</div>';
  }
  var marker=alive?'enemy':remains?'remains':drop?(t.drops.key?'key':'loot'):t.kind==='exit'?'exit':t.kind==='hunter-corpse'?'hunter-corpse':t.kind==='forest-well'?'forest-well':t.kind==='puzzle'||t.kind==='corpse'?'event':t.kind==='chamber'?'secret':t.kind;
- var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).sprite||FE.scene(t.forestId).art):marker==='mine-wall'?'<span class="mine-vein-art mine-wall-art">▥<small>'+((t.mine||{}).hp||0)+'</small></span>':marker==='ore-vein'?'<span class="mine-vein-art ore-'+CM.ORES[(t.mine||{}).type||0].id+'">◆<small>'+Math.ceil((t.mine||{}).hp||0)+'</small></span>':marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('forest_v2/forest_well.png'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
- var name=t.kind==='mine-wall'?'Треснувший завал · прочность '+((t.mine||{}).hp||0):t.kind==='ore-vein'?'Рудная жила · '+CM.ORES[(t.mine||{}).type||0].name+' · прочность '+((t.mine||{}).hp||0):alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='remains'?'Останки '+t.foe.name+(t.drops.gold?' · монеты '+t.drops.gold:''):marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':(RE.scene(r,t.t1Id)||{}).title||'Региональная находка'})[t.kind]||'Находка';
+ var graphic=marker==='remains'?remainsArt(t.remainsId||remainsId(t.foe)):marker==='key'?window.CryptArt.tileBase(marker):marker==='loot'?'<img class="tile-item-sprite" src="ui/loot-pouch.png" alt=""/>':['vial-hp','vial-mp'].includes(marker)?'<img class="tile-item-sprite" src="ui/'+marker+'.png" alt=""/>':['coin','coin-small'].includes(marker)?'<img class="tile-item-sprite" src="ui/coin-pouch.png" alt=""/>':marker==='trinket'?uiIcon('bag'):alive?(t.forestAlpha?forestAlphaVisual(t):monsterVisual(t.foe)):marker==='forest-event'&&t.forestId?FE.image(FE.scene(t.forestId).sprite||FE.scene(t.forestId).art):marker==='mine-wall'?'<span class="mine-vein-art mine-wall-art">▥<small>'+((t.mine||{}).hp||0)+'</small></span>':marker==='ore-vein'?'<span class="mine-vein-art ore-'+CM.ORES[(t.mine||{}).type||0].id+'">'+SP.materialIcon(CM.ORES[(t.mine||{}).type||0].name)+'<small>'+Math.ceil((t.mine||{}).hp||0)+'</small></span>':marker==='t1-event'?'<span class="t1-tile-icon '+(r.locationIndex===1?'ridge':'bog')+'">'+(r.locationIndex===1?'⛰':'❧')+'</span>':marker==='hunter-corpse'?FE.image('F01_001'):marker==='forest-well'?FE.image('forest_v2/forest_well.png'):icon(t.kind==='corpse'||t.kind==='chamber'?t.kind:marker);
+ var name=t.kind==='mine-wall'?'Треснувший завал · прочность '+((t.mine||{}).hp||0):t.kind==='ore-vein'?'Рудная жила · '+CM.ORES[(t.mine||{}).type||0].name+' · прочность '+((t.mine||{}).hp||0):alive?(t.foe.elite?'ЭЛИТА · ':'')+t.foe.name:marker==='remains'?'Останки '+t.foe.name+(t.drops.gold?' · монеты '+t.drops.gold:''):marker==='key'?'Ключ от лестницы':marker==='loot'?'Мешочек добычи':({exit:'Лестница',chest:'Сундук',trap:'Шипы',altar:'Алтарь',shop:'Торговец',secret:'Тайник',coin:'Монеты',potion:'Эликсир','vial-hp':'Склянки здоровья','vial-mp':'Склянки маны','coin-small':'Мелочь',trinket:'Безделушка',event:'Событие',puzzle:'Загадка',corpse:'Останки исследователя','hunter-corpse':'Погибший охотник с книгой','forest-well':'Лесной колодец',chamber:'Побочная комната','forest-event':(FE.scene(t.forestId)||{}).title||'Лесная находка','t1-event':((RG.active(r)?RG.scene(r,t.t1Id):RE.scene(r,t.t1Id))||{}).title||'Региональная находка'})[t.kind]||'Находка';
  var action=alive?(r.pendingSpell?'cast-target':r.pendingSkill?'skill-target':r.pendingForestUse?'forest-target':'strike'):t.kind==='exit'?'descend':(t.kind==='ore-vein'||t.kind==='mine-wall')?'mine-hit':'pickup';
  var delay=alive?(t.foe.cooldown==null?((t.foe.skill&&t.foe.skill.every)||EX.monster(t.foe.visual||t.foe.id).every):t.foe.cooldown):0;
  var unit=alive?'<span class="unit-corner unit-hp">♥'+t.foe.hp+'</span>'+
@@ -913,7 +913,7 @@ function gearArt(it,slot){
   var forestSrc=window.CryptForestV2Art.gear(it.forestUnique);
   if(forestSrc)return '<img class="painted-gear forest-gear-art" src="'+forestSrc+'" alt="'+esc(it.name)+'" draggable="false"/>';
  }
- if(it&&it.miningPick)return '<span class="mine-gear-art" role="img" aria-label="Кирка">⚒</span>';
+ if(it&&it.miningPick)return '<img class="painted-gear mine-pick-art" src="ui/mining_pick.svg" alt="Кирка рудокопа" draggable="false"/>';
  if(it&&it.ridgeUniqueId){var spec=RG.UNIQUE[it.ridgeUniqueId];if(spec)return '<span class="mine-gear-art" role="img" aria-label="'+esc(it.name)+'">'+spec.icon+'</span>';}
  var art=SP.gearIcon&&SP.gearIcon(it);if(art)return art;
  var type=slot||(it&&it.slot)||'weapon';
@@ -2542,7 +2542,7 @@ function triggerTrap(t){
  else if(k==='enemy'||k==='boss'||k==='elite')log('Открыта плита: '+t.foe.name+'.');
  else if(k==='empty'){t.cleared=true;log('Под плитой — пустой каменный пол.');}
   else if(k==='forest-event'){log('Найдено в лесу: '+(FE.scene(t.forestId)||{}).title+'.');}
- else if(k==='t1-event'){log('Найдено: '+(RE.scene(r,t.t1Id)||{}).title+'.');}
+ else if(k==='t1-event'){log('Найдено: '+((RG.active(r)?RG.scene(r,t.t1Id):RE.scene(r,t.t1Id))||{title:'Региональная находка'}).title+'.');}
  else if(k==='ore-vein'){log('Под плитой рудная жила. Наденьте кирку и разбейте породу.');}
  else if(k==='mine-wall'){log('Здесь треснувший завал: киркой можно открыть спрятанное помещение.');}
  else if(k==='exit')log('Лестница найдена. Для спуска необходим ключ.');
@@ -3393,7 +3393,7 @@ function action(name,id){
  if(name==='cast-target'){if(r.pendingSpell)cast(r.pendingSpell,id);return;}
  if(r.pendingSpell&&name!=='battle-log'){toast('Нажмите на подсвеченного врага либо отмените выбор цели.');return;}
  if(name==='ridge-use'){
-  var effect=RG.useItem(r,id);if(!effect.ok){toast(effect.message);return;}
+  var effect=RG.useItem(r,id,stats());if(!effect.ok){toast(effect.message);return;}
   r.hp=Math.min(stats().hp,r.hp);r.mp=Math.min(stats().mp,r.mp);
   log(effect.message);close();finishAction();return;
  }

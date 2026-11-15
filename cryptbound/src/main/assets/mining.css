@@ -64,3 +64,7 @@
 .ridge-prev-btn .ui-icon{height:17px;width:17px}
 .ridge-prev-btn small{font-size:9px}
 .ridge-prev-btn:active,.boss-choice-door:active{filter:brightness(1.2)}
+
+/* Illustrated T1 ore and mining weapon. */
+.mine-vein-art .crypt-resource-icon{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 2px #18131c)}
+.mine-pick-art{object-fit:contain}
