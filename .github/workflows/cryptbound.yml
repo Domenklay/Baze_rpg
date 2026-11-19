@@ -95,8 +95,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.16-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.16-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.17-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.8.17-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -109,7 +109,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.16 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.16 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.16 — исправления первых двух локаций T1" --notes "Пепельный лабиринт v0.8.16. Исправлены названия событий нагорья, на обычных этажах гарантирована хотя бы одна региональная находка, лечебные расходники учитывают предел HP и MP. Новые офлайн-иконки трёх сортов руды и кирки, дополнительные тесты."
+          if ! gh release view cryptbound-v0.8.17 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.8.17 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.17 — 33 новых кадра монстров T1" --notes "Пепельный лабиринт v0.8.17, офлайн APK. 33 новых PNG RGBA 128x128 (11 существ леса и нагорья, кадры idle/attack/skill); спрайты привязаны к ID врагов на поле и в бою. Все предыдущие системы и ресурсы T1 сохранены; тесты проверяют размеры, альфу и наличие каждого кадра."
           fi
-          gh release upload cryptbound-v0.8.16 dist/Cryptbound-v0.8.16-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.8.17 dist/Cryptbound-v0.8.17-offline-Android.apk dist/SHA256SUMS.txt --clobber

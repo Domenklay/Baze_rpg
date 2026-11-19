@@ -58,5 +58,22 @@ for(const entry of conceptIndex.items){
  const svg=fs.readFileSync(art,'utf8');
  assert.match(svg,/data:image\/png;base64,iVBOR/,'Original PNG must be embedded '+entry.name);
 }
+// Eleven T1 monsters now have three custom 128x128 RGBA sprites each.
+for(const id of ["r1_22","r1_23","r1_24","r2_2","r2_4","r2_6","r2_14","r2_16","r2_18","r2_23","r2_24"]){
+ for(const pose of ['idle','attack','skill']){
+  const html=spr.monster({id},pose);
+  assert.ok(html,'missing monster sprite route: '+id+' '+pose);
+  const match=html.match(/src="([^"]+)"/);
+  assert.ok(match,'missing sprite HTML: '+id+' '+pose);
+  const file=path.join(assetDir,match[1]);
+  assert.ok(fs.existsSync(file),'missing sprite file '+file);
+  const png=fs.readFileSync(file);
+  assert.equal(png.subarray(0,8).toString('hex'),'89504e470d0a1a0a','not PNG: '+file);
+  assert.equal(png.readUInt32BE(16),128,'wrong PNG width: '+file);
+  assert.equal(png.readUInt32BE(20),128,'wrong PNG height: '+file);
+  assert.equal(png[25],6,'not RGBA PNG: '+file);
+ }
+}
+console.log('PASS 33 new illustrated monster frames are mapped and packaged (11 T1 creatures).');
 console.log('PASS All 257 exact-name Clicker material icons are present and mapped for offline use');
 console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 132 equipment icons,',spr.materialIds.length,'material icons');
