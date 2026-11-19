@@ -22,7 +22,7 @@ const {chromium}=require('playwright');
   const enemyId=await page.evaluate(()=>{
    const r=Crypt.state().run,t=r.tiles.find(t=>t.foe);r.hp=Crypt.debug.stats().hp;r.mp=Crypt.debug.stats().mp;
    for(const other of r.tiles)if(other.foe)other.revealed=false;
-   Object.assign(t.foe,{id:'r1_10',name:'Рой лесных пчёл',hp:500,maxHp:500,atk:1,def:0,cooldown:99,guard:0,evadeCharges:0});t.revealed=true;
+   Object.assign(t.foe,{id:'r1_10',name:'Рой лесных пчёл',spawnedByEvent:true,hp:500,maxHp:500,atk:1,def:0,cooldown:99,guard:0,evadeCharges:0});t.revealed=true;
    r.summon.specialCooldown=4;Crypt.debug.draw();return t.id;
   });
   const mark=await page.evaluate(()=>CryptFeedback.events().at(-1)?.id||0);
@@ -61,7 +61,7 @@ const {chromium}=require('playwright');
   await page.locator('.dialog [data-action="close"]').last().click();
   await page.locator('[data-action="ui-panel"][data-id="bag"]').click();await page.locator('.gear-slot[data-id="weapon"]').click();
   const style=await page.evaluate(()=>{const name=document.querySelector('.gear-two-columns b'),caption=document.querySelector('.comparison-caption'),note=document.querySelector('.comparison-sheet .fine');return {font:getComputedStyle(name).fontFamily,captionFont:getComputedStyle(caption).fontFamily,opacity:getComputedStyle(note).opacity,nameColor:getComputedStyle(name).color,frame:getComputedStyle(document.querySelector('.dialog')).borderImageSource};});
-  assert.equal(style.font,style.captionFont);assert.equal(style.opacity,'1');assert.ok(style.frame.includes('/ui/skin/panel.png'));assert.equal(style.nameColor,'rgb(241, 217, 173)');
+  assert.equal(style.font,style.captionFont);assert.equal(style.opacity,'1');assert.ok(style.frame.includes('/ui/illustrated/panel.png'));assert.equal(style.nameColor,'rgb(241, 217, 173)');
   if(process.env.UI_SCREENSHOTS)await page.screenshot({style:'#toast{display:none!important}',path:process.env.UI_SCREENSHOTS+'/comparison.png'});
   await page.locator('.panel-close').click();await page.locator('.panel-close').click();
   await page.evaluate(()=>{const r=Crypt.state().run,t=r.tiles.find(t=>t.kind==='empty');t.kind='puzzle';t.revealed=true;t.cleared=false;Crypt.debug.action('pickup',t.id);});

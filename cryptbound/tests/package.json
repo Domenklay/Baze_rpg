@@ -1,0 +1,1 @@
+{"name":"cryptbound-ui-checks","private":true,"scripts":{"illustrated":"node illustrated_ui.cjs","hunter":"node hunter_book_visual.cjs"},"devDependencies":{"playwright":"1.65.1"}}

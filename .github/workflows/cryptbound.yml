@@ -45,6 +45,9 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Install browser test tools
+        run: npm ci --prefix cryptbound/tests --ignore-scripts --no-audit --no-fund
+
       - name: Validate original artwork and game scripts
         run: |
           node --check cryptbound/src/main/assets/art.js
@@ -85,6 +88,7 @@ jobs:
           node cryptbound/tests/mining.cjs
           node cryptbound/tests/ridge_events.cjs
           node cryptbound/tests/hunter_book_visual.cjs
+          node cryptbound/tests/illustrated_ui.cjs
           node cryptbound/tests/ui_baseline.cjs
           node cryptbound/tests/sprites.cjs
           node cryptbound/tests/equipment_icons.cjs
@@ -95,8 +99,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.8.16-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.8.16-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.9.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.9.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -109,7 +113,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.8.16 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.8.16 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.8.16 — исправления первых двух локаций T1" --notes "Пепельный лабиринт v0.8.16. Исправлены названия событий нагорья, на обычных этажах гарантирована хотя бы одна региональная находка, лечебные расходники учитывают предел HP и MP. Новые офлайн-иконки трёх сортов руды и кирки, дополнительные тесты."
+          if ! gh release view cryptbound-v0.9.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.9.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.9.0 — рисованный интерфейс" --notes "Единый рисованный интерфейс: новые кожаные панели, кнопки, пергамент, разворот бестиария, 12 значков разделов и иллюстрации нагорья и болот. Переработаны деревня, инвентарь, сравнение, события, добыча, шахта и звания. Проверены 72 состояния экранов и шесть размеров телефона. Все ресурсы встроены, игра работает офлайн."
           fi
-          gh release upload cryptbound-v0.8.16 dist/Cryptbound-v0.8.16-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.9.0 dist/Cryptbound-v0.9.0-offline-Android.apk dist/SHA256SUMS.txt --clobber

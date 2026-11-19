@@ -149,7 +149,7 @@ function build(materials,level){
 function e(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function render(r,tab,selected){
  var m=ensure(r),p=pickItem(r),ready=levelReady(r),isWorn=equipped(r);
- var header='<div class="mine-summary"><span class="mine-emblem">⚒</span><div><b>Кирка рудокопа · ур. '+m.level+'/10</b><small>'+(isWorn?'Надета · все бонусы действуют':'Не надета · боевые бонусы выключены')+'</small></div></div>';
+ var header='<div class="mine-summary"><span class="mine-emblem"><img class="menu-art" src="ui/illustrated/mining.png" alt=""/></span><div><b>Кирка рудокопа · ур. '+m.level+'/10</b><small>'+(isWorn?'Надета · все бонусы действуют':'Не надета · боевые бонусы выключены')+'</small></div></div>';
  var tabs='<div class="mine-tabs"><button data-action="mine-tab" data-id="level" class="'+(tab!=='web'?'selected':'')+'">Кирка</button><button data-action="mine-tab" data-id="web" class="'+(tab==='web'?'selected':'')+'">Паутинка · 18 узлов</button></div>';
  if(tab!=='web'){
   var next=XP[m.level+1]||XP[10],prev=XP[m.level]||0,p=Math.max(0,Math.min(100,Math.floor(100*(m.xp-prev)/Math.max(1,next-prev))));

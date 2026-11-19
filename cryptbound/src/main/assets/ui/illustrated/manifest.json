@@ -1,0 +1,132 @@
+{
+  "version": "0.9.0",
+  "origin": "Original generated ink and gouache UI artwork. All labels rendered as HTML, never baked into textures.",
+  "sprites": [
+    {
+      "file": "alchemy.png",
+      "width": 138,
+      "height": 144,
+      "sha256": "224f5008e3696bd0858d6004408411c53a90b367af8a74d8fd49bb8eeabf131c"
+    },
+    {
+      "file": "backpack.png",
+      "width": 144,
+      "height": 144,
+      "sha256": "6397f7d3b7901e7d790d4edf5de731c82d521020a70cde04324e2ddf5238b5c1"
+    },
+    {
+      "file": "bog.png",
+      "width": 288,
+      "height": 285,
+      "sha256": "799379ff7833152a2a2a1854bb57026e34fd127a3f917af61c58ef1523da237a"
+    },
+    {
+      "file": "book.png",
+      "width": 1145,
+      "height": 1374,
+      "sha256": "ec050c7a4386a54762aa1d8cbb804d841fd1d094812b388c9ebb2c0b63c4fd87"
+    },
+    {
+      "file": "button-neutral.png",
+      "width": 616,
+      "height": 219,
+      "sha256": "fda4cca3a596ac1f4a224602395a86c175dfbdf120a68e8b83c5cbf5cc1df383"
+    },
+    {
+      "file": "button-red.png",
+      "width": 619,
+      "height": 219,
+      "sha256": "7f5ab59bdfc226659fc3b1f386fc0f5768c7ab1d0ff92f10e1041201819896c4"
+    },
+    {
+      "file": "chronicles.png",
+      "width": 144,
+      "height": 140,
+      "sha256": "90bf8d0c25d7609967cec83b904e1e7258edd14157df517ebc5e5c5acdb817d2"
+    },
+    {
+      "file": "event.png",
+      "width": 142,
+      "height": 144,
+      "sha256": "0c71fdab42a13e1bcfd60357c2c2039904a23d7fa117642ac921354970f28f08"
+    },
+    {
+      "file": "expedition.png",
+      "width": 144,
+      "height": 138,
+      "sha256": "2b97f4701cf7bd292ecf3b12a7142dfa06da206a9c41bebd829780aec7136ead"
+    },
+    {
+      "file": "forge.png",
+      "width": 144,
+      "height": 139,
+      "sha256": "961b198709b9728fda13acaa3ffc71f63b709d02a186d8aac22056d2bde103fa"
+    },
+    {
+      "file": "hero.png",
+      "width": 144,
+      "height": 144,
+      "sha256": "117b56cd4bac6fae7a52c350c54f25ab0fcd8033376f94c9330a5ce2015a02ed"
+    },
+    {
+      "file": "hunter.png",
+      "width": 144,
+      "height": 144,
+      "sha256": "8bcdf31ec5868c553603f03ecf45cbee7b3678588bc1b15c7f9b9eff859dbc49"
+    },
+    {
+      "file": "medallion-active.png",
+      "width": 144,
+      "height": 142,
+      "sha256": "7156c0e0b0bdfb17806929f0b5cae774c9aedfe87d93f823209ef915467d901f"
+    },
+    {
+      "file": "medallion.png",
+      "width": 144,
+      "height": 142,
+      "sha256": "53622e9f2543c45b47cb5a4038c99465d8c7ea5df705a038a3ce70187966d5a4"
+    },
+    {
+      "file": "mining.png",
+      "width": 144,
+      "height": 144,
+      "sha256": "1aa116479dc986793b27df42b50a2e1007bb78e33c2eb8151a90a5e37fc38df4"
+    },
+    {
+      "file": "panel.png",
+      "width": 615,
+      "height": 620,
+      "sha256": "86d6ea25afa007a1cc0404179f93c0e60d4678c08ef8e89ac1ac623e4f3e02a6"
+    },
+    {
+      "file": "paper.png",
+      "width": 619,
+      "height": 598,
+      "sha256": "63b5994bac0128e68ab9bde96739ab0948f9f4dc88f1ed06ba4a99799fa261fd"
+    },
+    {
+      "file": "ridge.png",
+      "width": 288,
+      "height": 285,
+      "sha256": "cc1c76223cacf85d93e99199dfedb0c8d9bb6cd71ef26ffc950dca2ec34b4af4"
+    },
+    {
+      "file": "spells.png",
+      "width": 144,
+      "height": 144,
+      "sha256": "369b707c2150cfed59209175b7fbc28b883c99146a16c29a4709b99bba465848"
+    },
+    {
+      "file": "talents.png",
+      "width": 142,
+      "height": 144,
+      "sha256": "36af640ab2936c8151091072762ed4ac404fabdf80de9f957ae13fe83d7ec2d1"
+    },
+    {
+      "file": "village.png",
+      "width": 144,
+      "height": 143,
+      "sha256": "2fb597f7796cbb14c641912f74c78769ad6b2f9ffcf30c33ae2a29062c87f71b"
+    }
+  ]
+}
