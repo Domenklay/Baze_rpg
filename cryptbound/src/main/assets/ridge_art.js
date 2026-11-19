@@ -1,0 +1,25 @@
+/* Original individually cropped T1 mountain artwork.
+ * First-pass concepts; scene/gear/item IDs are stable and save-compatible. */
+(function(){'use strict';
+var ROOT='ridge_v2/';
+var scenes={"1":"01_first_shaft_entrance.png","2":"02_pickaxe_in_stone.png","3":"03_trapped_miner_dorn.png","4":"04_miner_bag.png","5":"05_trader_malachite.png","6":"06_testing_machine.png","7":"07_mining_guild_token.png","8":"08_geological_lens.png","9":"09_quartz_slime.png","10":"10_cat_soot.png","11":"11_second_shaft_entrance.png","12":"12_rumbling_drill.png","13":"13_emergency_control.png","14":"14_collapse_gauntlets.png","15":"15_ilva_mine_cart.png","16":"16_resonance_smelter.png","17":"17_rope_lift.png","18":"18_healing_salt_cave.png","19":"19_sorting_factory.png","20":"20_cave_healer.png","21":"21_third_shaft_entrance.png","22":"22_prisoner_miners.png","23":"23_kalts_ledger.png","24":"24_missing_apprentice.png","25":"25_false_document_outpost.png","26":"26_black_ore_market.png","27":"27_brigand_treasury.png","28":"28_collapse_charge_warehouse.png","29":"29_fugitive_engineer_artek.png","30":"30_mine_master_kalt.png","31":"31_forgotten_golem_heart.png","32":"32_mirror_ore_cavern.png","33":"33_stone_guardian_hall.png","34":"34_ancient_miner_bell.png","35":"35_troll_hunters.png","36":"36_black_glass_forge.png","37":"37_stone_troll_trophy.png","38":"38_stolen_soul_golem.png","39":"39_depth_resonator.png","40":"40_ilvas_last_work.png","41":"41_foreman_ghost.png","42":"42_stone_calculator.png","43":"43_unowned_armor.png","44":"44_living_rune_vein.png","45":"45_distant_caravan_store.png","46":"46_broken_bridge.png","47":"47_last_masters_school.png","48":"48_revival_of_artel.png","49":"49_last_seal_stone.png","50":"50_mountain_heart.png"};
+var questItems={"whetstone":"whetstone.png","rail_key":"rail_key.png","repair_parts":"repair_parts.png","miner_token":"miner_token.png","lens":"lens.png","slime_mark":"slime_mark.png","soot_tag":"soot_tag.png","drill_charge":"drill_charge.png","collapse_charge":"collapse_charge.png","emergency_fuse":"emergency_fuse.png","strong_rope":"strong_rope.png","miner_ration":"miner_ration.png","healing_salt":"healing_salt.png","recovery_crystal":"recovery_crystal.png","shock_wedge":"shock_wedge.png","mirror_chisel":"mirror_chisel.png","mirror_shard":"mirror_shard.png","guardian_seal":"guardian_seal.png","bell_fragment":"bell_fragment.png","armor_wedge":"armor_wedge.png","troll_tip":"troll_tip.png","rune_accumulator":"rune_accumulator.png","bog_ward":"bog_ward.png","sorting_plan":"sorting_plan.png","lift_plan":"lift_plan.png","healer_letter":"healer_letter.png","debt_ledger":"debt_ledger.png","artel_order":"artel_order.png","treasury_password":"treasury_password.png","drill_coolant":"drill_coolant.png","keeper_testament":"keeper_testament.png"};
+var equipment={"miner_bag":"miner_bag.png","collapse_gloves":"collapse_gloves.png","quartz_bracers":"quartz_bracers.png","climber_boots":"climber_boots.png","artel_helm":"artel_helm.png","guard_cloak":"guard_cloak.png","collector_ring":"collector_ring.png","master_seal":"master_seal.png","stone_amulet":"stone_amulet.png","depth_armor":"depth_armor.png","stonebreaker_ring":"stonebreaker_ring.png","giant_ring":"giant_ring.png","elder_ring":"elder_ring.png","hollow_helm":"hollow_helm.png","clean_helm":"clean_helm.png","pass_amulet":"pass_amulet.png","mountain_heart":"mountain_heart.png"};
+var npcs={"0":"01_npc.png","1":"02_npc.png","2":"03_npc.png","3":"04_npc.png","4":"05_npc.png","5":"06_npc.png","6":"07_npc.png","7":"08_npc.png","8":"09_npc.png","9":"10_npc.png","10":"11_npc.png","11":"12_npc.png"};
+var npcScenes={"3":10,"7":0,"15":1,"17":3,"20":4,"22":10,"24":9,"25":7,"26":5,"29":6,"30":2,"34":11,"35":8,"41":0,"47":11,"48":0};
+function stem(group,id){var m=group[id];return typeof m==='string'&&/^[a-z0-9_\-]+\.png$/.test(m)?m:null;}
+function path(group,id,dir){var name=stem(group,id);return name?ROOT+dir+'/'+name:null;}
+function scene(id){return path(scenes,Number(id),'scenes');}
+function item(id){return path(questItems,id,'quest_items');}
+function gear(id){return path(equipment,id,'equipment');}
+function npc(id){return path(npcs,Number(id),'npc');}
+function npcForScene(id){return npc(npcScenes[Number(id)]);}
+function html(src,cls){return src?'<img class="'+(cls||'ridge-art')+'" src="'+src+'" alt="" draggable="false" loading="lazy"/>':'';}
+function sceneHtml(id,cls){return html(scene(id),cls||'ridge-scene-image');}
+function itemHtml(id,cls){return html(item(id),cls||'ridge-item-image');}
+function gearHtml(id,cls){return html(gear(id),cls||'painted-gear ridge-gear-art');}
+function npcHtml(id,cls){return html(npc(id),cls||'ridge-npc-image');}
+function sceneNpcHtml(id,cls){return html(npcForScene(id),cls||'ridge-npc-image');}
+window.CryptRidgeArt={ROOT:ROOT,scenes:scenes,questItems:questItems,equipment:equipment,npcs:npcs,npcScenes:npcScenes,
+ scene:scene,item:item,gear:gear,npc:npc,npcForScene:npcForScene,html:html,sceneHtml:sceneHtml,itemHtml:itemHtml,gearHtml:gearHtml,npcHtml:npcHtml,sceneNpcHtml:sceneNpcHtml};
+})();

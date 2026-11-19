@@ -223,7 +223,9 @@ function render(r,t){
  def.id===11?'Второй вход зафиксирован на этаже '+(x.shaft.base+10)+'.':
  def.id===21?'Третий вход зафиксирован на этаже '+(x.shaft.base+20)+'.':
  def.id===12?'Бур встретится лишь один раз в этой экспедиции.':'';
- return '<div class="forest-event-dialog t1-scene"><div class="sheet-kicker">КАМЕНИСТОЕ НАГОРЬЕ · НАХОДКА '+String(def.id).padStart(2,'0')+'/50</div><h2>'+esc(def.title)+'</h2><div class="t1-scene-emblem ridge">⛰</div>'+
+ var art=window.CryptRidgeArt?window.CryptRidgeArt.sceneHtml(def.id,'ridge-scene-image'):'';
+ var npcArt=window.CryptRidgeArt?window.CryptRidgeArt.sceneNpcHtml(def.id,'ridge-npc-image'):'';
+ return '<div class="forest-event-dialog t1-scene"><div class="sheet-kicker">КАМЕНИСТОЕ НАГОРЬЕ · НАХОДКА '+String(def.id).padStart(2,'0')+'/50</div><h2>'+esc(def.title)+'</h2><div class="t1-scene-emblem ridge'+(art?' ridge-event-illustration':'')+'">'+(art||'⛰')+npcArt+'</div>'+
  '<p>'+esc(def.text)+'</p>'+(info?'<p class="fine golden">'+esc(info)+'</p>':'')+
  opts.map(function(c,i){var disabled=!meets(r,c.need)||!costsOk(r,c.cost);
   var reason=!meets(r,c.need)?' (не выполнено условие)':!costsOk(r,c.cost)?' (не хватает материалов)':'';

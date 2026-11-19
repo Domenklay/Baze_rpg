@@ -58,5 +58,15 @@ for(const entry of conceptIndex.items){
  const svg=fs.readFileSync(art,'utf8');
  assert.match(svg,/data:image\/png;base64,iVBOR/,'Original PNG must be embedded '+entry.name);
 }
+for(const id of ["r1_22","r1_23","r1_24","r2_2","r2_4","r2_6","r2_14","r2_16","r2_18","r2_23","r2_24"]){
+ for(const pose of ['idle','attack','skill']){
+ const html=spr.monster({id},pose);assert.ok(html,'monster route: '+id+' '+pose);
+ const src=html.match(/src="([^"]+)"/)?.[1];assert.ok(src&&fs.existsSync(path.join(assetDir,src)),id+' missing '+pose);
+ const png=fs.readFileSync(path.join(assetDir,src));
+ assert.equal(png.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+ assert.equal(png.readUInt32BE(16),128);assert.equal(png.readUInt32BE(20),128);assert.equal(png[25],6);
+ }
+}
+console.log('PASS 33 original forest/mountain frames in 0.9.1');
 console.log('PASS All 257 exact-name Clicker material icons are present and mapped for offline use');
 console.log('Cryptbound sprite and resource catalog OK:',Object.keys(spr.monsterRoutes).length+Object.keys(spr.portraitRoutes).length,'monster routes, 132 equipment icons,',spr.materialIds.length,'material icons');

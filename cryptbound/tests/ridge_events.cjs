@@ -2,8 +2,20 @@
    one drill, spectrals with separate ore payout, persistent uniques and consumables. */
 'use strict';const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 const ctx={window:{}};vm.createContext(ctx);
-for(const name of ['mining.js','ridge_catalog.js','ridge_events.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/main/assets',name),'utf8'),ctx,{filename:name});
-const RG=ctx.window.CryptRidgeEvents,CM=ctx.window.CryptMining,cat=RG.catalog;
+for(const name of ['mining.js','ridge_catalog.js','ridge_art.js','ridge_events.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../src/main/assets',name),'utf8'),ctx,{filename:name});
+const RG=ctx.window.CryptRidgeEvents,CM=ctx.window.CryptMining,cat=RG.catalog,RA=ctx.window.CryptRidgeArt;
+const assetDir=path.resolve(__dirname,'../src/main/assets');
+for(const [group,n,fn] of [['scenes',50,RA.scene],['questItems',31,RA.item],['equipment',17,RA.gear],['npcs',12,RA.npc]]){
+ const ids=Object.keys(RA[group]);assert.equal(ids.length,n,group+' number of sprites');
+ for(const id of ids){const src=fn(id);assert(src&&fs.existsSync(path.join(assetDir,src)),group+': missing '+id);
+  const data=fs.readFileSync(path.join(assetDir,src));assert.equal(data.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+  assert.equal(data.readUInt32BE(16),128);assert.equal(data.readUInt32BE(20),128);assert.equal(data[25],6);
+ }
+}
+assert.equal(RA.scene(1),'ridge_v2/scenes/01_first_shaft_entrance.png');
+assert.equal(RA.scene(50),'ridge_v2/scenes/50_mountain_heart.png');
+const htmlIndex=fs.readFileSync(path.join(assetDir,'index.html'),'utf8');
+assert(htmlIndex.includes('ridge_art.js')&&htmlIndex.includes('ridge_art.css'),'0.9.1 must load mountain art');
 assert.equal(cat.length,50);assert.equal(new Set(cat.map(e=>e.id)).size,50);
 assert(cat.every(e=>e.choices.length>=2),'every scene has a choice');assert(cat.every(e=>e.title&&e.text&&e.min));
 assert(cat.every(e=>e.choices.every(o=>!o.reward.includes('ep:')&&!o.reward.includes('reveal:'))),'no useless reveal/experience prizes');
@@ -18,6 +30,7 @@ let t=event(1);
 for(let i=0;i<3;i++){let result=RG.choose(r,t,0,api());assert(result.ok&&result.turn&&result.keep);}
 assert.equal(state.shaft.first,3);
 assert(RG.render(r,t).includes('следующий тоннель'));
+assert(RG.render(r,t).includes(RA.scene(1)),'event dialog artwork missing');
 r.floor=state.shaft.base+10;assert(RG.floorSpecials(r).includes(11));
 t=event(11);let back=RG.choose(r,t,0,api());assert.equal(back.navigate,-10);assert(RG.floorSpecials(r).includes(11),'fixed until travel');
 for(let i=0;i<3;i++)assert.equal(RG.choose(r,t,1,api()).ok,true);
@@ -72,4 +85,7 @@ const src=fs.readFileSync(path.join(__dirname,'../src/main/assets/game.js'),'utf
 assert(src.includes("room[11].kind='boss-base-door'")&&src.includes("room[13].kind='boss-next-door'"));
 assert(src.includes('if(e.ethereal)'),'spectral kill must bypass normal loot');
 assert(src.includes('RG.onFloorTransition(r,to)'),'backtrack loses drill');
+assert(src.includes('CryptRidgeArt.itemHtml'),'custom backpack icons');
+assert(src.includes('CryptRidgeArt.gearHtml'),'custom mountain gear icons');
+assert(src.includes('CryptRidgeArt.sceneHtml'),'custom tile scene icons');
 console.log('OK: 50 ridge events, fixed shaft & 20-floor jump, one spectral drill, unique items, base perks, boss doors');

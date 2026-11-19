@@ -1,0 +1,8 @@
+/* T1 mountain art within existing v0.9.1 illustrated UI; no changes to layout navigation. */
+.t1-scene .ridge-event-illustration {position:relative;display:block;margin:3px auto 8px;width:148px;max-width:48vw;height:118px;min-height:118px;overflow:visible;isolation:isolate}
+.t1-scene .ridge-event-illustration img.ridge-scene-image{width:100%;height:100%;display:block;object-fit:contain;filter:drop-shadow(0 2px 3px #170e09b3)}
+.t1-scene .ridge-event-illustration img.ridge-npc-image{width:52px;height:52px;object-fit:contain;position:absolute;right:-16px;bottom:-2px;z-index:2;filter:drop-shadow(0 2px 3px #241810b0)}
+.tile .ridge-tile-art{display:block;width:90%;height:90%;max-width:100%;max-height:100%;margin:auto;object-fit:contain;pointer-events:none;filter:drop-shadow(0 2px 2px #0008)}
+.bag-extra-item img.ridge-item-image,.item img.ridge-item-image{width:44px;height:44px;max-width:100%;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 2px 1px #0006)}
+.ridge-gear-art{object-fit:contain;max-width:100%;max-height:100%}
+@media(max-height:680px){.t1-scene .ridge-event-illustration{height:92px;min-height:92px;width:112px;margin:0 auto 4px}.t1-scene .ridge-event-illustration img.ridge-npc-image{height:39px;width:39px;right:-9px}}
