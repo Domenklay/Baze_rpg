@@ -99,8 +99,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.9.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.9.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.9.1-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.9.1-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -113,7 +113,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.9.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.9.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.9.0 — рисованный интерфейс" --notes "Единый рисованный интерфейс: новые кожаные панели, кнопки, пергамент, разворот бестиария, 12 значков разделов и иллюстрации нагорья и болот. Переработаны деревня, инвентарь, сравнение, события, добыча, шахта и звания. Проверены 72 состояния экранов и шесть размеров телефона. Все ресурсы встроены, игра работает офлайн."
+          if ! gh release view cryptbound-v0.9.1 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.9.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.9.1 — новая компоновка меню" --notes "Новая компоновка меню: главный вход в экспедицию, лёгкие списки служб и улучшений, рюкзак с фильтрами, самостоятельная книга заклинаний, события на пергаменте и компактная добыча. Убраны повторяющиеся вложенные рамки. Проверены 72 состояния экранов на шести размерах телефона. Игра работает офлайн."
           fi
-          gh release upload cryptbound-v0.9.0 dist/Cryptbound-v0.9.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.9.1 dist/Cryptbound-v0.9.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
