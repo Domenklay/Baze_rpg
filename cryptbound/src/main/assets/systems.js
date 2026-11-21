@@ -1,6 +1,8 @@
 /* Gameplay-only content, no artwork or online services. */
 (function(){'use strict';
 var potions=[
+{id:'field_hp',name:'Походный бальзам',level:0,cost:1,description:'Восстанавливает 25% максимального здоровья. Приготовление из провизии в деревне.',icon:'✚'},
+{id:'field_mp',name:'Настой ясности',level:0,cost:1,description:'Восстанавливает 25% максимальной маны. Приготовление из рунных чернил в деревне.',icon:'✧'},
 {id:'ghost',name:'Настой призрачного стража',level:0,cost:7,description:'Призывает неупокоенного спутника, бьющего раз в 3 хода с 70% уклонением, пока тот не погибнет.',icon:'☽'},
 {id:'aegis',name:'Тройная печать защиты',level:0,cost:5,description:'Три заряда, каждый полностью отменяет одно прямое попадание.',icon:'⬡'},
 {id:'cleanse',name:'Чистая роса',level:0,cost:3,description:'Снимает яд и другие обычные отрицательные эффекты, лечит небольшое количество HP.',icon:'✚'},
@@ -14,6 +16,8 @@ var potions=[
 /* Exact craft ingredients from the RPG Clicker Infinity loot tables.
    Never consume random materials or quest memories in the alchemy workshop. */
 var potionIngredients={
+ field_hp:[['Походная провизия',1]],
+ field_mp:[['Рунные чернила',1]],
  ghost:[['Болотные споры',3],['Кожа нетопыря',2]],
  aegis:[['древесина',4],['Горный кристалл',2]],
  cleanse:[['Болотные споры',2],['Ядовитая железа',1]],

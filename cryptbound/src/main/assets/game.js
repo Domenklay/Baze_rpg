@@ -11,6 +11,7 @@ function grantTestResearch(run){
  run.testResearchGranted=true;
  return true;
 }
+var VG=window.CryptVillage,VUI=window.CryptVillageUI;
 var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,FW=window.CryptForestRework,RE=window.CryptT1Encounters,CM=window.CryptMining,RG=window.CryptRidgeEvents;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
 var $=function(id){return document.getElementById(id);};
@@ -104,7 +105,7 @@ function stats(){
   a+=i.atk||0;def+=i.def||0;hp+=i.hp||0;mp+=i.mp||0;pow+=i.pow||0;crit+=i.crit||0;
  });
  var city=s.meta.city||{};
- a+=(city.forge||0)*2;hp+=(city.barracks||0)*12;mp+=(city.library||0)*8;
+ a+=(city.forge||0)*2;hp+=(city.barracks||0)*12;mp+=(city.library||0)*8;var villageBonus=VG.bonuses(s.meta);hp+=villageBonus.hp;mp+=villageBonus.mp;
  var w=r.forestWellStats||{};
  a+=hunterStat('atk')+(w.atk||0);def+=hunterStat('def')+(w.def||0);
  hp+=hunterStat('hp')+(w.hp||0);mp+=hunterStat('mp')+(w.mp||0);pow+=hunterStat('pow')+(w.pow||0);
@@ -447,6 +448,7 @@ function begin(hero){
  var meta=s.meta;
  if(meta.activeExpedition){toast('Сначала продолжите или завершите предыдущую экспедицию.');return;}
  if((meta.selectedAct||0)>(meta.unlockedAct||0)){toast('Это подземелье пока не открыто.');return;}
+ var villageShield=VG.bonuses(meta).shield;
  r=s.run={class:hero,actIndex:meta.selectedAct||0,locationIndex:0,bossClears:{},eliteSchedule:{},eliteClears:{},rangerType:null,portalReady:false,materials:{},diamonds:0,questItems:[],preparedPotions:[null,null],locationUsedPotion:0,guardCharges:0,ghost:null,earthGateFound:false,earthGateTitleGranted:false,sixStarFound:false,spellHistory:[],resurrection:0,timeStopTurns:0,rageTurns:0,reflectionTurns:0,barrierTurns:0,burnTurns:0,bleedTurns:0,silenceTurns:0,floor:1,turn:0,gold:20,ep:1,kills:0,secrets:0,
     hp:1,mp:1,items:[],equip:{weapon:null,helm:null,armor:null,bracer:null,boots:null,ring:null,amulet:null,cloak:null,gloves:null},bagSelected:null,bagFilter:'all',spellSchool:'all',treeView:hero==='necromancer'||hero==='sorceress'?1:hero==='scout'||hero==='assassin'?2:0,key:false,
     talents:{},scrolls:{bolt:4,flame:1,heal:2,frost:1,ward:1,chain:0,sight:1,leech:0},
@@ -457,7 +459,7 @@ function begin(hero){
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
  fillPreparedPotions(r);
- startFloor();save();draw();close();
+ startFloor();r.shield+=villageShield;save();draw();close();
 }
 function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},questReports:{},memoryChapters:{},fairyMuted:false,diamondUpgrades:{},cosmetics:{default:true},fairyCosmetic:'default',potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 
@@ -1125,9 +1127,10 @@ function renderMenu(){
 
 /* Persistent town / three-location expedition boundary. */
 function bankExpeditionLoot(fraction){
- var keep=fraction==null?1:Math.max(0,Math.min(1,fraction));
+ var keep=fraction==null?1:Math.max(0,Math.min(1,fraction));if(keep<1)keep=Math.min(1,keep+VG.bonuses(s.meta).retention/100);
  var summary={resources:0,diamonds:0};
  if(!r)return summary;
+ if(fraction==null||fraction===1){var delivered=VG.record(s.meta,r,true);if(delivered){summary.memory=8+r.floor*2+Math.floor(delivered.kills/3)+delivered.secrets*2;summary.essence=8+r.floor*2+Math.floor(delivered.kills/2);s.meta.totalSecrets=(s.meta.totalSecrets||0)+delivered.secrets;s.meta.souls+=summary.memory;s.meta.heroEssence[r.class]=(s.meta.heroEssence[r.class]||0)+summary.essence;}}
  for(var name of Object.keys(r.materials||{})){
   var amount=Math.floor(Math.max(0,r.materials[name]||0)*keep);
   if(amount>0){s.meta.materials[name]=(s.meta.materials[name]||0)+amount;summary.resources+=amount;}
@@ -1140,6 +1143,7 @@ function bankExpeditionLoot(fraction){
 function salvageExpedition(expedition){
  if(!expedition)return 0;
  var gain=(expedition.items||[]).reduce(function(total,it){return total+1+(it.rarity||0)+(it.plus||0);},0);
+ gain=Math.floor(gain*(1+VG.bonuses(s.meta).salvage/100));
  s.meta.materials['Металлолом']=(s.meta.materials['Металлолом']||0)+gain;
  return gain;
 }
@@ -1197,7 +1201,7 @@ function claimQuestReport(id){
   '<button class="btn wide" data-action="quest-board">Продолжить изучение хроник</button>';
  dialog(textResult);
 }
-function questBoard(){
+function regionalQuestBoard(){
  if(r){toast('Совет деревни доступен между походами.');return;}
  var reports=s.meta.questReports||{},chapterCount=Object.keys(s.meta.memoryChapters||{}).length;
  var pending=Object.keys(reports).filter(function(k){return !reports[k].claimed;}).length;
@@ -1253,7 +1257,7 @@ function safePortal(){
  }
  s.run=null;r=null;save();draw();
  dialog('<div class="emblem">◈</div><h2>'+(oldLocation===2?'Подземелье завершено':'Безопасное возвращение')+'</h2>'+
- '<p>Покинута локация «'+esc(oldName)+'». На склад сдано '+loot.resources+' ресурсов и '+loot.diamonds+' алмазов.</p>'+ (rainbow?'<p class="golden">Достижения: +'+rainbow+' радужных алмазов (одноразово).</p>':'')+
+ '<p>Покинута локация «'+esc(oldName)+'». На склад сдано '+loot.resources+' ресурсов и '+loot.diamonds+' алмазов.</p><p class="golden">Память +'+(loot.memory||0)+' · эссенция героя +'+(loot.essence||0)+'.</p>'+ (rainbow?'<p class="golden">Достижения: +'+rainbow+' радужных алмазов (одноразово).</p>':'')+
  (oldLocation<2?'<p>Таланты, предметы, золото, свитки и записи сохранены. Следующая локация начнётся после отдыха на базе.</p>'+
  '<button class="btn wide" data-action="resume-expedition">Продолжить экспедицию</button>':
  '<p>Все три локации пройдены. Временное снаряжение разобрано: +'+scrap+' металлолома.</p>'+
@@ -1350,7 +1354,7 @@ function diamondShop(){
  }).join('');
  dialog('<div class="emblem">◇</div><h2>АЛМАЗНАЯ ЛАВКА</h2>'+
  '<p>Обычные алмазы: '+m.diamonds+' ◇ · Радужные: '+m.rainbowDiamonds+' ◈. Радужные выдаются за достижения.</p>'+
- '<div class="frame-title">УМЕРЕННЫЕ ПОСТОЯННЫЕ УЛУЧШЕНИЯ</div>'+upgrades+
+ '<button class="btn alt wide" data-action="village-tab" data-id="craft">Обработка сырья и обмен трофеев</button><p class="fine">Торговые ряды ур. '+VG.level(m,'market')+': +'+VG.level(m,'market')+' памяти за каждый заказ жителей. Алмазы расходуются отдельно от сырья и строительных материалов.</p><div class="frame-title">УМЕРЕННЫЕ ПОСТОЯННЫЕ УЛУЧШЕНИЯ</div>'+upgrades+
  '<div class="frame-title space-top">КОСМЕТИКА СВЕТЛЯЧКА</div>'+looks+
  '<button class="btn alt wide space-top" data-action="close">В деревню</button>');
 }
@@ -1382,10 +1386,10 @@ function renderBase(){
  var pending=exp?'<div class="base-resume"><div><small>ЭКСПЕДИЦИЯ СОХРАНЕНА</small><b>'+esc(DN.acts[exp.actIndex].name)+'</b><span>Следующая локация '+(exp.locationIndex+1)+'/3</span></div><button class="btn gold" data-action="resume-expedition">Продолжить</button><button class="stored-gear-button" data-action="stored-gear" aria-label="Снаряжение сохранённой экспедиции">'+uiIcon('bag')+'</button></div>':'';
  var services=[['quest-board','journal','Совет деревни','Задания и история'],['bestiary','shield','Бестиарий','Открытые существа'],['town','home','Поселение','Здания и склад'],['diamond-shop','gem','Лавка','Улучшения и облики'],['alchemy','potion','Алхимик','Подготовить зелья'],['dungeon-achievements','talent','Достижения','Награды путешествия']];
  var acts=DN.acts.map(function(a,i){var unlocked=i<=s.meta.unlockedAct,done=(s.meta.completedActs[i]||0)>0,profile=BAL.actProfile(i);return '<details class="act-entry '+(unlocked?'unlocked':'')+'"><summary><span class="act-number">'+(i+1)+'</span><div><b>'+esc(a.name)+'</b><small>'+(done?'Пройдено · ':!unlocked?'Пока закрыто · ':'')+'Опасность '+(i+1)+'/10</small></div><span class="act-expand">+</span></summary><div class="act-details"><p>'+esc(a.story||'')+'</p><ol>'+a.locations.map(function(l){return '<li>'+esc(l.name)+'</li>';}).join('')+'</ol><small>'+esc(profile.threat)+' · ♥ '+profile.normalHp+' · ⚔ '+profile.normalAtk+'</small><button class="btn gold wide space-top" data-action="select-act" data-id="'+i+'" '+(!unlocked?'disabled':'')+'>'+(exp&&exp.actIndex===i?'Продолжить экспедицию':'Выбрать подземелье')+'</button></div></details>';}).join('');
- return '<div class="village-hub"><div class="village-scene"><div class="village-label"><small>МЕЖДУ ПОХОДАМИ</small><h2>Пограничный привал</h2><p>Последний огонь перед глубиной</p></div></div><div class="village-wealth"><span>'+uiIcon('gem')+(s.meta.diamonds||0)+'<small>Алмазы</small></span><span>'+uiIcon('sun')+(s.meta.rainbowDiamonds||0)+'<small>Радужные</small></span><span>'+uiIcon('bag')+materialCount()+'<small>Материалы</small></span><span>'+uiIcon('talent')+s.meta.souls+'<small>Память</small></span></div>'+pending+'<button class="expedition-invite" data-action="choose">'+menuArt('expedition')+'<span><small>СЛЕДУЮЩАЯ ЭКСПЕДИЦИЯ</small><b>'+(exp?'Продолжить путь':'Отправиться в глубину')+'</b><em>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</em></span>'+uiIcon('arrow-right')+'</button><div class="hub-section village-services-title"><h3>У огня</h3><span>Приготовления к походу</span></div><div class="village-services">'+services.map(function(x){return '<button data-action="'+x[0]+'">'+menuArt(({'quest-board':'chronicles',bestiary:'hunter',town:'village','diamond-shop':'expedition',alchemy:'alchemy','dungeon-achievements':'talents'})[x[0]])+'<span><b>'+x[2]+'</b><small>'+x[3]+'</small></span></button>';}).join('')+'</div><div class="hub-section"><h3>Пути в глубину</h3><span>10 актов · 30 локаций</span></div><div class="act-list">'+acts+'</div><div class="village-record"><span>Походов <b>'+s.meta.runs+'</b></span><span>Лучший этаж <b>'+s.meta.best+'</b></span><button data-action="fairy-toggle">'+(s.meta.fairyMuted?'Светлячок: выкл.':'Светлячок: вкл.')+'</button></div>'+(exp?'<button class="btn dark wide space-top" data-action="discard-expedition">Завершить сохранённую экспедицию</button>':'')+'</div>';
+ return '<div class="village-hub"><div class="village-scene"><div class="village-label"><small>МЕЖДУ ПОХОДАМИ</small><h2>Пограничный привал</h2><p>Последний огонь перед глубиной</p></div></div><div class="village-wealth"><span>'+uiIcon('gem')+(s.meta.diamonds||0)+'<small>Алмазы</small></span><span>'+uiIcon('sun')+(s.meta.rainbowDiamonds||0)+'<small>Радужные</small></span><span>'+uiIcon('bag')+materialCount()+'<small>Материалы</small></span><span>'+uiIcon('talent')+s.meta.souls+'<small>Память</small></span></div>'+pending+'<button class="expedition-invite" data-action="choose">'+menuArt('expedition')+'<span><small>СЛЕДУЮЩАЯ ЭКСПЕДИЦИЯ</small><b>'+(exp?'Продолжить путь':'Отправиться в глубину')+'</b><em>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</em></span>'+uiIcon('arrow-right')+'</button><div class="village-home-progress"><button data-action="town">'+esc(VG.stage(s.meta))+'<b>'+VG.levels(s.meta)+'/45</b></button><button data-action="village-tab" data-id="craft">Мастерские</button><button data-action="quest-board">Заказы жителей</button></div><div class="hub-section village-services-title"><h3>У огня</h3><span>Приготовления к походу</span></div><div class="village-services">'+services.map(function(x){return '<button data-action="'+x[0]+'">'+menuArt(({'quest-board':'chronicles',bestiary:'hunter',town:'village','diamond-shop':'expedition',alchemy:'alchemy','dungeon-achievements':'talents'})[x[0]])+'<span><b>'+x[2]+'</b><small>'+x[3]+'</small></span></button>';}).join('')+'</div><div class="hub-section"><h3>Пути в глубину</h3><span>10 актов · 30 локаций</span></div><div class="act-list">'+acts+'</div><div class="village-record"><span>Походов <b>'+s.meta.runs+'</b></span><span>Лучший этаж <b>'+s.meta.best+'</b></span><button data-action="fairy-toggle">'+(s.meta.fairyMuted?'Светлячок: выкл.':'Светлячок: вкл.')+'</button></div>'+(exp?'<button class="btn dark wide space-top" data-action="discard-expedition">Завершить сохранённую экспедицию</button>':'')+'</div>';
 }
 function draw(visualOnly){
- if(!s)return;
+ if(!s)return;VG.ensure(s.meta);
  $('app').classList.toggle('in-expedition',!!r);
  hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=renderBase();if(FD)FD.paint();return;}
  r.tab='maze';$('content').classList.toggle('dungeon-mode',true);
@@ -1413,7 +1417,7 @@ function toast(msg){
  var el=$('toast');el.textContent=msg;el.classList.add('shown');
  clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('shown');},2400);
 }
-function dialog(content){if(FD)FD.hide();uiPanel=null;var layout=/panel-spells|spell-detail-page/.test(content)?'book':/panel-bag|panel-hero/.test(content)?'inventory':/forest-event-dialog|puzzle-answer|story-choice/.test(content)?'event':/reward-rows/.test(content)?'loot':'ledger';var kind=/data-action="(?:puzzle-answer|story-choice|event-yes)"/.test(content)?' dialog-event':/reward-rows/.test(content)?' dialog-loot':'';$('overlay').innerHTML='<div class="veil"><div class="dialog'+kind+'" data-layout="'+layout+'" role="dialog" aria-modal="true">'+(/panel-close/.test(content)?'':'<button class="dialog-dismiss" data-action="close" aria-label="Закрыть окно">×</button>')+content+'</div></div>';}
+function dialog(content){if(FD)FD.hide();uiPanel=null;var layout=/village-management/.test(content)?'village':/panel-spells|spell-detail-page/.test(content)?'book':/panel-bag|panel-hero/.test(content)?'inventory':/forest-event-dialog|puzzle-answer|story-choice/.test(content)?'event':/reward-rows/.test(content)?'loot':'ledger';var kind=/data-action="(?:puzzle-answer|story-choice|event-yes)"/.test(content)?' dialog-event':/reward-rows/.test(content)?' dialog-loot':'';$('overlay').innerHTML='<div class="veil"><div class="dialog'+kind+'" data-layout="'+layout+'" role="dialog" aria-modal="true">'+(/panel-close/.test(content)?'':'<button class="dialog-dismiss" data-action="close" aria-label="Закрыть окно">×</button>')+content+'</div></div>';}
 function close(){uiPanel=null;$('overlay').innerHTML='';}
 function choose(){
  var opts=Object.keys(C).map(function(k){
@@ -3058,11 +3062,13 @@ function scrap(id){
 function die(reason){
  if(!r)return;
  s.meta.activeExpedition=null;
+ VG.record(s.meta,r,false);
  var depth=r.floor,kills=r.kills,secret=r.secrets,hero=r.class;
- var gain=3+depth*2+Math.floor(kills/3)+secret*2;
- var essence=3+depth*2+Math.floor(kills/2);
+ var pendingKills=Math.max(0,kills-((r.villageDeposited||{}).kills||0)),pendingSecrets=Math.max(0,secret-((r.villageDeposited||{}).secrets||0));
+ var gain=3+depth*2+Math.floor(pendingKills/3)+pendingSecrets*2;
+ var essence=3+depth*2+Math.floor(pendingKills/2);
  s.meta.souls+=gain;s.meta.best=Math.max(s.meta.best,depth);
- s.meta.runs++;s.meta.totalSecrets=(s.meta.totalSecrets||0)+secret;
+ s.meta.runs++;s.meta.totalSecrets=(s.meta.totalSecrets||0)+pendingSecrets;
  s.meta.heroEssence[hero]=(s.meta.heroEssence[hero]||0)+essence;
  s.run=null;r=null;save();draw();
  dialog('<div class="emblem">☠</div><div class="subhead red">ЭКСПЕДИЦИЯ ЗАВЕРШЕНА</div><h2>ПЕПЕЛ ПОМНИТ</h2>'+
@@ -3094,33 +3100,25 @@ function camp(){
  function line(key,name,desc){
   var price=5+up[key]*4;
   return '<div class="meta-upgrade"><div><strong>'+name+'</strong><small>Ранг '+up[key]+'/5 · '+desc+'</small></div>'+
-  '<button class="btn small" data-action="permanent" data-id="'+key+'" '+(m.souls<price||up[key]>=5?'disabled':'')+'>'+price+' ✧</button></div>';
+  '<button class="btn small" data-action="permanent" data-id="'+key+'" '+(r||m.souls<price||up[key]>=5?'disabled':'')+'>'+price+' ✧</button></div>';
  }
  var heroes=Object.keys(C).map(function(id){
   var c=C[id],rank=m.heroRanks[id]||0,essence=m.heroEssence[id]||0,cost=EX.upgradeCost(rank);
   return '<div class="meta-hero-row"><span class="meta-hero-portrait">'+window.CryptArt.hero(id)+'</span>'+
    '<div><strong>'+c.name+' · '+rank+'/5</strong><small>'+EX.heroMastery[id].effect+'</small>'+
    '<small>☽ Эссенция: '+essence+'</small></div>'+
-   '<button class="btn small" data-action="hero-rank" data-id="'+id+'" '+(rank>=5||essence<cost?'disabled':'')+'>'+
+   '<button class="btn small" data-action="hero-rank" data-id="'+id+'" '+(r||rank>=5||essence<cost?'disabled':'')+'>'+
    (rank>=5?'МАКС':cost+' ☽')+'</button></div>';
  }).join('');
  dialog('<div class="emblem">✥</div><div class="subhead">МЕТАПРОГРЕССИЯ</div><h2>ПАМЯТЬ ПРЕДКОВ</h2>'+
   '<p>Память общая: <b class="golden">'+m.souls+' ✧</b>. Эссенция у каждого героя своя. Титулы внутри забега — общие и временные.</p>'+
   '<div class="frame-title">ОБЩИЕ УЛУЧШЕНИЯ</div>'+
   line('hp','Крепкое тело','HP +12')+line('atk','Стальное наследие','Атака +2')+line('mp','Тайная мудрость','Мана +8')+
-  '<div class="frame-title space-top">РАЗВИТИЕ ГЕРОЕВ</div>'+heroes+
+  '<div class="frame-title space-top">НАСЛЕДИЕ МАСТЕРСКИХ</div><p class="fine">Три постоянных исследования открываются развитием деревни.</p><button class="btn alt wide" data-action="village-tab" data-id="legacy">Исследования и постоянные бонусы</button><div class="frame-title space-top">РАЗВИТИЕ ГЕРОЕВ</div>'+heroes+
   '<button class="btn gold wide space-top" data-action="town">⚒ Поселение и материалы</button>'+ '<button class="btn alt wide space-top" data-action="chronicles">✥ Реликварий, бестиарий и испытания</button>'+
   '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
 }
-var BUILDINGS={
- forge:{title:'Кузница',desc:'+2 атаки за уровень для всех героев',icon:'⚒'},
- alchemist:{title:'Алхимическая лаборатория',desc:'Расширяет доступные рецепты зелий.',icon:'⚗'},
- mine:{title:'Шахтный двор',desc:'За уровень +5% шанс получить дополнительную руду. Требует руду нагорья.',icon:'⚒'},
- barracks:{title:'Казармы',desc:'+12 максимального HP за уровень',icon:'♜'},
- library:{title:'Библиотека',desc:'+8 максимальной маны за уровень',icon:'✣'}
-};
 function materialCount(){return Object.values(s.meta.materials||{}).reduce(function(n,v){return n+Math.max(0,Number(v)||0);},0);}
-function townCommonMaterialCount(){return Object.entries(s.meta.materials||{}).reduce(function(n,p){return n+(CM.isOreName(p[0])?0:Math.max(0,Number(p[1])||0));},0);}
 
 /* Prepared potions live in exactly two slots; no dungeon replenishment. */
 function commonMaterialCount(){
@@ -3200,7 +3198,9 @@ function usePreparedPotion(index){
  var id=r.preparedPotions&&r.preparedPotions[index],p=SYS.byPotion[id];
  if((index!==0&&index!==1)||!p)return;
  r.preparedPotions[index]=null;r.locationUsedPotion=(r.locationUsedPotion||0)+1;
- if(id==='ghost'){
+ if(id==='field_hp'){r.hp=Math.min(stats().hp,r.hp+Math.ceil(stats().hp*.25));
+ }else if(id==='field_mp'){r.mp=Math.min(stats().mp,r.mp+Math.ceil(stats().mp*.25));
+ }else if(id==='ghost'){
   if(!r.ghost||r.ghost.hp<=0){var hp=Math.round(32+r.floor*1.6);
    r.ghost={hp:hp,maxHp:hp,atk:Math.round(8+r.floor*.8),cooldown:3,dodge:70};}
   else r.ghost.hp=Math.min(r.ghost.maxHp,r.ghost.hp+Math.round(r.ghost.maxHp*.3));
@@ -3240,52 +3240,38 @@ function bestiary(){
   dialog('<div class="emblem">☗</div><h2>БЕСТИАРИЙ</h2><p>Записи сохраняются между экспедициями. Доступны изображения обнаруженных существ T1–T2, остальные получат их по мере создания.</p>'+
    '<div class="crypt-bestiary-list">'+(rows||'<p class="fine muted">Пока не побеждено ни одного существа.</p>')+'</div><button class="btn wide space-top" data-action="close">Назад</button>');
 }
-function town(){
- var city=s.meta.city||{forge:0,barracks:0,library:0},mat=s.meta.materials||{},available=townCommonMaterialCount();
- var builds=Object.keys(BUILDINGS).map(function(id){
-  var b=BUILDINGS[id],level=city[id]||0,cost=6+level*8,isMine=id==='mine';
-  var need=isMine?CM.houseCost(level):null,canPay=isMine?CM.canBuild(mat,level):available>=cost;
-  var price=isMine?(need?Object.keys(need).map(function(name){return name+' ×'+need[name];}).join(' · '):'МАКС'):cost+' мат.';
-  return '<div class="meta-upgrade"><div><strong>'+b.icon+' '+b.title+' · '+level+'/5</strong><small>'+b.desc+'</small></div>'+
-  '<button class="btn small" data-action="town-upgrade" data-id="'+id+'" '+
-   (level>=5||!canPay?'disabled':'')+'>'+esc(price)+'</button></div>';
- }).join('');
- var resources=Object.entries(mat).filter(function(v){return v[1]>0;}).sort(function(a,b){return b[1]-a[1];}).slice(0,32);
- dialog('<div class="emblem">♜</div><div class="subhead">ПОСЕЛЕНИЕ ПЕРЕЖИВАЕТ КАЖДЫЙ ЗАБЕГ</div><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2>'+
- '<p>Обычные материалы: <b class="golden">'+available+'</b>. Руда с нагорья учитывается отдельно и расходуется на Шахтный двор. Добычу сдаём на склад при безопасном возвращении.</p>'+
- '<div class="frame-title">РАЗВИТИЕ ПОСЕЛЕНИЯ</div>'+builds+
- (s.meta.forestProjects&&Object.keys(s.meta.forestProjects).length?'<div class="frame-title space-top">Наследие Лесной окраины</div><p class="fine golden">'+Object.keys(s.meta.forestProjects).filter(function(k){return s.meta.forestProjects[k];}).map(function(k){return esc(({forest_shrine:'Святилище рощи · +5 щита на каждом этаже леса',grove_seed:'Саженец древнего дуба · +3 HP на каждом этаже леса'})[k]||k);}).join(' · ')+'</p>':'')+
- (s.meta.ridgePerks?'<div class="frame-title space-top">Трофеи Каменистого нагорья</div><p class="fine golden">'+Object.keys(s.meta.ridgePerks).filter(function(k){return s.meta.ridgePerks[k];}).map(function(k){return esc(({troll_horn:'Рог тролля',vibrosieve:'План вибросита',artel:'Восстановленная артель',heart_of_mountain:'Сердце горы'})[k]||k);}).join(' · ')+'</p>':'')+
- '<button class="btn gold wide space-top" data-action="quest-board">✥ Совет деревни и журнал заданий</button>'+
- '<button class="btn gold wide space-top" data-action="alchemy">⚗ Зелья и алхимик</button>'+
- '<div class="frame-title space-top">СКЛАД · '+resources.length+' ВИДОВ</div>'+
- '<div class="town-resources">'+(resources.length?resources.map(function(e){return '<span class="crypt-material-chip">'+SP.materialIcon(e[0])+'<i>'+esc(e[0])+'</i><b>×'+e[1]+'</b></span>';}).join(''):'<p class="fine muted">Материалов пока нет. Исследуйте подземелье и собирайте добычу с врагов.</p>')+'</div>'+
- '<button class="btn alt wide space-top" data-action="camp">Память предков</button>'+
- '<button class="btn dark wide space-top" data-action="close">Выйти</button>');
+var villageTab='overview';
+function town(tab){
+ if(r){toast('Развитие деревни доступно между походами.');return;}
+ var previous=document.querySelector('.village-management'),scroll=previous&&(!tab||tab===villageTab)?previous.scrollTop:0;
+ if(tab)villageTab=tab;
+ dialog('<div class="panel-heading"><div><small class="sheet-kicker">'+esc(VG.stage(s.meta))+'</small><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2></div><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div>'+VUI.render(s.meta,villageTab));
+ var current=document.querySelector('.village-management');if(current)current.scrollTop=scroll;
 }
+function questBoard(){town('quests');}
 function townUpgrade(id){
- if(!Object.prototype.hasOwnProperty.call(BUILDINGS,id))return;
- var city=s.meta.city,level=city[id]||0,cost=6+level*8;
- if(level>=5)return;
- if(id==='mine'){
-  if(!CM.build(s.meta.materials,level))return;
-  city.mine=level+1;save();draw();town();return;
- }
- if(townCommonMaterialCount()<cost)return;
- var remaining=cost;
- var names=Object.keys(s.meta.materials).filter(function(name){return !CM.isOreName(name);}).sort(function(a,b){return (s.meta.materials[b]||0)-(s.meta.materials[a]||0);});
- for(var key of names){
-  var used=Math.min(remaining,s.meta.materials[key]||0);
-  s.meta.materials[key]-=used;remaining-=used;
-  if(!remaining)break;
- }
- if(remaining!==0)throw Error('Material budget invariant violation');
- city[id]=level+1;
- if(r){if(id==='barracks')r.hp+=12;if(id==='library')r.mp+=8;}
+ if(r)return;
+ if(!VG.build(s.meta,id)){toast('Недостаточно указанных материалов или постройка уже завершена.');return;}
+ save();draw();town('build');
+}
+function villageAction(name,id){
+ if(r){toast('Мастерские и совет доступны между походами.');return;}
+ var ok=false;
+ if(name==='village-tab'){town(id);return;}
+ if(name==='village-exchange'){ok=VG.exchange(s.meta,id);villageTab='storage';}
+ if(name==='village-craft'){var parts=String(id).split(':');ok=VG.craft(s.meta,parts[0],Number(parts[1]));villageTab='craft';}
+ if(name==='village-research'){ok=VG.research(s.meta,id);villageTab='legacy';}
+ if(name==='village-story'){ok=VG.claimStory(s.meta,id);villageTab='quests';}
+ if(name==='village-order-accept'){ok=VG.accept(s.meta,id);villageTab='quests';}
+ if(name==='village-order-claim'){ok=VG.claimOrder(s.meta,id);villageTab='quests';}
+ if(name==='village-order-cancel'){ok=VG.cancel(s.meta,id);villageTab='quests';}
+ if(!ok){toast('Условия пока не выполнены.');return;}
  save();draw();town();
+ toast(({'village-exchange':'Выбранное сырьё обменяно. Продукция на складе.','village-craft':'Продукция отправлена на склад.','village-research':'Исследование завершено.','village-story':'Награда этапа получена.','village-order-claim':'Заказ выполнен, награда получена.','village-order-accept':'Заказ принят.','village-order-cancel':'Заказ отменён.'})[name]||'Готово.');
 }
 
 function rankHero(id){
+ if(r){toast('Развитие героя доступно в деревне.');return;}
  if(!Object.prototype.hasOwnProperty.call(C,id))return;
  var m=s.meta,rank=m.heroRanks[id]||0,cost=EX.upgradeCost(rank);
  if(rank>=5||(m.heroEssence[id]||0)<cost)return;
@@ -3343,6 +3329,7 @@ function claimMilestone(id){
 }
 
 function permanent(id){
+ if(r){toast('Улучшения памяти доступны в деревне.');return;}
  var ups=s.meta.upgrades;if(!Object.prototype.hasOwnProperty.call(ups,id))return;
  var n=ups[id],cost=5+n*4;if(n>=5||s.meta.souls<cost)return;
  s.meta.souls-=cost;ups[id]++;
@@ -3352,6 +3339,8 @@ function permanent(id){
 function action(name,id){
  if(FD){var label=name==='skill'&&r?SKILLS[r.class].name:['strike','chamber-fight'].includes(name)?'Удар':['cast','cast-modal'].includes(name)?(SPELLS.find(function(sp){return sp.id===id;})||{}).name:name==='potion'?'Лечение':name==='use-prepared'?'Зелье':null;FD.begin(label,name);}
  if(name!=='move-hero'&&name!=='close')heroMoveToken++;
+ if(name.indexOf('village-')===0){villageAction(name,id);return;}
+ if(name==='region-reports'){regionalQuestBoard();return;}
  if(name==='close'){if(r)r.pendingStory=null;close();return;}
  if(name==='menu'){dialog(renderMenu());return;}
  if(name==='stored-gear'){storedGearDialog();return;}

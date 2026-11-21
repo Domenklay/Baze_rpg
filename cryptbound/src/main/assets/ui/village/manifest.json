@@ -1,0 +1,21 @@
+{
+  "origin": "Original generated ink and gouache resource sprites, no embedded text",
+  "sprites": [
+    {
+      "file": "boards.png",
+      "sha256": "6dd034c755477696f36e793482e1be504251d6beb871a5f0036649d8dc28616d"
+    },
+    {
+      "file": "ink.png",
+      "sha256": "d150a369b018d47e851c2058098cd98517f97a3a40ea715926899717ef255c3a"
+    },
+    {
+      "file": "parts.png",
+      "sha256": "74d50523edbdda700d0e7d469a0a7beb317eaaccc2a1d321398a97cf0d990714"
+    },
+    {
+      "file": "rations.png",
+      "sha256": "06cfd628260d7bad877def9cf35ccba13b4ad35f9cac0c581ff7dfb65762a64a"
+    }
+  ]
+}

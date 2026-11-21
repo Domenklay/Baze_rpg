@@ -66,6 +66,8 @@ jobs:
           node --check cryptbound/src/main/assets/mining.js
           node --check cryptbound/src/main/assets/ridge_catalog.js
           node --check cryptbound/src/main/assets/ridge_events.js
+          node --check cryptbound/src/main/assets/village.js
+          node --check cryptbound/src/main/assets/village_ui.js
           node --check cryptbound/src/main/assets/game.js
           node --check cryptbound/src/main/assets/dungeons.js
           node --check cryptbound/src/main/assets/clicker_rules.js
@@ -73,6 +75,8 @@ jobs:
           node --check cryptbound/src/main/assets/boss_scripts.js
           node --check cryptbound/src/main/assets/story_events.js
           node --check cryptbound/src/main/assets/balance.js
+          node cryptbound/tests/village_economy.cjs
+          node cryptbound/tests/village_ui.cjs
           node cryptbound/tests/smoke.cjs
           node cryptbound/tests/titles_v2.cjs
           node cryptbound/tests/path_items_regression.cjs
@@ -99,8 +103,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.9.1-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.9.1-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.10.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.10.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -113,7 +117,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.9.1 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.9.1 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.9.1 — новая компоновка меню" --notes "Новая компоновка меню: главный вход в экспедицию, лёгкие списки служб и улучшений, рюкзак с фильтрами, самостоятельная книга заклинаний, события на пергаменте и компактная добыча. Убраны повторяющиеся вложенные рамки. Проверены 72 состояния экранов на шести размерах телефона. Игра работает офлайн."
+          if ! gh release view cryptbound-v0.10.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.10.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.10.0 — деревня, ремёсла и задания" --notes "Девять построек деревни, точные ресурсы для строительства, девять рецептов обработки и обмена, шесть этапов восстановления и шесть повторяемых заказов. Постоянные исследования мастерских, начальные зелья и награды за безопасное возвращение. Сохранения и новые монстры T1 сохранены. Без таймеров; полное развитие даёт грамоту основания будущего города."
           fi
-          gh release upload cryptbound-v0.9.1 dist/Cryptbound-v0.9.1-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.10.0 dist/Cryptbound-v0.10.0-offline-Android.apk dist/SHA256SUMS.txt --clobber

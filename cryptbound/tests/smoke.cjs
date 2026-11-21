@@ -12,7 +12,7 @@ const ctx={window:win,document:doc,Date,Math,
  localStorage:{getItem:k=>storage[k]||null,setItem:(k,v)=>storage[k]=v,removeItem:k=>delete storage[k]},
  setTimeout:()=>1,clearTimeout(){},setInterval:()=>1,console};
 vm.createContext(ctx);
-const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','forest_rework.js','forest_v2_art.js','t1_encounters.js','mining.js','ridge_catalog.js','ridge_events.js','game.js'];
+const sources=['art.js','equipment_art.js','imported_art.js','sprite_catalog.js','titles.js','gumballs_titles_reference.js','titles_runtime.js','expansion.js','clicker_data.js','dungeons.js','clicker_rules.js','systems.js','boss_scripts.js','story_events.js','balance.js','combat_feedback.js','hunter_bestiary.js','forest_encounters.js','forest_rework.js','forest_v2_art.js','t1_encounters.js','mining.js','ridge_catalog.js','ridge_events.js','village.js','village_ui.js','game.js'];
 for(const file of sources){if(file==='gumballs_titles_reference.js')win.CryptLegacyTitles=win.CryptTitles;vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),ctx,{filename:file,timeout:12000});}
 const api=win.Crypt,rawAction=api.debug.action,DB=win.ClickerData,CR=win.ClickerRules,DN=win.CryptDungeons;
 /* Existing v0.7.2 tests skip directly to distant floors. Claim the newly required book
@@ -254,14 +254,13 @@ test('Compact modal compares fixed equipment with set bonuses',()=>{
  assert.match(el('overlay').innerHTML,/2 предмета/);
  A('close');
 });
-test('Village permanently consumes material quantities for upgrades',()=>{
- state.meta.materials['Шкура животного']=18;
- const before=api.debug.stats().atk,old=state.meta.city.forge;
- A('town-upgrade','forge');
- assert.equal(state.meta.city.forge,old+1);
- assert.ok(api.debug.stats().atk>=before+2);
- A('town');assert.match(el('overlay').innerHTML,/ПОГРАНИЧНЫЙ ПРИВАЛ/);
- assert.match(el('overlay').innerHTML,/СКЛАД/);A('close');
+test('Village upgrades use exact crafted goods and are unavailable during combat',()=>{
+ const old=state.meta.city.forge;
+ state.meta.materials['Строевые доски']=10;state.meta.materials['Кованые детали']=10;state.meta.materials['Осколок воспоминания']=13;
+ A('town-upgrade','forge');assert.equal(state.meta.city.forge,old,'No village spending during an expedition');
+ assert.ok(win.CryptVillage.build(state.meta,'forge'));assert.equal(state.meta.city.forge,old+1);
+ assert.equal(state.meta.materials['Осколок воспоминания'],13,'Quest memories are never construction fuel');
+ A('close');
 });
 test('Hero actions choose one original frame, retain it on redraw and never repeat the previous variant',()=>{
  r.tab='maze';r.mp=10000;r.hp=10000;
@@ -519,7 +518,7 @@ test('Town quest reports are one-time, survive runs and restore one memory chapt
  assert.equal(state.run,null);
  const diamonds=state.meta.diamonds,rainbow=state.meta.rainbowDiamonds;
  const memory=state.meta.materials['Осколок воспоминания']||0;
- A('quest-board');assert.match(el('overlay').innerHTML,/СОВЕТ ДЕРЕВНИ/);
+ A('region-reports');assert.match(el('overlay').innerHTML,/СОВЕТ ДЕРЕВНИ/);
  for(const key of keys)A('claim-quest',key);
  assert.ok(state.meta.memoryChapters.act1);
  assert.equal(state.meta.materials['Осколок воспоминания'],memory+3);
@@ -614,7 +613,7 @@ test('Exactly three compact consumables sit above the backpack, beside the hero'
 });
 test('Late-game alchemy materials exist in their own tier and cannot be substituted',()=>{
  const sys=win.CryptSystems;
- assert.equal(sys.potions.length,16);
+ assert.equal(sys.potions.length,18);
  const late=['forgeguard','wildheart','ashvow','deepveil','soulmemory','dreamtruce','stormroot','astraloath'];
  const allLoot=DN.acts.map(a=>new Set(a.locations.flatMap(l=>[...l.mobs,...l.elites,l.boss]
     .flatMap(m=>(m.loot||[]).map(x=>x.name)))));
