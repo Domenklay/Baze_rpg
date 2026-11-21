@@ -149,7 +149,9 @@ test('Random hero origin with connected orthogonal exploration',()=>{
  assert.match(el('content').innerHTML,/tile-origin/);
  assert.match(el('content').innerHTML,/hero-on-board/);
  assert.ok(r.tiles.filter(t=>t.revealed).length<=3);
- const far=r.tiles.find(t=>!t.revealed&&CR.near(origin.id).indexOf(t.id)===-1);
+ // The claimed hunter corpse may extend the connected explored area beyond the origin.
+ const far=r.tiles.find(t=>!t.revealed&&!CR.exploreStatus(t,r.tiles,r.heroTile).ok);
+ assert.ok(far);
  const turn=r.turn;A('reveal',far.id);
  assert.equal(r.turn,turn);
  assert.equal(far.revealed,false);
