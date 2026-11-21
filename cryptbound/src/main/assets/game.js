@@ -11,6 +11,7 @@ function grantTestResearch(run){
  run.testResearchGranted=true;
  return true;
 }
+var HP=window.CryptHeroProgression,HUI=window.CryptHeroProgressionUI;
 var VG=window.CryptVillage,VUI=window.CryptVillageUI;
 var FD=window.CryptFeedback,HB=window.CryptHunterBook,FE=window.CryptForestEvents,FW=window.CryptForestRework,RE=window.CryptT1Encounters,CM=window.CryptMining,RG=window.CryptRidgeEvents;
 var EX=window.CryptExpansion,CR=window.ClickerRules,DB=window.ClickerData,DN=window.CryptDungeons,SYS=window.CryptSystems,BS=window.CryptBossScripts,STORY=window.CryptStoryEvents,BAL=window.CryptBalance,SP=window.CryptSprites,holdTimeout=null,suppressClickUntil=0;
@@ -89,14 +90,17 @@ function equipped(id){return Object.values(r.equip).some(function(v){return v===
 function item(id){return r.items.find(function(x){return x.id===Number(id);})||null;}
 function equippedItem(slot){return item(r.equip[slot]);}
 function setBonus(k){var obj=CR.bonuses(r.equip,r.items);return obj[k]||0;}
+function heroBuff(key){return r?(HP.effects(s.meta,r.class,r)[key]||0):0;}
+function heroSkill(){var skill=SKILLS[r.class];return Object.assign({},skill,{cost:Math.max(1,skill.cost-heroBuff('skillMana'))});}
+function heroSkillDamage(raw,foe){return Math.max(1,Math.floor(raw*(1+heroBuff('skillPct')*.01)*(foe&&foe.boss?1+heroBuff('bossPct')*.01:1)));}
 function stats(){
  var c=C[r.class],e=r.equip,training=BAL.training(r.actIndex||0);
- var a=c.atk+training.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+EX.masteryStat(s.meta,r.class,'atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
- var def=c.def+training.def+bonus('def')+EX.masteryStat(s.meta,r.class,'def')+EX.relicStat(s.meta,'def')+setBonus('def');
- var hp=c.hp+training.hp+bonus('hp')+s.meta.upgrades.hp*12+EX.masteryStat(s.meta,r.class,'hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
- var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+EX.masteryStat(s.meta,r.class,'mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
- var pow=c.pow+training.pow+bonus('pow')+EX.masteryStat(s.meta,r.class,'pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
- var crit=c.crit+bonus('crit')+EX.masteryStat(s.meta,r.class,'crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
+ var a=c.atk+training.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+heroBuff('atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
+ var def=c.def+training.def+bonus('def')+heroBuff('def')+EX.relicStat(s.meta,'def')+setBonus('def');
+ var hp=c.hp+training.hp+bonus('hp')+s.meta.upgrades.hp*12+heroBuff('hp')+EX.relicStat(s.meta,'hp')+setBonus('hp');
+ var mp=c.mp+training.mp+bonus('mp')+s.meta.upgrades.mp*8+heroBuff('mp')+EX.relicStat(s.meta,'mp')+setBonus('mp');
+ var pow=c.pow+training.pow+bonus('pow')+heroBuff('pow')+EX.relicStat(s.meta,'pow')+setBonus('pow');
+ var crit=c.crit+bonus('crit')+heroBuff('crit')+EX.relicStat(s.meta,'crit')+setBonus('crit');
  var ts=TR.statBonuses(r);a+=ts.atk+(r.titleFloorAtk||0)+(r.titleHealAtk||0)+(r.titleSageFlat||0)+(r.titleBlessAtk||0);hp+=ts.hp;mp+=ts.mp;pow+=ts.pow;def+=ts.def;
  a+=miningBonus('flatDamage');hp+=miningBonus('maxHp');crit+=miningBonus('critChance')+(RG.active(r)?(RG.ensure(r).crit||0):0);
  if(RG.active(r)&&RG.ensure(r).flags.bag_masterwork&&RG.gearBonus(r,'mineExtra')>=25)def+=2;
@@ -114,7 +118,7 @@ function stats(){
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
- return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+FW.bonus(r,'dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
+ return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+heroBuff('dodge')+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+FW.bonus(r,'dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
   return Math.max(0,stats().def-(r.armorBreakPower||0))+bonus('damageFlat')+Math.max(0,Math.floor(r.blessed||0));
@@ -171,7 +175,7 @@ function addItem(slot,rarity){
  var i=newItem(slot,r.floor,rarity);
  r.items.push(i);log('Найдено: '+i.name+' ('+RARITY[i.rarity]+').');return i;
 }
-function bonusGold(n){return Math.round(n*(1+(bonus('gold')+RG.gearBonus(r,'gold'))*.01));}
+function bonusGold(n){return Math.round(n*(1+(bonus('gold')+heroBuff('goldPct')+RG.gearBonus(r,'gold'))*.01));}
 function addGold(n){n=bonusGold(n);r.gold+=n;return n;}
 function mkEnemy(boss,ranged,forcedElite){
  var reg=currentRegion(),elites=reg.elites||[],mobs=(reg.mobs||[]).slice();
@@ -459,7 +463,7 @@ function begin(hero){
  // No default equipment: the first weapon or armor must be found.
  r.hp=stats().hp;r.mp=stats().mp;
  fillPreparedPotions(r);
- startFloor();r.shield+=villageShield;save();draw();close();
+ startFloor();r.shield+=villageShield+heroBuff('startShield');save();draw();close();
 }
 function fresh(){s={version:1,seq:0,meta:{souls:0,best:0,runs:0,unlockedAct:0,selectedAct:0,activeExpedition:null,completedActs:{},achievements:{},questReports:{},memoryChapters:{},fairyMuted:false,diamondUpgrades:{},cosmetics:{default:true},fairyCosmetic:'default',potionStock:{},preparedLoadout:[null,null],diamonds:0,rainbowDiamonds:0,upgrades:{hp:0,atk:0,mp:0},secrets:[],heroRanks:{necromancer:0,executioner:0,scout:0},heroEssence:{necromancer:0,executioner:0,scout:0},relics:{},bestiary:{},milestones:{},materials:{},city:{forge:0,barracks:0,library:0,alchemist:0},totalSecrets:0,bossKills:0},run:null};r=null;}
 
@@ -769,7 +773,7 @@ function effectList(){
 function renderMaze(){
  var artPair=[0,2,4,6,0,4,6,2,6,10][r.actIndex||0];
  var room=activeRoom();
- var st=stats(),skill=SKILLS[r.class],ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
+ var st=stats(),skill=heroSkill(),ready=Math.min(skill.turns,Math.max(0,r.turn-r.skillUsed)),region=currentRegion();
  var quick='<button class="quick-spell class-ability" data-action="skill" aria-label="'+esc(skill.name)+' · '+skill.cost+' маны" title="'+esc(skill.name)+' · '+skill.cost+'" '+(ready<skill.turns||r.mp<skill.cost?'disabled':'')+'><img src="ui/abilities/'+r.class+'.png" alt=""/><small class="quick-mana-cost">'+skill.cost+'</small><small class="quick-cooldown">'+ready+'/'+skill.turns+'</small></button>'+[1,2].map(function(i){return '<button class="quick-spell ability-empty" disabled aria-label="Свободная ячейка способности '+i+'"><span>+</span></button>';}).join('');
  var adventurerTool=TR.toolOf(r);
  quick+='<button class="quick-spell adventurer-tool '+(adventurerTool?'':'ability-empty')+'" data-action="title-tool" aria-label="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста — не открыт')+'" title="'+esc(adventurerTool?adventurerTool.name:'Предмет авантюриста')+'">'+(adventurerTool?uiIcon(adventurerTool.icon):'<span>+</span>')+'<small>'+(adventurerTool?(TR.curSup(r,adventurerTool.kind==='lantern'?'wick':adventurerTool.kind==='bow'?'arrow':adventurerTool.kind==='compass'?'compass':adventurerTool.kind==='rune'?'rune':'quench')||''):'')+'</small></button>';
@@ -966,7 +970,7 @@ function grantScroll(id,count,source){
  count=TR.scrollCount(r,sp,count,source);r.scrolls[id]=(r.scrolls[id]||0)+count;return count;
 }
 
-function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount'));}
+function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount')-heroBuff('spellMana'));}
 
 /* Pocket-room spell combat uses the same consumable scroll and turn rules.
    World-altering / terrain magic is cast only from the main maze. */
@@ -1389,7 +1393,7 @@ function renderBase(){
  return '<div class="village-hub"><div class="village-scene"><div class="village-label"><small>МЕЖДУ ПОХОДАМИ</small><h2>Пограничный привал</h2><p>Последний огонь перед глубиной</p></div></div><div class="village-wealth"><span>'+uiIcon('gem')+(s.meta.diamonds||0)+'<small>Алмазы</small></span><span>'+uiIcon('sun')+(s.meta.rainbowDiamonds||0)+'<small>Радужные</small></span><span>'+uiIcon('bag')+materialCount()+'<small>Материалы</small></span><span>'+uiIcon('talent')+s.meta.souls+'<small>Память</small></span></div>'+pending+'<button class="expedition-invite" data-action="choose">'+menuArt('expedition')+'<span><small>СЛЕДУЮЩАЯ ЭКСПЕДИЦИЯ</small><b>'+(exp?'Продолжить путь':'Отправиться в глубину')+'</b><em>'+esc(DN.acts[s.meta.selectedAct||0].name)+'</em></span>'+uiIcon('arrow-right')+'</button><div class="village-home-progress"><button data-action="town">'+esc(VG.stage(s.meta))+'<b>'+VG.levels(s.meta)+'/45</b></button><button data-action="village-tab" data-id="craft">Мастерские</button><button data-action="quest-board">Заказы жителей</button></div><div class="hub-section village-services-title"><h3>У огня</h3><span>Приготовления к походу</span></div><div class="village-services">'+services.map(function(x){return '<button data-action="'+x[0]+'">'+menuArt(({'quest-board':'chronicles',bestiary:'hunter',town:'village','diamond-shop':'expedition',alchemy:'alchemy','dungeon-achievements':'talents'})[x[0]])+'<span><b>'+x[2]+'</b><small>'+x[3]+'</small></span></button>';}).join('')+'</div><div class="hub-section"><h3>Пути в глубину</h3><span>10 актов · 30 локаций</span></div><div class="act-list">'+acts+'</div><div class="village-record"><span>Походов <b>'+s.meta.runs+'</b></span><span>Лучший этаж <b>'+s.meta.best+'</b></span><button data-action="fairy-toggle">'+(s.meta.fairyMuted?'Светлячок: выкл.':'Светлячок: вкл.')+'</button></div>'+(exp?'<button class="btn dark wide space-top" data-action="discard-expedition">Завершить сохранённую экспедицию</button>':'')+'</div>';
 }
 function draw(visualOnly){
- if(!s)return;VG.ensure(s.meta);
+ if(!s)return;HP.ensure(s.meta,r||s.meta.activeExpedition);VG.ensure(s.meta);
  $('app').classList.toggle('in-expedition',!!r);
  hud();if(!r){$('content').classList.remove('dungeon-mode');$('content').innerHTML=renderBase();if(FD)FD.paint();return;}
  r.tab='maze';$('content').classList.toggle('dungeon-mode',true);
@@ -1417,7 +1421,7 @@ function toast(msg){
  var el=$('toast');el.textContent=msg;el.classList.add('shown');
  clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('shown');},2400);
 }
-function dialog(content){if(FD)FD.hide();uiPanel=null;var layout=/village-management/.test(content)?'village':/panel-spells|spell-detail-page/.test(content)?'book':/panel-bag|panel-hero/.test(content)?'inventory':/forest-event-dialog|puzzle-answer|story-choice/.test(content)?'event':/reward-rows/.test(content)?'loot':'ledger';var kind=/data-action="(?:puzzle-answer|story-choice|event-yes)"/.test(content)?' dialog-event':/reward-rows/.test(content)?' dialog-loot':'';$('overlay').innerHTML='<div class="veil"><div class="dialog'+kind+'" data-layout="'+layout+'" role="dialog" aria-modal="true">'+(/panel-close/.test(content)?'':'<button class="dialog-dismiss" data-action="close" aria-label="Закрыть окно">×</button>')+content+'</div></div>';}
+function dialog(content){if(FD)FD.hide();uiPanel=null;var layout=/hero-legacy/.test(content)?'hero-tree':/village-management/.test(content)?'village':/panel-spells|spell-detail-page/.test(content)?'book':/panel-bag|panel-hero/.test(content)?'inventory':/forest-event-dialog|puzzle-answer|story-choice/.test(content)?'event':/reward-rows/.test(content)?'loot':'ledger';var kind=/data-action="(?:puzzle-answer|story-choice|event-yes)"/.test(content)?' dialog-event':/reward-rows/.test(content)?' dialog-loot':'';$('overlay').innerHTML='<div class="veil"><div class="dialog'+kind+'" data-layout="'+layout+'" role="dialog" aria-modal="true">'+(/panel-close/.test(content)?'':'<button class="dialog-dismiss" data-action="close" aria-label="Закрыть окно">×</button>')+content+'</div></div>';}
 function close(){uiPanel=null;$('overlay').innerHTML='';}
 function choose(){
  var opts=Object.keys(C).map(function(k){
@@ -1851,8 +1855,8 @@ function echoFollowUp(enemy,st,fromPick){
  var critical=Math.random()*100<st.crit;
  var damage=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,(enemy.def||0)-miningBonus('armorPen'))-(enemy.guard||0));
  enemy.guard=0;
- if(enemy.boss)damage=Math.floor(damage*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)damage=Math.floor(damage*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
+ if(enemy.boss)damage=Math.floor(damage*(1+(heroBuff('bossPct')+bonus('bossDamage')+setBonus('bossDamage'))*.01));
+ if(critical)damage=Math.floor(damage*(1.6+(heroBuff('critDamage')+bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  damage=Math.max(1,Math.floor(damage*(1+miningBonus('secondDamage')*.01)));
  damage=TR.attack(r,enemy,damage,titleHelpers());
  if(enemy.hp>0)enemy.hp=Math.max(0,enemy.hp-damage);
@@ -1876,8 +1880,8 @@ function strike(tid){
  var critical=Math.random()*100<st.crit;
  var amount=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-Math.max(0,(ridgeStrike.ignoreArmor?0:t.foe.def)-miningBonus('armorPen'))-(t.foe.guard||0));
  t.foe.guard=0;
- if(t.foe.boss)amount=Math.floor(amount*(1+(bonus('bossDamage')+setBonus('bossDamage'))*.01));
- if(critical)amount=Math.floor(amount*(1.6+(bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
+ if(t.foe.boss)amount=Math.floor(amount*(1+(heroBuff('bossPct')+bonus('bossDamage')+setBonus('bossDamage'))*.01));
+ if(critical)amount=Math.floor(amount*(1.6+(heroBuff('critDamage')+bonus('critDamage')+setBonus('critDamage')+miningBonus('critDamage')+(CM.equipped(r)?RG.gearBonus(r,'critDamage'):0))*.01));
  amount=TR.attack(r,t.foe,amount,titleHelpers());
  var forestStrike=FW.firstStrikeBonus(r);if(forestStrike)amount=Math.max(1,Math.floor(amount*(1+forestStrike*.01)));
  if(ridgeStrike.extra)amount=Math.max(1,Math.floor(amount*(1+ridgeStrike.extra*.01)));
@@ -1957,7 +1961,7 @@ var SKILLS={
 };
 function useSkill(chosenTarget){
  if(r.silenceTurns>0){toast('Босс наложил молчание.');return;}
- var skill=SKILLS[r.class];
+ var skill=heroSkill();
  if(r.turn-r.skillUsed<skill.turns){toast('Умение восстанавливается.');return;}
  if(r.mp<skill.cost){toast('Нужно '+skill.cost+' маны.');return;}
  var cave=activeRoom();
@@ -1985,33 +1989,33 @@ function useSkill(chosenTarget){
  }
  function skillKill(target){if(target.roomGuard){target.foe.hp=Math.max(0,target.foe.hp);cave.room.guardHp=cave.room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);}else kill(target);}
  if(r.class==='necromancer'){
-  var creature={name:'Костяной страж',def:2,specialCooldown:4,
-   maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
-   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+EX.mastery(s.meta,r.class)*9,
-   atk:Math.round((5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+EX.mastery(s.meta,r.class)*3)*(1+hunterStat('hunterAttackPct')*.01))};
+  var creature={name:'Костяной страж',def:2+heroBuff('summonDef'),specialCooldown:4,
+   maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'),
+   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'),
+   atk:Math.round((5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+heroBuff('summonAtk'))*(1+hunterStat('hunterAttackPct')*.01))};
   var previous=r.summon,oldTile=r.summonTile;
   r.summon=creature;r.summonTile=null;
   if(!placeSummon()){r.summon=previous;r.summonTile=oldTile;toast('Свободных клеток для призыва нет.');return;}
   log('Призван костяной страж на клетку '+r.summonTile+'.');
  }else if(r.class==='executioner'){
   if(!t){toast('Нужен открытый враг.');return;}
-  damage=Math.max(3,Math.floor(st.atk*2.1)-t.foe.def);
+  damage=heroSkillDamage(Math.max(3,Math.floor(st.atk*2.1)-t.foe.def),t.foe);
    provoke(t.foe);t.foe.hp-=damage;r.shield+=Math.floor(st.def*1.8)+7;
   log('Казнь: '+damage+' урона и защитная стойка.');
   if(t.foe.hp<=0)skillKill(t);
  }else if(r.class==='guardian'){
-  r.shield+=12+Math.floor(st.def*2.2);
-  if(t){damage=Math.max(3,Math.floor(st.atk*1.65)-t.foe.def);provoke(t.foe);t.foe.hp-=damage;
+  r.shield+=Math.floor((12+Math.floor(st.def*2.2))*(1+heroBuff('shieldPct')*.01));
+  if(t){damage=heroSkillDamage(Math.max(3,Math.floor(st.atk*1.65)-t.foe.def),t.foe);provoke(t.foe);t.foe.hp-=damage;
    if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
  }else if(r.class==='sorceress'){
   var targets=cave?caveGuards.slice(0,4).map(function(g){return {foe:g,roomGuard:true};}):enemies().slice(0,4);if(!targets.length){toast('Нужен открытый враг.');return;}
-  targets.forEach(function(enemy){var val=Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def);
+  targets.forEach(function(enemy){var val=heroSkillDamage(Math.max(3,Math.floor(st.pow*1.6)-enemy.foe.def),enemy.foe);
     enemy.foe.hp-=val;if(enemy.foe.hp<=0)skillKill(enemy);});
   log('Грозовое эхо поражает '+targets.length+' врагов.');
  }else if(r.class==='assassin'){
   if(!t){toast('Нужен открытый враг.');return;}
-  damage=Math.max(3,Math.floor(st.atk*1.35)-t.foe.def);
+  damage=heroSkillDamage(Math.max(3,Math.floor(st.atk*1.35)-t.foe.def),t.foe);
    provoke(t.foe);t.foe.hp-=damage;t.foe.poison=3;
   log('Ядовитый клинок: '+damage+' урона, яд на три хода.');
   if(t.foe.hp<=0)skillKill(t);
@@ -2019,7 +2023,7 @@ function useSkill(chosenTarget){
   if(!t){toast('Нужен обнаруженный противник для двойного выстрела.');return;}
   var arrows=0;
   for(var shot=0;shot<2&&t.foe.hp>0;shot++){
-   var arrowDamage=Math.max(1,Math.floor(st.atk*.95)+rand(0,3)-(t.foe.def||0)-(t.foe.guard||0));
+   var arrowDamage=heroSkillDamage(Math.max(1,Math.floor(st.atk*.95)+rand(0,3)-(t.foe.def||0)-(t.foe.guard||0)),t.foe);
    provoke(t.foe,'hero');
    t.foe.hp-=arrowDamage;damage+=arrowDamage;arrows++;
    if(t.foe.hp<=0)skillKill(t);
@@ -2045,7 +2049,7 @@ function spellPreview(sp){
  var k=sp.kind,harm=['attack','burn','stun','drain','holy','weakness','chain','aoe','burnall','freezeall','drainall','earthquake','sunfall','soulcovenant','firstlight'];
  var heals=['heal','healshield','lastlight'],shield=['shield'];
  if(!harm.includes(k)&&!heals.includes(k)&&!shield.includes(k))return null;
- var st=stats(),raw=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ var st=stats(),raw=Math.floor((sp.base+st.pow*1.45)*(1+(heroBuff('spellPct')+bonus('spellDamage')+setBonus('spellDamage'))*.01));
  var strength=Math.max(1,Math.ceil(raw*TR.previewMultiplier(r,sp)));
  if(heals.includes(k))strength=Math.ceil(strength*(1+bonus('healPower')*.01));
  if(shield.includes(k))strength=Math.ceil(strength*(1+(bonus('iceArmor')+bonus('utilityPower'))*.01));
@@ -2054,7 +2058,7 @@ function spellPreview(sp){
 }
 function spellPower(sp,st){
  r.titleAuroraTriggered=false;r.titlePopeTriggered=false;
- var amount=Math.floor((sp.base+st.pow*1.45)*(1+(bonus('spellDamage')+setBonus('spellDamage'))*.01));
+ var amount=Math.floor((sp.base+st.pow*1.45)*(1+(heroBuff('spellPct')+bonus('spellDamage')+setBonus('spellDamage'))*.01));
  if(sp.school==='dark'&&Math.random()*100<bonus('darkCrit'))amount*=2;
  if(sp.school==='fire'&&Math.random()*100<bonus('fireProc'))amount=Math.ceil(amount*1.65);
  if(sp.school==='light'&&Math.random()*100<bonus('lightEcho'))amount=Math.ceil(amount*1.55);
@@ -3095,29 +3099,8 @@ function abandon(){
  '<p class="fine muted">Игра сейчас офлайн: если реклама технически недоступна, выдаётся 50%. После подтверждённого просмотра в будущей онлайн-сборке — 75%.</p>'+
  '<button class="btn dark wide space-top" data-action="close">Отмена</button>');
 }
-function camp(){
- var m=s.meta,up=m.upgrades;
- function line(key,name,desc){
-  var price=5+up[key]*4;
-  return '<div class="meta-upgrade"><div><strong>'+name+'</strong><small>Ранг '+up[key]+'/5 · '+desc+'</small></div>'+
-  '<button class="btn small" data-action="permanent" data-id="'+key+'" '+(r||m.souls<price||up[key]>=5?'disabled':'')+'>'+price+' ✧</button></div>';
- }
- var heroes=Object.keys(C).map(function(id){
-  var c=C[id],rank=m.heroRanks[id]||0,essence=m.heroEssence[id]||0,cost=EX.upgradeCost(rank);
-  return '<div class="meta-hero-row"><span class="meta-hero-portrait">'+window.CryptArt.hero(id)+'</span>'+
-   '<div><strong>'+c.name+' · '+rank+'/5</strong><small>'+EX.heroMastery[id].effect+'</small>'+
-   '<small>☽ Эссенция: '+essence+'</small></div>'+
-   '<button class="btn small" data-action="hero-rank" data-id="'+id+'" '+(r||rank>=5||essence<cost?'disabled':'')+'>'+
-   (rank>=5?'МАКС':cost+' ☽')+'</button></div>';
- }).join('');
- dialog('<div class="emblem">✥</div><div class="subhead">МЕТАПРОГРЕССИЯ</div><h2>ПАМЯТЬ ПРЕДКОВ</h2>'+
-  '<p>Память общая: <b class="golden">'+m.souls+' ✧</b>. Эссенция у каждого героя своя. Титулы внутри забега — общие и временные.</p>'+
-  '<div class="frame-title">ОБЩИЕ УЛУЧШЕНИЯ</div>'+
-  line('hp','Крепкое тело','HP +12')+line('atk','Стальное наследие','Атака +2')+line('mp','Тайная мудрость','Мана +8')+
-  '<div class="frame-title space-top">НАСЛЕДИЕ МАСТЕРСКИХ</div><p class="fine">Три постоянных исследования открываются развитием деревни.</p><button class="btn alt wide" data-action="village-tab" data-id="legacy">Исследования и постоянные бонусы</button><div class="frame-title space-top">РАЗВИТИЕ ГЕРОЕВ</div>'+heroes+
-  '<button class="btn gold wide space-top" data-action="town">⚒ Поселение и материалы</button>'+ '<button class="btn alt wide space-top" data-action="chronicles">✥ Реликварий, бестиарий и испытания</button>'+
-  '<button class="btn alt wide space-top" data-action="close">Вернуться</button>');
-}
+var selectedHero='necromancer',selectedHeroNode=null;
+function camp(){heroProgressDialog(selectedHero);}
 function materialCount(){return Object.values(s.meta.materials||{}).reduce(function(n,v){return n+Math.max(0,Number(v)||0);},0);}
 
 /* Prepared potions live in exactly two slots; no dungeon replenishment. */
@@ -3244,6 +3227,7 @@ var villageTab='overview';
 function town(tab){
  if(r){toast('Развитие деревни доступно между походами.');return;}
  var previous=document.querySelector('.village-management'),scroll=previous&&(!tab||tab===villageTab)?previous.scrollTop:0;
+ if((tab||villageTab)==='legacy'){villageTab='overview';heroProgressDialog('common');return;}
  if(tab)villageTab=tab;
  dialog('<div class="panel-heading"><div><small class="sheet-kicker">'+esc(VG.stage(s.meta))+'</small><h2>ПОГРАНИЧНЫЙ ПРИВАЛ</h2></div><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div>'+VUI.render(s.meta,villageTab));
  var current=document.querySelector('.village-management');if(current)current.scrollTop=scroll;
@@ -3270,28 +3254,24 @@ function villageAction(name,id){
  toast(({'village-exchange':'Выбранное сырьё обменяно. Продукция на складе.','village-craft':'Продукция отправлена на склад.','village-research':'Исследование завершено.','village-story':'Награда этапа получена.','village-order-claim':'Заказ выполнен, награда получена.','village-order-accept':'Заказ принят.','village-order-cancel':'Заказ отменён.'})[name]||'Готово.');
 }
 
-function rankHero(id){
- if(r){toast('Развитие героя доступно в деревне.');return;}
- if(!Object.prototype.hasOwnProperty.call(C,id))return;
- var m=s.meta,rank=m.heroRanks[id]||0,cost=EX.upgradeCost(rank);
- if(rank>=5||(m.heroEssence[id]||0)<cost)return;
- m.heroEssence[id]-=cost;m.heroRanks[id]=rank+1;
- if(r&&r.class===id){
-  if(id==='scout')r.hp+=5;
-  if(id==='necromancer'&&r.summon){r.summon.hp+=9;r.summon.maxHp+=9;r.summon.atk+=3;}
- }
- save();draw();camp();
-}
+function rankHero(id){heroProgressDialog(id);}
 function heroProgressDialog(id){
- if(!C[id])return;
- var rank=s.meta.heroRanks[id]||0,ess=s.meta.heroEssence[id]||0;
- dialog('<div class="emblem">'+C[id].icon+'</div><div class="subhead">ЛИЧНОЕ РАЗВИТИЕ ГЕРОЯ</div>'+
-  '<h2>'+C[id].name+'</h2><p>'+C[id].description+'</p>'+
-  '<p><b class="golden">Ранг '+rank+'/5</b> · Эссенция '+ess+' ☽</p>'+
-  '<div class="unit-skill"><strong>'+EX.heroMastery[id].title+'</strong><p>'+EX.heroMastery[id].effect+'</p></div>'+
-  '<button class="btn wide" data-action="hero-rank" data-id="'+id+'" '+
-    (rank>=5||ess<EX.upgradeCost(rank)?'disabled':'')+'>Усилить · '+EX.upgradeCost(rank)+' ☽</button>'+
-  '<button class="btn alt wide space-top" data-action="camp">Память предков</button>');
+ if(id!=='common'&&!Object.prototype.hasOwnProperty.call(HP.heroes,id))return;
+ if(id!==selectedHero)selectedHeroNode=null;selectedHero=id;
+ dialog('<div class="panel-heading"><div><small class="sheet-kicker">ПОСТОЯННОЕ РАЗВИТИЕ · ВНЕ ЭКСПЕДИЦИИ</small><h2>Наследие героев</h2></div><button class="panel-close" data-action="close" aria-label="Закрыть">×</button></div>'+HUI.render(s.meta,id,selectedHeroNode,!!r,r||s.meta.activeExpedition));
+ if(window.requestAnimationFrame)window.requestAnimationFrame(function(){var area=document.querySelector('.hero-tree-scroll'),node=document.querySelector('.hero-node.selected');if(area&&node)area.scrollTop=Math.max(0,node.offsetTop-area.clientHeight/2);});
+}
+function heroProgressAction(name,id){
+ if(name==='hero-select'){heroProgressDialog(id);return;}
+ if(name==='hero-node'){selectedHeroNode=id;heroProgressDialog(selectedHero);return;}
+ if(name==='hero-buy'){if(!HP.buy(s.meta,selectedHero,id,!!r)){toast('Узел закрыт, изучен или недостаточно эссенции.');return;}save();heroProgressDialog(selectedHero);return;}
+ if(name==='hero-research'){if(r||!VG.research(s.meta,id)){toast('Нужны память, материалы и соответствующая мастерская.');return;}save();heroProgressDialog('common');return;}
+ if(name==='hero-reset-preview'){
+  if(r||!Object.prototype.hasOwnProperty.call(HP.heroes,id))return;
+  var spent=HP.ensure(s.meta).heroes[id].spent||0;
+  dialog('<h2>Перераспределение: '+HP.heroes[id].name+'</h2><p>Все узлы этого героя будут сброшены. Вернётся ровно '+spent+' потраченной эссенции. Остальные герои и общие улучшения сохранятся.</p><button class="btn wide" data-action="hero-reset" data-id="'+id+'">Вернуть '+spent+' эссенции</button><button class="btn alt wide space-top" data-action="hero-select" data-id="'+id+'">Назад к дереву</button>');return;
+ }
+ if(name==='hero-reset'){if(!HP.respec(s.meta,id,!!r))return;save();selectedHeroNode=null;heroProgressDialog(id);}
 }
 function chronicles(){
  var m=s.meta;
@@ -3339,6 +3319,7 @@ function permanent(id){
 function action(name,id){
  if(FD){var label=name==='skill'&&r?SKILLS[r.class].name:['strike','chamber-fight'].includes(name)?'Удар':['cast','cast-modal'].includes(name)?(SPELLS.find(function(sp){return sp.id===id;})||{}).name:name==='potion'?'Лечение':name==='use-prepared'?'Зелье':null;FD.begin(label,name);}
  if(name!=='move-hero'&&name!=='close')heroMoveToken++;
+ if(['hero-select','hero-node','hero-buy','hero-research','hero-reset-preview','hero-reset'].indexOf(name)>=0){heroProgressAction(name,id);return;}
  if(name.indexOf('village-')===0){villageAction(name,id);return;}
  if(name==='region-reports'){regionalQuestBoard();return;}
  if(name==='close'){if(r)r.pendingStory=null;close();return;}
@@ -3416,7 +3397,7 @@ function action(name,id){
  if(name==='effect-info'){var effect=effectList().find(function(x){return x[0]===id;});if(effect)dialog('<h2>'+effect[1]+'</h2><p>'+effect[2]+'</p><p>Осталось: '+r[id]+'</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='ghost-info'){dialog('<h2>Призрачный страж</h2><p>Здоровье '+(r.ghost?r.ghost.hp:0)+'. Атакует раз в три хода и сопровождает героя до гибели.</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='key-info'){toast('Ключ найден. Спуститесь по лестнице на следующий этаж.');return;}
- if(name==='skill-info'){dialog('<h2>'+esc(SKILLS[r.class].name)+'</h2><p>'+esc(SKILLS[r.class].cost+' маны · '+SKILLS[r.class].turns+' ходов восстановления')+'</p><p>Восстановление: '+Math.min(SKILLS[r.class].turns,Math.max(0,r.turn-r.skillUsed))+'/'+SKILLS[r.class].turns+' ходов.</p><button class="btn wide" data-action="close">Вернуться</button>');return;}
+ if(name==='skill-info'){dialog('<h2>'+esc(SKILLS[r.class].name)+'</h2><p>'+esc(heroSkill().cost+' маны · '+SKILLS[r.class].turns+' ходов восстановления')+'</p><p>Восстановление: '+Math.min(SKILLS[r.class].turns,Math.max(0,r.turn-r.skillUsed))+'/'+SKILLS[r.class].turns+' ходов.</p><button class="btn wide" data-action="close">Вернуться</button>');return;}
  if(name==='spell-page'){r.spellPage=id==='special'?'special':'rank';panelDialog('spells');save();return;}
  if(name==='spell-rank'){r.spellRank=clamp(Number(id)||0,0,5);panelDialog('spells');save();return;}
  if(name==='title-detail'){selectedTitle=id;panelDialog('talents');return;}
@@ -3641,7 +3622,7 @@ window.Crypt={save:save,back:function(){
  toast('Лабиринт хранит ваши следы.');
  },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction,quickSweep:quickSweepTile,quickSweepInterval:QUICK_SWEEP_INTERVAL_MS,testResearch:TEST_START_RESEARCH_POINTS}};
 s=load();
-if(!s)fresh();r=s.run;
+if(!s)fresh();r=s.run;HP.ensure(s.meta,r||s.meta.activeExpedition);
 if(r){grantTestResearch(r);if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());save();}
 if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();
