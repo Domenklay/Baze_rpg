@@ -79,6 +79,7 @@ jobs:
           node --check cryptbound/src/main/assets/balance.js
           node cryptbound/tests/hero_progression.cjs
           node cryptbound/tests/hero_progression_ui.cjs
+          node cryptbound/tests/hero_buff_lifecycle.cjs
           node cryptbound/tests/village_economy.cjs
           node cryptbound/tests/village_ui.cjs
           node cryptbound/tests/smoke.cjs
@@ -107,8 +108,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.11.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.11.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.12.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.12.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -121,7 +122,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.11.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.11.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.11.0 — деревья наследия героев" --notes "Шесть постоянных деревьев героев: 54 узла, три ветви каждого класса. Общие улучшения и исследования в том же рисованном стиле. Персональные бонусы сбалансированы и подключены к бою, есть полный возврат эссенции при перераспределении. Старые ранги возвращаются валютой один раз, сохранённые походы сохраняют прежние личные бонусы. Проверено совместное применение реликвий и новых деревьев. Проверены реальные способности всех шести классов и мобильная вёрстка."
+          if ! gh release view cryptbound-v0.12.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.12.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.12.0 — значимые классовые бонусы" --notes "Переработаны бонусы всех шести героев: масштабирование с экипировкой, щиты на новых этажах, лечение и мана за победы, барьер за заклинания, сокращение восстановления и усиление первого удара. Купленные узлы и эссенция сохранены. Погребальный оберег: 10/20/30% максимального HP на каждом новом этаже. Проверены реальные срабатывания на 30 этажах, боссы, поздняя экипировка, пещеры и отсутствие повторных наград через загрузку."
           fi
-          gh release upload cryptbound-v0.11.0 dist/Cryptbound-v0.11.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.12.0 dist/Cryptbound-v0.12.0-offline-Android.apk dist/SHA256SUMS.txt --clobber

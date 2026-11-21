@@ -91,8 +91,26 @@ function item(id){return r.items.find(function(x){return x.id===Number(id);})||n
 function equippedItem(slot){return item(r.equip[slot]);}
 function setBonus(k){var obj=CR.bonuses(r.equip,r.items);return obj[k]||0;}
 function heroBuff(key){return r?(HP.effects(s.meta,r.class,r)[key]||0):0;}
-function heroSkill(){var skill=SKILLS[r.class];return Object.assign({},skill,{cost:Math.max(1,skill.cost-heroBuff('skillMana'))});}
+function heroSkill(){var skill=SKILLS[r.class];return Object.assign({},skill,{cost:Math.max(1,Math.ceil((skill.cost-heroBuff('skillMana'))*(1-heroBuff('skillManaPct')*.01))),turns:Math.max(2,skill.turns-heroBuff('skillCooldown'))});}
 function heroSkillDamage(raw,foe){return Math.max(1,Math.floor(raw*(1+heroBuff('skillPct')*.01)*(foe&&foe.boss?1+heroBuff('bossPct')*.01:1)));}
+function heroFloorBenefits(){
+ if(!r)return;var key=[r.actIndex||0,r.locationIndex||0,r.floor].join(':');
+ if(!r.heroFloorBenefits)r.heroFloorBenefits={};if(r.heroFloorBenefits[key])return;r.heroFloorBenefits[key]=true;
+ var st=stats(),shield=Math.ceil(st.hp*(heroBuff('floorShieldPct')+(VG.bonuses(s.meta).floorShieldPct||0))*.01),heal=Math.ceil(st.hp*heroBuff('floorHealPct')*.01);
+ if(shield){r.shield+=shield;log('Наследие: оберег нового этажа, +'+shield+' щита.');}
+ if(heal){var restored=Math.min(st.hp-r.hp,heal);r.hp+=restored;if(restored)log('Привал следопыта: +'+restored+' HP.');}
+}
+function markHistoricalHeroDeaths(run){if(run&&Array.isArray(run.tiles))run.tiles.forEach(function(t){if(t.room&&Array.isArray(t.room.guards))t.room.guards.forEach(function(g){if(g.hp<=0)g.heroLegacyRewarded=true;});});}
+function heroKillBenefits(foe){
+ if(!r||!foe||foe.hp>0||foe.ethereal||foe.heroLegacyRewarded)return;foe.heroLegacyRewarded=true;
+ var st=stats(),heal=Math.ceil(st.hp*heroBuff('killHealPct')*.01),mana=Math.ceil(st.mp*heroBuff('killManaPct')*.01);
+ if(heal){var h=Math.min(st.hp-r.hp,heal);r.hp+=h;if(h)log('Второе дыхание: +'+h+' HP.');}
+ if(mana){var m=Math.min(st.mp-r.mp,mana);r.mp+=m;if(m)log('Хладнокровный расчёт: +'+m+' маны.');}
+ if(r.summon&&r.summon.hp>0&&heroBuff('summonKillHealPct')){var petHeal=Math.min(r.summon.maxHp-r.summon.hp,Math.ceil(r.summon.maxHp*heroBuff('summonKillHealPct')*.01));r.summon.hp+=petHeal;if(petHeal)log('Круг возрождения восстанавливает скелету '+petHeal+' HP.');}
+}
+function heroPetDamage(amount){return Math.max(1,Math.ceil(amount*(1-Math.min(60,heroBuff('summonResistPct'))*.01)));}
+function heroOpeningDamage(foe,amount){if(!foe||foe.heroOpeningSpent||!heroBuff('firstStrikePct'))return amount;foe.heroOpeningSpent=true;return Math.max(1,Math.floor(amount*(1+heroBuff('firstStrikePct')*.01)));}
+function heroSpellBarrier(){var pct=heroBuff('spellShieldPct');if(!pct)return;var st=stats(),add=Math.min(Math.ceil(st.hp*pct*.01),Math.max(0,Math.ceil(st.hp*.30)-r.shield));if(add>0){r.shield+=add;log('Барьер заклинания: +'+add+' щита.');}}
 function stats(){
  var c=C[r.class],e=r.equip,training=BAL.training(r.actIndex||0);
  var a=c.atk+training.atk+(r.floor-1)*1.1+bonus('atk')+(s.meta.upgrades.atk*2)+heroBuff('atk')+EX.relicStat(s.meta,'atk')+setBonus('atk');
@@ -118,6 +136,7 @@ function stats(){
  hp=Math.round((hp+(r.titlePaladinFlat||0))*(1+lvl('war_knight')*.10));
  mp=Math.round(mp*(1+lvl('mag_white')*.10));
  pow=Math.round(pow*(1+(lvl('mag_black')>0?.05+.05*lvl('mag_black'):0)));
+ a*=1+heroBuff('atkPct')*.01;hp=Math.round(hp*(1+(heroBuff('hpPct')+(villageBonus.hpPct||0))*.01));mp=Math.round(mp*(1+(heroBuff('mpPct')+(villageBonus.mpPct||0))*.01));pow=Math.round(pow*(1+heroBuff('powPct')*.01));
  return {atk:Math.floor(a),def:def,hp:hp,mp:mp,pow:pow,crit:clamp(crit,0,75),dodge:clamp((ts.dodge||0)+heroBuff('dodge')+bonus('dodge')+setBonus('dodge')+hunterStat('dodge')+FW.bonus(r,'dodge')+RG.gearBonus(r,'dodge')+(r.scoutDodgeTurns>0?50:0),0,100)};
 }
 function flatDefense(){
@@ -128,7 +147,7 @@ function flatDefense(){
    if(apply)enemy.ridgeCloakBlocked=true;
    val=Math.ceil(val*(1-RG.gearBonus(r,'firstHit')*.01));
   }
-  return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)));}
+  return Math.max(0,Math.ceil(val*(1-miningBonus('damageReduction')*.01)*(1-Math.min(60,heroBuff('resistPct'))*.01)));}
  function provoke(enemy,attacker){if(enemy&&enemy.hp>0){enemy.provoked=true;enemy.provokedBy=attacker||'hero';}}
  function enemyDebuffs(enemy){
   var effects=[['poison','☠','Яд'],['bleed','✣','Кровотечение'],['burn','♨','Горение'],['stun','✸','Оглушение']];
@@ -444,7 +463,7 @@ function startFloor(){
   if(!available.length)break;
   var chosen=pick(available);chosen.revealed=true;if(chosen.kind==='trap')triggerTrap(chosen);if(chosen.kind==='empty')chosen.cleared=true;
  }
- TR.onFloor(r,titleHelpers());
+ TR.onFloor(r,titleHelpers());heroFloorBenefits();
  log('Этаж '+r.floor+' · '+maxFloorLabel()+'. Герой начинает исследование со случайной клетки.');
  fairyRemark('floor');
 }
@@ -970,7 +989,7 @@ function grantScroll(id,count,source){
  count=TR.scrollCount(r,sp,count,source);r.scrolls[id]=(r.scrolls[id]||0)+count;return count;
 }
 
-function manaCost(sp){return Math.max(1,sp.cost-bonus('manaDiscount')-heroBuff('spellMana'));}
+function manaCost(sp){return Math.max(1,Math.ceil((sp.cost-bonus('manaDiscount')-heroBuff('spellMana'))*(1-heroBuff('spellManaPct')*.01)));}
 
 /* Pocket-room spell combat uses the same consumable scroll and turn rules.
    World-altering / terrain magic is cast only from the main maze. */
@@ -1565,6 +1584,7 @@ function monsterSpecial(e,damage,room,attackTarget){
 
 function consumeTurn(){
  if(!r)return false;
+ if(activeRoom())activeRoom().room.guards.forEach(heroKillBenefits);
  r.turn++;
  TR.onTurn(r,titleHelpers());
  if(r.blessed>0)r.blessed--;
@@ -1667,7 +1687,7 @@ function consumeTurn(){
    }else if(ready){amount=monsterSpecial(e,amount,false,attackTarget);}
    if(provoked&&retaliationTarget==='summon'){
     if(r.summon&&r.summon.hp>0){
-     var summonHit=Math.max(1,Math.ceil(amount)-(r.summon.def||0));
+     var summonHit=heroPetDamage(Math.max(1,Math.ceil(amount)-(r.summon.def||0)));
      if(FD)FD.actor(e,ready?'skill':'attack',ready?(e.abilityName||special.name):'Удар');
      r.summon.hp=Math.max(0,r.summon.hp-summonHit);
      log(e.name+' отвечает призванному существу: −'+summonHit+' HP.');
@@ -1699,7 +1719,7 @@ function consumeTurn(){
   }
   if(r.guardCharges>0){r.guardCharges--;log('Алхимический щит полностью блокирует попадание; зарядов '+r.guardCharges+'.');return;}
   if(r.summon&&r.summon.hp>0&&Math.random()<.72){
-   var summonDamage=Math.max(1,amount-(r.summon.def||0));
+   var summonDamage=heroPetDamage(Math.max(1,amount-(r.summon.def||0)));
    r.summon.hp=Math.max(0,r.summon.hp-summonDamage);
    log('Скелет перехватывает '+summonDamage+' урона.');
    if(!r.summon.hp){log('Призванный скелет разрушен.');r.summon=null;r.summonTile=null;}
@@ -1733,7 +1753,7 @@ function kill(t){
   log(drillNotice||'Эфирный элитник рассеялся без трофеев.');
   return;
  }
- e.deathProcessed=true;e.hp=0;t.cleared=false;t.remainsId=remainsId(e);r.kills++;r.ep+=e.ep*12;
+ heroKillBenefits(e);e.deathProcessed=true;e.hp=0;t.cleared=false;t.remainsId=remainsId(e);r.kills++;r.ep+=e.ep*12;
  if(e.forestAlpha&&Array.isArray(t.forestAlphaSquare)){
   t.forestAlphaSquare.forEach(function(index){var shadow=r.tiles[index];if(shadow&&shadow.forestAlphaAnchor===t.id){
    shadow.kind='empty';shadow.cleared=true;shadow.foe=null;shadow.forestAlphaAnchor=null;shadow.revealed=true;
@@ -1825,7 +1845,7 @@ function counterBeforeHero(enemy,mainTile,room){
  }
  if(r.guardCharges>0){r.guardCharges--;log('Защитный заряд блокирует атаку '+enemy.name+'.');return true;}
  if(r.summon&&r.summon.hp>0&&Math.random()<(room?.45:.72)){
-  var reflected=Math.max(1,damage-(room?0:(r.summon.def||0)));
+  var reflected=heroPetDamage(Math.max(1,damage-(room?0:(r.summon.def||0))));
   r.summon.hp=Math.max(0,r.summon.hp-reflected);
   if(!r.summon.hp){r.summon=null;r.summonTile=null;}
   log('Спутник перехватывает удар '+enemy.name+'.');return true;
@@ -1885,6 +1905,7 @@ function strike(tid){
  amount=TR.attack(r,t.foe,amount,titleHelpers());
  var forestStrike=FW.firstStrikeBonus(r);if(forestStrike)amount=Math.max(1,Math.floor(amount*(1+forestStrike*.01)));
  if(ridgeStrike.extra)amount=Math.max(1,Math.floor(amount*(1+ridgeStrike.extra*.01)));
+ amount=heroOpeningDamage(t.foe,amount);
  t.foe.hp-=amount;
  if(t.foe.hp>0&&Math.random()*100<miningBonus('stunChance')){t.foe.stun=Math.max(t.foe.stun||0,1);log('Кирка оглушает '+t.foe.name+'.');}
  if(t.foe.hp>0&&Math.random()*100<hunterStat('poisonChance')){t.foe.poison=Math.max(t.foe.poison||0,2);log('Книга: отравление цели.');}
@@ -1990,9 +2011,9 @@ function useSkill(chosenTarget){
  function skillKill(target){if(target.roomGuard){target.foe.hp=Math.max(0,target.foe.hp);cave.room.guardHp=cave.room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);}else kill(target);}
  if(r.class==='necromancer'){
   var creature={name:'Костяной страж',def:2+heroBuff('summonDef'),specialCooldown:4,
-   maxHp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'),
-   hp:32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'),
-   atk:Math.round((5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+heroBuff('summonAtk'))*(1+hunterStat('hunterAttackPct')*.01))};
+   maxHp:Math.round((32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'))*(1+heroBuff('summonHpPct')*.01)),
+   hp:Math.round((32+Math.floor(st.pow*.9)+14*lvl('ritual')+bonus('summonHp')+heroBuff('summonHp'))*(1+heroBuff('summonHpPct')*.01)),
+   atk:Math.round((5+Math.floor(st.pow*.35)+4*lvl('ritual')+bonus('summonAtk')+heroBuff('summonAtk'))*(1+hunterStat('hunterAttackPct')*.01)*(1+heroBuff('summonAtkPct')*.01))};
   var previous=r.summon,oldTile=r.summonTile;
   r.summon=creature;r.summonTile=null;
   if(!placeSummon()){r.summon=previous;r.summonTile=oldTile;toast('Свободных клеток для призыва нет.');return;}
@@ -2004,7 +2025,7 @@ function useSkill(chosenTarget){
   log('Казнь: '+damage+' урона и защитная стойка.');
   if(t.foe.hp<=0)skillKill(t);
  }else if(r.class==='guardian'){
-  r.shield+=Math.floor((12+Math.floor(st.def*2.2))*(1+heroBuff('shieldPct')*.01));
+  r.shield+=Math.min(Math.floor((12+Math.floor(st.def*2.2))*(1+heroBuff('shieldPct')*.01)),Math.max(0,stats().hp-r.shield));
   if(t){damage=heroSkillDamage(Math.max(3,Math.floor(st.atk*1.65)-t.foe.def),t.foe);provoke(t.foe);t.foe.hp-=damage;
    if(t.foe.hp<=0)skillKill(t);}
   log('Воительница получает крепкую защиту'+(damage?' и наносит '+damage+' урона.':'.'));
@@ -2172,7 +2193,7 @@ function cast(id,chosenTarget){
  }
  r.pendingSpell=null;
  setHeroPose('skill');
- r.scrolls[id]--;r.mp-=manaCost(sp);
+ r.scrolls[id]--;r.mp-=manaCost(sp);heroSpellBarrier();
   TR.spellCast(r,sp,titleHelpers());
  if(sp.rank!==6&&sp.id!=='earthgate'){
   if(!Array.isArray(r.spellHistory))r.spellHistory=[];
@@ -2703,16 +2724,17 @@ function renderChamberTiles(t){
  }
  return html;
 }
-function chamberEnemyPhase(frozen){
+function chamberEnemyPhase(frozen){var deadRoom=activeRoom();if(deadRoom)deadRoom.room.guards.forEach(heroKillBenefits);
  if(!r||r.chamberActive==null)return;
  var t=activeRoom(),room=t&&t.room;if(!room)return;
  room.turns++;
  room.guards.forEach(function(g){
+  heroKillBenefits(g);
   if(g.hp<=0||r.hp<=0)return;
   if(g.guardTurns>0){g.guardTurns--;if(!g.guardTurns)g.guard=0;}
   if(g.burn>0){g.burn--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().pow*.45)));}
   if(g.poison>0){g.poison--;g.hp=Math.max(0,g.hp-Math.max(2,Math.ceil(stats().atk*.25)));}
-  if(g.hp<=0){g.provoked=false;return;}
+  if(g.hp<=0){heroKillBenefits(g);g.provoked=false;return;}
    var provoked=!!g.provoked,retaliationTarget=g.provokedBy||'hero';g.provoked=false;g.provokedBy=null;
    var interval=Math.max(1,(g.skill&&g.skill.every)||3);
    g.cooldown=Math.max(0,(g.cooldown==null?interval:g.cooldown)-1);
@@ -2734,7 +2756,7 @@ function chamberEnemyPhase(frozen){
    if(ready)damage=monsterSpecial(g,damage,room,attackTarget);
    if(provoked&&retaliationTarget==='summon'){
     if(r.summon&&r.summon.hp>0){
-     var summonHit=Math.max(1,Math.ceil(damage)-(r.summon.def||0));
+     var summonHit=heroPetDamage(Math.max(1,Math.ceil(damage)-(r.summon.def||0)));
      r.summon.hp=Math.max(0,r.summon.hp-summonHit);
      log(g.name+' отвечает призванному существу в комнате: −'+summonHit+' HP.');
      if(!r.summon.hp){r.summon=null;r.summonTile=null;}
@@ -2762,7 +2784,7 @@ function chamberEnemyPhase(frozen){
    r.ghost.hp=Math.max(0,r.ghost.hp-damage);if(!r.ghost.hp)r.ghost=null;return;
   }
   if(r.summon&&r.summon.hp>0&&Math.random()<.45){
-   r.summon.hp=Math.max(0,r.summon.hp-damage);
+   r.summon.hp=Math.max(0,r.summon.hp-heroPetDamage(damage));
    if(r.summon.hp===0){r.summon=null;r.summonTile=null;}
    log('Спутник принимает удар '+g.name+'.');return;
   }
@@ -2771,7 +2793,7 @@ function chamberEnemyPhase(frozen){
   r.hp=Math.max(0,r.hp-damage);
   if(damage>0)log(g.name+' наносит '+damage+' урона в побочной комнате.');
  });
- room.guardHp=room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
+ room.guards.forEach(heroKillBenefits);room.guardHp=room.guards.reduce(function(n,g){return n+Math.max(0,g.hp);},0);
 }
 function fightChamber(id){
  if(!r)return;
@@ -2789,7 +2811,7 @@ function fightChamber(id){
   if(Math.random()<.45){log(g.name+' уклонился в побочной комнате.');finishAction();if(r)showChamber(t);return;}}
  var st=stats(),echo=TR.consumeEcho(r);
  var dmg=Math.max(1,st.atk+(r.rageTurns>0?Math.ceil(st.atk*.4):0)+rand(0,3)-g.def-(g.guard||0));
- dmg=TR.attack(r,g,dmg,titleHelpers());g.guard=0;g.hp=Math.max(0,g.hp-dmg);
+ dmg=heroOpeningDamage(g,TR.attack(r,g,dmg,titleHelpers()));g.guard=0;g.hp=Math.max(0,g.hp-dmg);
  if(echo&&g.hp>0)echoFollowUp(g,st);
  room.guardHp=room.guards.reduce(function(sum,x){return sum+x.hp;},0);
  if(room.guardHp===0)log('Все стражи побочной комнаты побеждены.');
@@ -3397,7 +3419,7 @@ function action(name,id){
  if(name==='effect-info'){var effect=effectList().find(function(x){return x[0]===id;});if(effect)dialog('<h2>'+effect[1]+'</h2><p>'+effect[2]+'</p><p>Осталось: '+r[id]+'</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='ghost-info'){dialog('<h2>Призрачный страж</h2><p>Здоровье '+(r.ghost?r.ghost.hp:0)+'. Атакует раз в три хода и сопровождает героя до гибели.</p><button class="btn wide" data-action="close">Понятно</button>');return;}
  if(name==='key-info'){toast('Ключ найден. Спуститесь по лестнице на следующий этаж.');return;}
- if(name==='skill-info'){dialog('<h2>'+esc(SKILLS[r.class].name)+'</h2><p>'+esc(heroSkill().cost+' маны · '+SKILLS[r.class].turns+' ходов восстановления')+'</p><p>Восстановление: '+Math.min(SKILLS[r.class].turns,Math.max(0,r.turn-r.skillUsed))+'/'+SKILLS[r.class].turns+' ходов.</p><button class="btn wide" data-action="close">Вернуться</button>');return;}
+ if(name==='skill-info'){dialog('<h2>'+esc(SKILLS[r.class].name)+'</h2><p>'+esc(heroSkill().cost+' маны · '+heroSkill().turns+' ходов восстановления')+'</p><p>Восстановление: '+Math.min(heroSkill().turns,Math.max(0,r.turn-r.skillUsed))+'/'+heroSkill().turns+' ходов.</p><button class="btn wide" data-action="close">Вернуться</button>');return;}
  if(name==='spell-page'){r.spellPage=id==='special'?'special':'rank';panelDialog('spells');save();return;}
  if(name==='spell-rank'){r.spellRank=clamp(Number(id)||0,0,5);panelDialog('spells');save();return;}
  if(name==='title-detail'){selectedTitle=id;panelDialog('talents');return;}
@@ -3622,7 +3644,7 @@ window.Crypt={save:save,back:function(){
  toast('Лабиринт хранит ваши следы.');
  },state:function(){return s;},debug:{action:action,draw:draw,stats:stats,finish:finishAction,quickSweep:quickSweepTile,quickSweepInterval:QUICK_SWEEP_INTERVAL_MS,testResearch:TEST_START_RESEARCH_POINTS}};
 s=load();
-if(!s)fresh();r=s.run;HP.ensure(s.meta,r||s.meta.activeExpedition);
+if(!s)fresh();r=s.run;HP.ensure(s.meta,r||s.meta.activeExpedition);markHistoricalHeroDeaths(r||s.meta.activeExpedition);
 if(r){grantTestResearch(r);if(repairCurrentFloorElite())save();TR.refreshHints(r,titleHelpers());save();}
 if(r&&r.summon&&r.summon.hp>0&&r.summonTile==null)placeSummon();
 draw();

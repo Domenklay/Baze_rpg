@@ -32,8 +32,8 @@ function buildingCost(meta,id){var lv=level(meta,id),n=lv+1;if(!Object.prototype
  return [[main,scale*2],[secondary,Math.max(1,n-1)]];
 }
 var RESEARCH=[
- {id:'provision',name:'Походная выучка',building:'inn',desc:'+4 здоровья и +2 маны всем героям за ранг.',cost:[[GOODS.rations,2]],souls:8},
- {id:'wards',name:'Охранные руны',building:'library',desc:'+3 щита в начале экспедиции за ранг.',cost:[[GOODS.ink,2]],souls:8},
+ {id:'provision',name:'Походная выучка',building:'inn',desc:'+4 HP, +2 MP и дополнительно +2% максимального HP и MP за ранг.',cost:[[GOODS.rations,2]],souls:8},
+ {id:'wards',name:'Охранные руны',building:'library',desc:'На каждом новом этаже: щит 5% максимального HP за ранг. Дополнительно +3 щита на старте похода за ранг.',cost:[[GOODS.ink,2]],souls:8},
  {id:'salvage',name:'Бережливый разбор',building:'workshop',desc:'+10% металлолома при завершении сохранённой экспедиции за ранг.',cost:[[GOODS.parts,2]],souls:8}
 ];
 var STORY=[
@@ -77,7 +77,7 @@ function orderReady(m,id){var v=ensure(m),q=ORDERS.find(function(x){return x.id=
 function claimOrder(m,id){if(!orderReady(m,id))return false;var v=ensure(m),q=ORDERS.find(function(x){return x.id===id;});if(q.deliver&&!pay(m,q.deliver))return false;delete v.active[id];v.cooldowns[id]=journey(m);v.counters.orders++;grant(m,Object.assign({},q.reward,{souls:q.reward.souls+level(m,'market')}));return true;}
 function cancel(m,id){var v=ensure(m);if(!v.active[id])return false;delete v.active[id];return true;}
 function record(m,r,safe){if(!r)return;var v=ensure(m);if(safe){var key=[r.actIndex||0,r.locationIndex||0,r.floor||1].join(':');if(!r.villageReturnKeys)r.villageReturnKeys={};if(r.villageReturnKeys[key])return;r.villageReturnKeys[key]=true;var prev=r.villageDeposited||{kills:0,secrets:0};v.counters.kills+=Math.max(0,int(r.kills)-int(prev.kills));v.counters.secrets+=Math.max(0,int(r.secrets)-int(prev.secrets));var result={kills:Math.max(0,int(r.kills)-int(prev.kills)),secrets:Math.max(0,int(r.secrets)-int(prev.secrets))};r.villageDeposited={kills:int(r.kills),secrets:int(r.secrets)};v.counters.returns++;return result;}else v.counters.losses++;}
-function bonuses(m){var v=ensure(m);return {hp:int(v.research.provision)*4,mp:int(v.research.provision)*2,shield:level(m,'inn')*3+int(v.research.wards)*3,salvage:int(v.research.salvage)*10,retention:level(m,'warehouse')*5};}
+function bonuses(m){var v=ensure(m);return {hpPct:int(v.research.provision)*2,mpPct:int(v.research.provision)*2,floorShieldPct:int(v.research.wards)*5,hp:int(v.research.provision)*4,mp:int(v.research.provision)*2,shield:level(m,'inn')*3+int(v.research.wards)*3,salvage:int(v.research.salvage)*10,retention:level(m,'warehouse')*5};}
 function stage(m){var n=levels(m);return n>=45?'Деревня готова к городу':n>=25?'Укреплённое поселение':n>=10?'Растущая деревня':n>=3?'Пограничная деревня':'Лагерь у руин';}
 function tradeOffer(name){if(Object.values(GOODS).some(function(k){return norm(k)===norm(name);})||/руда|воспомин|печать|чертеж|реликви|грамот|знак|трофей|сердц|ядро/i.test(name))return null;var id=/древес|дерев|ветв|лоза|корень|смола/i.test(name)?'boards':/запис|пыл|эссенц|сущност|пыльц|кристалл|янтарь/i.test(name)?'ink':/шкур|кож|клык|перо|перь|рог|желез|слиз|спор|яд|чешу/i.test(name)?'rations':'parts';return {cost:[[name,3]],output:[GOODS[id],1]};}
 function exchange(m,name){ensure(m);var offer=tradeOffer(name);if(level(m,'market')<1||!offer||!pay(m,offer.cost))return false;m.materials[offer.output[0]]=int(m.materials[offer.output[0]])+1;return true;}
