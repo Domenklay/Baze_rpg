@@ -1845,7 +1845,7 @@ function counterBeforeHero(enemy,mainTile,room){
  }
  if(r.guardCharges>0){r.guardCharges--;log('Защитный заряд блокирует атаку '+enemy.name+'.');return true;}
  if(r.summon&&r.summon.hp>0&&Math.random()<(room?.45:.72)){
-  var reflected=heroPetDamage(Math.max(1,damage-(room?0:(r.summon.def||0))));
+  var reflected=heroPetDamage(Math.max(1,damage-(r.summon.def||0)));
   r.summon.hp=Math.max(0,r.summon.hp-reflected);
   if(!r.summon.hp){r.summon=null;r.summonTile=null;}
   log('Спутник перехватывает удар '+enemy.name+'.');return true;
