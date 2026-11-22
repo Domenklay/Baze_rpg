@@ -75,35 +75,22 @@ test('New expeditions start without equipment placeholders',()=>{
  assert.equal(Object.values(r.equip).filter(Boolean).length,0);
 });
 r.hp=5000;r.mp=5000;
-test('65 original title nodes, exclusive branches and rank upgrades',()=>{
+test('76 original titles, exclusive paths and three-step upgrades',()=>{
  const titles=win.CryptTitles,system=win.CryptTitlesRuntime;
- assert.equal(titles.length,65);
- assert.equal(titles.filter(t=>t.tree===0).length,22);
- assert.equal(titles.filter(t=>t.tree===1).length,22);
- assert.equal(titles.filter(t=>t.tree===2).length,21);
- const oldEp=r.ep,oldTitles=Object.assign({},r.talents),oldSupplies=Object.assign({},r.titleSupplies);
- r.ep=10000;
- A('talent','adv_seeker');A('talent','adv_explorer');assert.ok(r.talents.adv_explorer>0);
- let before=r.ep;A('talent','adv_explorationist');assert.equal(r.ep,before);
- assert.equal(r.talents.adv_explorationist||0,0);
- A('talent','adv_night_walker');assert.ok(r.talents.adv_night_walker>0);
- before=r.ep;A('talent','adv_demon_hunter');assert.equal(r.ep,before);
- assert.equal(r.talents.adv_demon_hunter||0,0);
- A('talent','adv_magic_bandit');assert.ok(r.talents.adv_magic_bandit>0);
- before=r.ep;A('talent','adv_elven_ranger');assert.equal(r.ep,before);
- const rank=r.talents.adv_night_walker;A('talent','adv_night_walker');
- assert.equal(r.talents.adv_night_walker,rank+1);
- A('talent','adv_god_thieves');assert.equal(r.talents.adv_god_thieves,1);
- r.ep=1000;A('title-mastery','adv_god_thieves:atk');
- assert.equal(r.titleMastery.adv_god_thieves.atk,1);
- assert.equal(system.toolOf(r).icon,'lantern');
- r.talents=oldTitles;r.titleSupplies=oldSupplies;r.titleMastery={};r.ep=oldEp;api.debug.draw();
+ assert.equal(titles.length,76);assert.deepEqual([0,1,2].map(t=>titles.filter(n=>n.tree===t).length),[25,26,25]);
+ const ep=r.ep,old=r.talents;r.ep=10000;r.talents={};
+ A('talent','lt_eye');A('talent','lt_supply');A('talent','lt_hound');
+ assert.equal(r.talents.lt_hound,1);const before=r.ep;A('talent','lt_crossbow');assert.equal(r.ep,before);
+ A('talent','lt_sniff');A('talent','lt_tracker');assert.equal(r.talents.lt_tracker,1);
+ A('talent','lt_hound');assert.equal(r.talents.lt_hound,2);assert.equal(system.toolOf(r).id,'lt_hound');
+ r.talents=old;r.ep=ep;system.init(r);api.debug.draw();
 });
+
 
 test('Adventure remains, soul use and one-time treasure',()=>{
  const old=Object.assign({},r.talents);
  const originalTiles=JSON.parse(JSON.stringify(r.tiles));
- r.talents.adv_seeker=1;r.talents.adv_explorer=1;r.talents.adv_night_walker=1;r.talents.adv_magic_bandit=1;r.talents.adv_farplane=1;
+ r.talents.lt_eye=1;
  const corpse=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(corpse);
  corpse.kind='corpse';corpse.corpseId='storm-smith';corpse.revealed=true;corpse.cleared=false;
  const n=r.items.length,before=state.seq;
@@ -123,7 +110,7 @@ test('Adventure remains, soul use and one-time treasure',()=>{
 test('Side chamber guard, central loot and talent-gated secret',()=>{
  const old=Object.assign({},r.talents);
  const originalTiles=JSON.parse(JSON.stringify(r.tiles));
- r.talents.adv_seeker=1;r.talents.adv_explorer=1;r.talents.adv_night_walker=1;r.talents.adv_magic_bandit=1;r.talents.adv_god_thieves=1;
+ r.talents.lt_eye=1;r.talents.lt_sniff=1;
  const room=r.tiles.find(x=>x.kind==='empty'&&!x.revealed);assert.ok(room);
  room.kind='chamber';room.revealed=true;room.cleared=false;
  A('pickup',room.id);assert.ok(room.room);
@@ -302,7 +289,7 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
  const firstStock=state.meta.materials['Экспедиционный образец']||0;
  const firstDiamond=state.meta.diamonds||0,firstRainbow=state.meta.rainbowDiamonds||0;
  run.materials['Экспедиционный образец']=20;run.diamonds=3;run.gold=88;
- run.talents.adv_seeker=1;run.scrolls.bolt=7;
+ run.talents.lt_eye=1;run.scrolls.bolt=7;
  const equippedIds=Object.values(run.equip).filter(Boolean);
  A('safe-portal');assert.equal(state.run,run);
  for(let stage=0;stage<3;stage++){
@@ -328,7 +315,7 @@ test('Three-location expedition: only boss portals bank loot and preserve talent
    assert.equal(carry.locationIndex,stage+1);
    assert.ok(carry.gold>=88); // Full-cleared floors pay extra gold.
    assert.equal(carry.scrolls.bolt,7);
-   assert.equal(carry.talents.adv_seeker,1);
+   assert.equal(carry.talents.lt_eye,1);
    for(const id of equippedIds)assert.ok(carry.items.some(i=>i.id===id));
    assert.equal(state.meta.materials['Экспедиционный образец'],firstStock+20);
    assert.ok(state.meta.diamonds>=firstDiamond+3);
@@ -644,12 +631,12 @@ test('Every region has a unique one-time lore puzzle with adventurer clue',()=>{
  const run=state.run,point=run.tiles.find(t=>t.kind==='empty'&&!t.revealed);
  assert.ok(point);
  run.hp=9999;run.mp=9999;
- run.talents.adv_seeker=1;
+ run.talents.lt_eye=1;
  point.kind='puzzle';point.revealed=true;point.cleared=false;
  const oldRainbow=state.meta.rainbowDiamonds,turn=run.turn;
  A('pickup',point.id);
  assert.equal(run.pendingPuzzle.regional,true);
- assert.match(el('overlay').innerHTML,/Подсказка авантюриста/);
+ assert.match(el('overlay').innerHTML,/ПРОВЕРКА ПАМЯТИ/);
  A('puzzle-answer',String(puzzles[0][2]));
  assert.equal(run.turn,turn+2);
  assert.equal(run.pendingPuzzle,null);

@@ -1,5 +1,5 @@
 /* Reference catalogue: 65 core Gumballs & Dungeons title mechanics, Nov 2026.
- * NOT loaded by game or wired to combat: upgrade model differs from current 45-node system.
+ * Kept only to refund old saved titles. Active mechanics use the original 76-node catalogue.
  * Russian descriptions are newly authored. Sources listed in companion docs.
  */
 window.CryptGumballsTitleReference = [

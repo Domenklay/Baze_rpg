@@ -83,10 +83,12 @@ jobs:
           node cryptbound/tests/village_economy.cjs
           node cryptbound/tests/village_ui.cjs
           node cryptbound/tests/smoke.cjs
-          node cryptbound/tests/titles_v2.cjs
+          node cryptbound/tests/titles_original.cjs
+          node cryptbound/tests/titles_combat.cjs
+          node cryptbound/tests/titles_mobile.cjs
           node cryptbound/tests/path_items_regression.cjs
-          node cryptbound/tests/shadow_echo.cjs
-          node cryptbound/tests/titles_panther.cjs
+          node cryptbound/tests/titles_warrior.cjs
+          node cryptbound/tests/titles_hound.cjs
           node cryptbound/tests/all_title_paths.cjs
           node cryptbound/tests/combat_hud_v082.cjs
           node cryptbound/tests/hunter_book.cjs
@@ -108,8 +110,8 @@ jobs:
       - name: Gather APK
         run: |
           mkdir -p dist
-          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.12.0-offline-Android.apk
-          sha256sum dist/Cryptbound-v0.12.0-offline-Android.apk > dist/SHA256SUMS.txt
+          cp cryptbound/build/outputs/apk/debug/cryptbound-debug.apk dist/Cryptbound-v0.13.0-offline-Android.apk
+          sha256sum dist/Cryptbound-v0.13.0-offline-Android.apk > dist/SHA256SUMS.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -122,7 +124,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if ! gh release view cryptbound-v0.12.0 >/dev/null 2>&1; then
-            gh release create cryptbound-v0.12.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.12.0 — значимые классовые бонусы" --notes "Переработаны бонусы всех шести героев: масштабирование с экипировкой, щиты на новых этажах, лечение и мана за победы, барьер за заклинания, сокращение восстановления и усиление первого удара. Купленные узлы и эссенция сохранены. Погребальный оберег: 10/20/30% максимального HP на каждом новом этаже. Проверены реальные срабатывания на 30 этажах, боссы, поздняя экипировка, пещеры и отсутствие повторных наград через загрузку."
+          if ! gh release view cryptbound-v0.13.0 >/dev/null 2>&1; then
+            gh release create cryptbound-v0.13.0 --target "$GITHUB_SHA" --title "Пепельный лабиринт v0.13.0 — новые деревья званий" --notes "76 оригинальных званий по финальному дизайну: Воин, Фонарщик, Маг. Новые ветки призывных, четыре бесплатных навыка в отдельной ячейке, фиксируемая школа магии, новые боевые и походные эффекты. Старые звания заменены с однократным возвратом очков исследования. Метапрогрессия героев и деревня сохранены."
           fi
-          gh release upload cryptbound-v0.12.0 dist/Cryptbound-v0.12.0-offline-Android.apk dist/SHA256SUMS.txt --clobber
+          gh release upload cryptbound-v0.13.0 dist/Cryptbound-v0.13.0-offline-Android.apk dist/SHA256SUMS.txt --clobber

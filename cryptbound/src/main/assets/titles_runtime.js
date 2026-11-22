@@ -1,498 +1,236 @@
-/* Active five-rank title rules (65 nodes): source catalogue is separate from mechanics. */
+/* Original title trees: mechanics shared by maze, bosses and side chambers. */
 (function(){
 'use strict';
-var data=(window.CryptGumballsTitleReference||[]).map(function(t){
- return Object.assign({},t,{desc:t.mechanic+' '+t.stats,icon:t.tree===2?'◈':t.tree===1?'✣':'⚔',max_level:t.rank===5?1:3});
-});
-var byId={};data.forEach(function(t){byId[t.id]=t;});
-window.CryptTitles=data;
-var spellRewards={
- mag_apprentice:['bless',3],mag_black:['fireball',3],mag_white:['heal',3],
- mag_wizard:['firestorm',2],mag_conjuror:['deathripple',3],mag_priest:['holybolt',3],
- mag_bishop:['iceshield',3],mag_fire:['fireball',5],mag_dark:['deathripple',4],
- mag_earth:['gravity',2],mag_air:['lightningbolt',5],mag_light:['holybolt',4],mag_water:['icicle',3]
-};
-function ownedLevel(r,id){return r&&r.talents?Math.max(0,Number(r.talents[id])||0):0;}
-/* Complete original equipment sets temporarily lend rank-I titles.
-   They never persist in the title tree or unlock permanent branches. */
+var data=window.CryptOriginalTitles,byId={};data.forEach(function(t){byId[t.id]=t;});window.CryptTitles=data;
+function ownedLevel(r,id){return Math.min(byId[id]?byId[id].max_level:0,Math.max(0,Number(r&&r.talents&&r.talents[id])||0));}
 function borrowedTitle(r,id){
+ var aliases={war_novice:'wt_fighter',mag_apprentice:'mt_initiate',adv_seeker:'lt_eye'};
  if(!r||!window.ClickerRules)return false;
- var count=window.ClickerRules.counts(r.equip||{},r.items||[]);
- return Object.keys(count).some(function(setId){
-  var spec=window.ClickerRules.setRules(setId);
-  return spec&&spec.borrowTitle===id&&count[setId]>=spec.slots.length;
- });
+ var counts=window.ClickerRules.counts(r.equip||{},r.items||[]);
+ return Object.keys(counts).some(function(k){var spec=window.ClickerRules.setRules(k);return spec&&aliases[spec.borrowTitle]===id&&counts[k]>=spec.slots.length;});
 }
 function level(r,id){return Math.max(ownedLevel(r,id),borrowedTitle(r,id)?1:0);}
 function has(r,id){return level(r,id)>0;}
-var TITLE_SUITS={
- adv_magic_bandit:{id:'noble',name:'Облачение дворянина',pieces:[['bracer','Лента дворянина'],['ring','Кольцо этикета'],['cloak','Бархатный плащ']]},
- adv_treasure_hunter:{id:'hunter',name:'Трофеи охотника',pieces:[['armor','Броня охотника'],['amulet','Охотничий медальон'],['boots','Сапоги охотника']]},
- adv_royal_rune:{id:'rune',name:'Регалии мастера рун',pieces:[['ring','Рунное кольцо'],['gloves','Перчатки гоблина'],['amulet','Кулон магической энергии']]},
- adv_royal_blacksmith:{id:'smith',name:'Кузнечное облачение',pieces:[['helm','Спектральный шлем'],['bracer','Наручи литейщика'],['boots','Сапоги кузнеца']]}
-};
-function titleSetEquipped(r,id){
- var items=r&&r.items||[],equip=r&&r.equip||{};
- return Object.keys(equip).filter(function(slot){return items.some(function(it){return it.id===equip[slot]&&it.titleSet===id;});}).length;
-}
-function titleSets(r){
- var descriptions={
-  noble:'Каждая часть снижает цену званий на 6%; полный комплект — дополнительная скидка 10%.',
-  hunter:'За каждую часть +3 ОИ при входе на новый этаж; полный комплект: +3 защиты, +12% уклонения, +2 ОИ за убийство.',
-  rune:'При разборе предметов каждая часть восстанавливает +3 маны; полный комплект: +5 магии, +50 маны и 1 руна каждые пять этажей.',
-  smith:'Каждая часть даёт +2 ОИ при разборе предмета; полный комплект: 1 эссенция закалки каждые пять этажей.'
- };
- return Object.keys(TITLE_SUITS).map(function(key){
-  var suit=TITLE_SUITS[key],count=titleSetEquipped(r,suit.id);
-  return {id:suit.id,name:suit.name,count:count,max:suit.pieces.length,description:descriptions[suit.id]};
- }).filter(function(x){return x.count>0;});
-}
-function grantTitlePiece(r,t,levelNum,h){
- var suit=TITLE_SUITS[t.id];if(!suit)return;
- var piece=suit.pieces[Math.min(suit.pieces.length-1,levelNum-1)];
- var item=h.addItem(piece[0],2);if(!item)return;
- item.name=piece[1];item.titleSet=suit.id;item.titleSetName=suit.name;item.titlePiece=levelNum;
- item.setId=null;item.setName=suit.name;item.catalogId=null;
- item.trait='Часть комплекта «'+suit.name+'»; дополнительные эффекты при экипировке.';
- h.log('Получена часть комплекта «'+piece[1]+'». Предмет помещён в рюкзак и не надет.');
-}
-function rank5(r,id,key){return Math.max(0,Math.min(3,Number(r.titleMastery&&r.titleMastery[id]&&r.titleMastery[id][key])||0));}
-function masterKeys(t){
- if(t.tree===1)return t.id==='mag_light_bishop'?['pow','atk','hp']:['pow','mp','hp'];
- if(t.tree===2){
-  if(t.id==='adv_holy_rune'||t.id==='adv_great_swordsmith'||t.id==='adv_holy_blacksmith')return ['atk','hp','mp'];
-  if(t.id==='adv_great_enchanter')return ['pow','hp','mp'];
-  return ['atk','pow','hp'];
- }
- return t.id==='war_warrior'||t.id==='war_commander'?['atk','mp','hp']:['atk','pow','hp'];
-}
-function masteryStatValues(t,k){
- if(t.tree===0)return k==='hp'?[60,120,180]:k==='mp'?[40,80,120]:[3,6,9];
- if(t.tree===1){
-  if(k==='pow'||k==='atk')return [3,6,9];
-  if(t.id==='mag_destruction'||t.id==='mag_elements')return k==='hp'?[40,80,120]:[60,120,180];
-  return k==='hp'?[60,120,180]:[40,80,120];
- }
- if(k==='atk'||k==='pow')return (t.id==='adv_farplane'||t.id==='adv_elf_king')?[2,3,4]:[2,4,6];
- return [40,60,80];
-}
-function statBonuses(r){
- var st={atk:0,hp:0,mp:0,pow:0,def:0};
- data.forEach(function(t){
-  var n=level(r,t.id);if(!n)return;
-  if(t.rank===5){masterKeys(t).forEach(function(k){var lv=rank5(r,t.id,k);if(lv)st[k]+=masteryStatValues(t,k)[lv-1];});return;}
-  var re=/(Атака|магия|Магия|HP|MP|Броня)\s*\+(\d+(?:\/\d+)*)/gi;
-  var m;while((m=re.exec(t.stats))!==null){
-   var k=/^атака$/i.test(m[1])?'atk':/^магия$/i.test(m[1])?'pow':m[1].toLowerCase();
-   var vals=m[2].split('/').map(Number);
-   st[k]+=vals[Math.min(Math.max(1,n),vals.length)-1];
-  }
- });
- if(r.titleSupplies&&r.titleSupplies.license){st.atk+=2*r.titleSupplies.license;st.pow+=2*r.titleSupplies.license;}
- if(titleSetEquipped(r,'rune')===3){st.pow+=5;st.mp+=50;}
- if(titleSetEquipped(r,'hunter')===3){st.def+=3;st.dodge=12;}
- return st;
-}
+function val(r,id,values){var n=level(r,id);return n?values[Math.min(n,values.length)-1]:0;}
+function mainTree(r){return /necromancer|sorceress/.test(r.class)?1:/executioner|guardian/.test(r.class)?0:2;}
+function cost(r,t){return ((t.ep_cost||[])[Math.min(2,ownedLevel(r,t.id))]||500)*(t.tree===mainTree(r)?1:2);}
+var legacyRanks={"blade":[0,0],"iron":[0,1],"duelist":[0,1],"endure":[0,2],"guard":[0,2],"execution":[0,2],"fury":[0,2],"lastwall":[0,3],"thornmail":[0,3],"vamp":[0,3],"berserk":[0,3],"citadel":[0,4],"reflection":[0,4],"deathmark":[0,4],"conqueror":[0,4],"mind":[1,0],"reserve":[1,1],"sorcery":[1,1],"ritual":[1,2],"flow":[1,2],"pyromancer":[1,2],"stormcaller":[1,2],"summonmaster":[1,3],"meditation":[1,3],"flameheart":[1,3],"lightning":[1,3],"legion":[1,4],"sage":[1,4],"inferno":[1,4],"thunderlord":[1,4],"fortune":[2,0],"seeker":[2,1],"explorer":[2,1],"stealth":[2,2],"vault":[2,2],"merchant":[2,2],"cartographer":[2,2],"scavenger":[2,3],"secretkeeper":[2,3],"trader":[2,3],"navigator":[2,3],"phantom":[2,4],"reliclord":[2,4],"magnate":[2,4],"pathfinder":[2,4],"legendmage":[1,4],"timelord":[1,4],"highpriest":[1,4],"bishop":[1,4],"icearch":[1,4]};
 function init(r){
  if(!r)return;
- if(r.titleVersion!==2){
-  var old=r.talents||{},legacy=Object.keys(old).filter(function(id){return !byId[id]&&old[id]>0;});
-  if(legacy.length){
-   r.legacyTitles=Object.assign({},old);
-   var original=window.CryptLegacyTitles||[],main=r.class==='necromancer'||r.class==='sorceress'?1:r.class==='executioner'||r.class==='guardian'?0:2;
-   var returned=0;
-   legacy.forEach(function(id){var oldTitle=original.find(function(t){return t.id===id;});if(!oldTitle)return;
-    for(var i=0;i<old[id];i++){var val=2+oldTitle.rank*3+i*3;returned+=oldTitle.tree===main?val:Math.ceil(val*1.25);}
-   });
-   r.ep=(r.ep||0)+returned;r.legacyTitleRefund=returned;
-  }
-  r.talents={};r.titleVersion=2;
+ if(r.titleVersion!==3){
+  var old=r.talents||{},mastery=r.titleMastery||{},refund=0,ref=window.CryptGumballsTitleReference||[];
+  Object.keys(old).forEach(function(id){var t=ref.find(function(x){return x.id===id;});if(!t)return;
+   var factor=t.tree===mainTree(r)?1:2;
+   for(var i=0;i<Math.min(old[id],t.rank===5?1:3);i++)refund+=(t.rank===5?500:t.ep_cost[i])*factor;
+   Object.keys(mastery[id]||{}).forEach(function(k){refund+=Math.min(3,mastery[id][k])*500*factor;});
+  });
+  // Pre-reference trees used inexpensive rank-based prices.
+  if(r.titleVersion!==2)Object.keys(old).forEach(function(id){var spec=legacyRanks[id];if(!spec)return;for(var i=0;i<Math.min(3,old[id]);i++){var price=2+spec[1]*3+i*3;refund+=spec[0]===mainTree(r)?price:Math.ceil(price*1.25);}});
+  r.legacyTitleArchive={talents:old,mastery:mastery,supplies:r.titleSupplies||{},refund:refund};
+  (r.tiles||[]).forEach(function(t){if(t.foe&&t.foe.hp<=0)t.foe.titleKillRewarded=true;if(t.room)(t.room.guards||[]).forEach(function(g){if(g.hp<=0)g.titleKillRewarded=true;});});
+  r.ep=(Number(r.ep)||0)+refund;r.originalTitleRefund=refund;r.talents={};r.titleVersion=3;
+  ['titleMastery','titleSupplies','titleFlags','titlePanther','titleTotemTurns','titleFloorAtk','titleHealAtk','titleSageFlat','titlePaladinFlat','titleBlessAtk','titleBlessTurns','titleEchoCharges','titleDarkSoulTurns'].forEach(function(k){delete r[k];});
  }
- if(!r.titleMastery)r.titleMastery={};
- if(!r.titleSupplies)r.titleSupplies={};
- if(!r.titleFlags)r.titleFlags={};
- // Earlier saves never granted the night-walker's lantern wicks.
- if(ownedLevel(r,'adv_night_walker')>0&&!r.titleFlags.lanternKitGranted){
-  supply(r,'wick',2);r.titleFlags.lanternKitGranted=true;
- }
- if(!r.titleFloorAtk)r.titleFloorAtk=0;
- if(!r.titleHealAtk)r.titleHealAtk=0;
- if(!r.titleTurnTick)r.titleTurnTick=0;
- // Existing active Shadow Warrior souls become equivalent Echo charges on load.
- if(r.titleEchoCharges==null)r.titleEchoCharges=has(r,'war_shadow')?Math.min(3,Math.max(0,Number(r.titleDarkSoulTurns)||0)):0;
- delete r.titleDarkSoulTurns;
- if(has(r,'war_paladin')&&r.titlePaladinFlat==null)r.titlePaladinFlat=Math.max(1,Math.round((r.hp||1)*.10));
+ r.titleFlags=r.titleFlags||{};r.titleSupplies=r.titleSupplies||{};r.titleState=r.titleState||{floorMarks:{},cooldowns:{}};
+ r.titleState.floorMarks=r.titleState.floorMarks||{};r.titleState.cooldowns=r.titleState.cooldowns||{};
+ if(!skills(r).some(function(t){return t.id===r.titleState.active;}))r.titleState.active=(skills(r)[0]||{}).id||null;
 }
-function pathConflict(r,t){
- return data.some(function(x){return x.tree===t.tree&&x.rank===t.rank&&x.id!==t.id&&ownedLevel(r,x.id)>0;});
-}
-function unlocked(r,t){
- if(pathConflict(r,t))return false;
- return t.rank===1||(t.parents||[]).some(function(id){return ownedLevel(r,id)>0;});
-}
-function cost(r,t){
- var n=ownedLevel(r,t.id);var raw=t.rank===5?500:(t.ep_cost||[])[Math.min(2,n)]||500;
- var main=(r.class==='necromancer'||r.class==='sorceress')?1:(r.class==='guardian'||r.class==='executioner')?0:2;
- if(t.tree!==main)raw*=2;
- var noble=titleSetEquipped(r,'noble');
- return Math.max(1,Math.ceil(raw*(1-Math.min(.28,noble*.06+(noble===3?.10:0)))));
-}
-function supply(r,key,amount){r.titleSupplies=r.titleSupplies||{};r.titleSupplies[key]=(r.titleSupplies[key]||0)+amount;}
-function curSup(r,key){return (r.titleSupplies&&r.titleSupplies[key])||0;}
-function reward(r,t,levelNum,h){
- var got=spellRewards[t.id];if(got)h.grant(got[0],got[1],'title');
- if(t.id==='mag_planar')h.grant('earthgate',1,'title');
- if(t.id==='adv_explorer'||t.id==='adv_explorationist')supply(r,'compass',3);
- if(t.id==='adv_night_walker')supply(r,'wick',levelNum+1);
- grantTitlePiece(r,t,levelNum,h);
- if(t.id==='adv_weapon_master'){supply(r,'license',1);}
- if(t.id==='adv_elven_ranger')supply(r,'leopard',1);
- if(t.id==='adv_demon_hunter')supply(r,'arrow',3+2*levelNum);
- if(t.id==='war_faith'){supply(r,'holy_badge',1);r.guardCharges=(r.guardCharges||0)+1;}
- if(t.id==='war_dancer'||t.id==='war_great_sword')supply(r,'sword_scroll',1);
- if(t.id==='war_commander'&&levelNum===1)h.addItem('amulet',6);
- if(t.id==='war_paladin'&&levelNum===1){r.titlePaladinFlat=Math.max(1,Math.round(h.stats().hp*.10));r.hp=h.stats().hp;}
- if(t.id==='war_sword_sage'&&levelNum===1)r.titleSageFlat=Math.max(1,Math.round(h.stats().atk*.30));
- if(t.rank===5&&t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
- if(t.id==='adv_farplane'&&levelNum===1)h.log('Особая специализация: '+(has(r,'adv_night_walker')?'извлечение душ из останков':'души павших врагов')+'.');
- if(t.id==='adv_legendary_hunter'&&levelNum===1)supply(r,'arrow',3);
-}
+function state(r){if(!r.titleState)init(r);return r.titleState;}
+function pathConflict(r,t){return data.some(function(x){return x.tree===t.tree&&x.rank===t.rank&&x.id!==t.id&&ownedLevel(r,x.id)>0;});}
+function unlocked(r,t){return !pathConflict(r,t)&&(t.rank===1||t.parents.some(function(id){return ownedLevel(r,id)>0;}));}
+function statBonuses(r){return {atk:level(r,'wt_fighter')+level(r,'lt_aim')+(r.titleTonicAtk||0),pow:level(r,'mt_initiate')+2*level(r,'mt_elements')+(r.titleTonicPow||0),hp:20*level(r,'wt_companion')+val(r,'lt_supply',[20,30,40]),mp:20*level(r,'mt_reserve'),def:0};}
 function upgraded(r,t,h){
- var old=h.stats(),n=ownedLevel(r,t.id);
- r.talents[t.id]=n+1;
- reward(r,t,n+1,h);
- var now=h.stats();
- r.hp=Math.min(now.hp,r.hp+Math.max(0,now.hp-old.hp));
- r.mp=Math.min(now.mp,r.mp+Math.max(0,now.mp-old.mp));
- return n+1;
+ var old=h.stats(),n=ownedLevel(r,t.id);r.talents[t.id]=n+1;
+ if(t.id==='lt_eye')refreshHints(r,h);
+ if(['lt_crossbow','lt_hound','lt_silence','lt_exchange'].includes(t.id))state(r).active=t.id;
+ if(t.tree===1&&['mt_school','mt_effect','mt_familiar'].includes(t.id)&&!state(r).school)state(r).school=r.pendingTitleSchool||'fire';
+ if(state(r).school)delete r.pendingTitleSchool;
+ var now=h.stats();r.hp=Math.min(now.hp,r.hp+Math.max(0,now.hp-old.hp));r.mp=Math.min(now.mp,r.mp+Math.max(0,now.mp-old.mp));
+ syncPet(r,r.summon);return n+1;
 }
-function masteryUpgrade(r,t,key,h){
- var choices=masterKeys(t);if(!has(r,t.id)||choices.indexOf(key)<0||rank5(r,t.id,key)>=3)return false;
- var costVal=cost(r,t);if(r.ep<costVal)return false;
- var old=h.stats();
- r.ep-=costVal;
- if(!r.titleMastery[t.id])r.titleMastery[t.id]={};
- r.titleMastery[t.id][key]=(r.titleMastery[t.id][key]||0)+1;
- var now=h.stats();
- r.hp=Math.min(now.hp,r.hp+Math.max(0,now.hp-old.hp));
- r.mp=Math.min(now.mp,r.mp+Math.max(0,now.mp-old.mp));
- if(t.tree===2){var tool=toolOf(r);supply(r,tool.kind==='bow'?'arrow':tool.kind==='lantern'?'wick':tool.kind==='rune'?'rune':'quench',2);}
- if(t.id==='mag_planar')h.grant('earthgate',1,'title');
- if(t.id==='mag_destruction'&&key==='hp')h.grant('fireball',5,'title');
- if(t.id==='mag_dark_priest'&&key==='hp')h.grant('implosion',rank5(r,t.id,key),'title');
- if(t.id==='mag_pope'&&key==='hp')h.grant('holybolt',4*rank5(r,t.id,key),'title');
- if(t.id==='mag_archbishop'&&key==='hp')h.grant('iceshield',4*rank5(r,t.id,key),'title');
- if(t.id==='mag_legendary'&&key==='hp')h.grant('electrostatic',[4,8,16][rank5(r,t.id,key)-1],'title');
- if(t.id==='mag_light_bishop'&&key==='atk')h.grant('recovering',3*rank5(r,t.id,key),'title');
- if(t.id==='mag_light_bishop'&&key==='hp')h.grant('divinefavor',3*rank5(r,t.id,key),'title');
- if(t.id==='mag_time'){
-  var l=rank5(r,t.id,key),type=key==='pow'?'chain':key==='mp'?'lightningbolt':'disrupting';
-  h.grant(type,key==='pow'?2*l:key==='mp'?5*l:3*l,'title');
- }
- if(t.id==='war_commander'&&key==='atk')h.addItem('amulet',6);
- h.log('Усилено звание «'+t.name+'»: '+key+' '+rank5(r,t.id,key)+'/3.');
- return true;
+function floorKey(r){return [r.actIndex||0,r.locationIndex||0,r.floor||1].join(':');}
+function refreshHints(r){
+ (r.tiles||[]).forEach(function(t){t.hintEnemy=false;});
+ var qty=val(r,'lt_eye',[3,4,5]);
+ (r.tiles||[]).filter(function(t){return !t.revealed&&t.foe&&t.foe.hp>0;}).slice(0,qty).forEach(function(t){t.hintEnemy=true;t.titleLanternMarked=true;t.foe.titleLanternMarked=true;});
+ if(r.titleHound&&r.titleHound.hp>0&&has(r,'lt_sniff'))hintSupply(r);
 }
-function toolOf(r){
- if(has(r,'adv_blacksmith'))return {name:has(r,'adv_holy_blacksmith')?'Священная наковальня':has(r,'adv_great_swordsmith')?'Кузнечная наковальня':'Кузнечная наковальня',icon:'anvil',kind:'forge'};
- if(has(r,'adv_rune_master'))return {name:has(r,'adv_holy_rune')?'Арканный тигель':has(r,'adv_great_enchanter')?'Тигель зачарователя':'Магический тигель',icon:'crucible',kind:'rune'};
- if(has(r,'adv_demon_hunter'))return {name:has(r,'adv_farplane')?'Загробный арбалет':has(r,'adv_elf_king')?'Королевский арбалет':has(r,'adv_legendary_hunter')?'Легендарный арбалет':'Арбалет охотника',icon:'crossbow',kind:'bow'};
- if(has(r,'adv_night_walker'))return {name:has(r,'adv_farplane')?'Загробный фонарь':has(r,'adv_god_thieves')?'Воровской фонарь':has(r,'adv_elf_king')?'Эльфийский фонарь':'Фонарь странника',icon:'lantern',kind:'lantern'};
- if(has(r,'adv_explorer')||has(r,'adv_explorationist'))return {name:has(r,'adv_explorer')?'Компас исследователя':'Компас первопроходца',icon:'compass',kind:'compass'};
-
- return null;
+function resourceTile(t){return ['ore-vein','mine-wall','secret','chest','coin','potion','vial-hp','vial-mp','coin-small','trinket'].includes(t.kind);}
+function hintSupply(r){
+ var hidden=(r.tiles||[]).filter(function(t){return !t.revealed&&resourceTile(t);});
+ var t=has(r,'lt_tracker')?hidden.find(function(t){return t.kind==='secret'||t.kind==='chest';})||hidden[0]:hidden[0];
+ if(t){t.hintSpecial=true;t.titleSupplyHint=true;}
 }
-function undead(e){return /нежит|скел|мертв|лич|зомб|труп|костян|призрак/i.test((e&&e.name)||'');}
 function floor(r,h){
- init(r);r.titleFloorAtk=0;r.titleHealAtk=0;r.titleTotemTurns=0;
- // Panther stays on this floor; statues remain in the backpack.
- r.titlePanther=null;
- if(has(r,'adv_explorer'))r.ep+=10+5*(level(r,'adv_explorer')-1);
- if(has(r,'adv_explorationist'))r.hp=Math.min(h.stats().hp,r.hp+6+3*(level(r,'adv_explorationist')-1));
- if(has(r,'mag_priest')){var b=3*level(r,'mag_priest');r.hp=Math.min(h.stats().hp,r.hp+b);r.mp=Math.min(h.stats().mp,r.mp+b);}
- if(r.floor>1&&titleSetEquipped(r,'hunter')>0)r.ep+=3*titleSetEquipped(r,'hunter');
- if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'rune')===3)supply(r,'rune',1);
- if(r.floor>1&&r.floor%5===0&&titleSetEquipped(r,'smith')===3)supply(r,'quench',1);
- refreshHints(r,h);
- if(has(r,'adv_elf_king')&&has(r,'adv_demon_hunter'))autoShot(r,h,25+10*rank5(r,'adv_elf_king','atk'),true);
+ init(r);var q=state(r),key=floorKey(r);refreshHints(r,h);
+ if(q.floorMarks[key])return;
+ q.floorMarks[key]=true;q.rhythm=0;q.fervor=0;q.victoryStrike=false;q.lastGuard=false;q.houndDied=false;q.deadtime=false;q.resources=0;q.quiet=0;q.rangedDelay=0;
+ if(r.titleHound&&!has(r,'lt_guide'))r.titleHound=null;
+ if(r.titleHound)hintSupply(r);
+ var st=h.stats(),mana=has(r,'mt_infinite')?20:val(r,'mt_return',[6,9,12]);
+ if(mana){var extra=Math.max(0,r.mp+mana-st.mp);r.mp=Math.min(st.mp,r.mp+mana);if(has(r,'mt_infinite')&&extra>0)r.shield=(r.shield||0)+Math.ceil(st.hp*.1);}
+ [r.summon,r.titleHound,r.ghost].forEach(function(p){if(p&&p.hp>0){syncPet(r,p);p.titleBarrier=petFloorBarrier(r,p);}});
 }
-/* Real clues identify what is hidden without opening a tile or allowing attacks.
-   Recalculate on floor entry, title purchases, gear changes and save loading. */
-function refreshHints(r,h){
- if(!r||!Array.isArray(r.tiles))return;
- r.tiles.forEach(function(t){t.hintEnemy=false;t.hintKey=false;t.hintSpecial=false;});
- if(has(r,'adv_seeker')){
-  var foes=r.tiles.filter(function(t){return !t.revealed&&t.foe&&t.foe.hp>0;});
-  foes.sort(function(a,b){return ((a.id*17+(r.floor||1)*13)%101)-((b.id*17+(r.floor||1)*13)%101);});
-  var quota=2+level(r,'adv_seeker');
-  for(var i=0;i<Math.min(quota,foes.length);i++)foes[i].hintEnemy=true;
- }
- if(has(r,'adv_night_walker')){
-  r.titleFlags=r.titleFlags||{};
-  var floorId=(r.actIndex||0)+':'+(r.locationIndex||0)+':'+(r.floor||1);
-  if(r.titleFlags.keyHintFloor!==floorId){
-   r.titleFlags.keyHintFloor=floorId;
-   var chance=Math.min(1,.5+.25*(level(r,'adv_night_walker')-1));
-   r.titleFlags.keyHintSuccess=Math.random()<chance;
-   r.titleFlags.keyHintAnnounced=false;
-  }
-  if(r.titleFlags.keyHintSuccess){
-   var key=r.tiles.find(function(t){return !t.revealed&&(t.hasKey||(t.drops&&t.drops.key));});
-   if(key){
-    key.hintKey=true;
-    if(h&&h.log&&!r.titleFlags.keyHintAnnounced){
-     h.log('Фонарь отметил ключ знаком ⚿ на закрытой плите.');
-     r.titleFlags.keyHintAnnounced=true;
-    }
-   }
-  }
- }
- if(has(r,'adv_god_thieves')){
-  r.tiles.filter(function(t){return !t.revealed&&(t.kind==='secret'||t.kind==='chamber');}).forEach(function(t){t.hintSpecial=true;});
- }
- r.tiles.forEach(function(t){
-  if(t.lanternHintKey)t.hintKey=true;
-  if(t.lanternHintSpecial)t.hintSpecial=true;
- });
+function petFloorBarrier(r,p){return Math.ceil(p.maxHp*(has(r,'wt_unbroken')?.25:val(r,'wt_formation',[.08,.12,.16])));}
+function petFactor(r){return 1+val(r,'mt_familiar',[.2,.3,.4])+(has(r,'mt_archsummon')?.25:0);}
+function syncPet(r,p){if(!p)return;var factor=petFactor(r),old=p.titleFactor||1;if(factor===old)return;p.maxHp=Math.max(1,Math.round(p.maxHp/old*factor));p.hp=Math.max(1,Math.min(p.maxHp,Math.round(p.hp/old*factor)));p.atk=Math.max(1,Math.round(p.atk/old*factor));p.titleFactor=factor;}
+function summoned(r,p){syncPet(r,p);p.titleBarrier=0;}
+function interceptChance(r){return val(r,'wt_guard',[.80,.88,.96])||.72;}
+function petDamage(r,p,amount,intercept){
+ if(intercept)amount=Math.ceil(amount*(1-val(r,'wt_bodyguard',[.15,.25,.35])));
+ var shield=Math.min(p.titleBarrier||0,amount);p.titleBarrier=(p.titleBarrier||0)-shield;return Math.max(0,amount-shield);
 }
-function autoShot(r,h,power,hidden){
- var target=(hidden&&h.hiddenTargets?h.hiddenTargets():h.targets()).find(function(t){return t.foe&&t.foe.hp>0&&(hidden||h.reachable(t));});if(!target)return false;
- var dmg=Math.max(1,Math.ceil(power)-target.foe.def);target.foe.hp-=dmg;
- h.log('Арбалет охотника поражает '+target.foe.name+': '+dmg+'.');
- if(target.foe.hp<=0)h.kill(target);
- return true;
+function protectFatal(r,damage,h){
+ var q=state(r),p=[r.summon,r.titleHound,r.ghost].find(function(p){return p&&p.hp>0;});if(!p||p.hp<=0||!has(r,'wt_lastguard')||q.lastGuard)return false;
+ var shields=(r.shield||0)+(r.setShieldRemaining||0);if(damage<r.hp+shields)return false;
+ q.lastGuard=true;p.hp=1;p.titleBarrier=0;h.log('Последний телохранитель принимает смертельный удар и остаётся с 1 HP.');return true;
 }
-function turn(r,h){
- r.titleTurnTick=(r.titleTurnTick||0)+1;
- if(has(r,'adv_legendary_hunter')&&r.titleTurnTick%5===0)autoShot(r,h,Math.max(10,Math.ceil(h.stats().atk*.6)));
- var alive=h.targets().filter(function(t){return t.foe&&t.foe.hp>0&&h.reachable(t);});
- if(r.titleTotemTurns>0){
-  // Totem lasts exactly 3/6/9 turns, including empty turns; never stays alive forever.
-  r.titleTotemTurns--;
-  if(alive.length&&alive[0].foe.hp>0){
-   var v=alive[0],amount=Math.max(1,Math.floor(h.stats().pow*(.5+.10*level(r,'mag_conjuror')))-(v.foe.def||0));
-   v.foe.hp=Math.max(0,v.foe.hp-amount);
-   h.log('Тотем призывателя наносит '+amount+' магического урона.');
-   if(v.foe.hp<=0)h.kill(v);
-  }
+function attack(r,e,damage,h){
+ var q=state(r);q.rhythm=(q.rhythm||0)+1;
+ var third=has(r,'wt_rhythm')&&q.rhythm%3===0;
+ damage*=1+val(r,'wt_breaker',[.05,.10,.15])+(q.fervor||0)*.03;
+ var threshold=has(r,'wt_punisher')?.45:val(r,'wt_verdict',[.35,.40,.45])||.30;
+ if(has(r,'wt_execution')&&e.hp<e.maxHp*threshold)damage*=1+(has(r,'wt_punisher')?.30:val(r,'wt_execution',[.15,.20,.25]));
+ if(q.victoryStrike){damage*=1+(has(r,'wt_onslaught')?.40:val(r,'wt_tempo',[.15,.20,.25]));q.victoryStrike=false;}
+ if(third){
+  damage+=h.stats().atk*val(r,'wt_rhythm',[.20,.30,.40]);
+  var pen=has(r,'wt_perfect')?(e.boss?8:(e.def||0)):val(r,'wt_split',[2,3,4]);damage+=Math.min(e.def||0,pen);
+  if(e.elite||e.boss)damage*=1+val(r,'wt_heavy',[.10,.15,.20]);
+  if(e.boss&&has(r,'wt_titans'))damage*=1.25;
  }
- var panther=r.titlePanther;
- if(panther&&panther.hp>0){
-  var bonus=has(r,'adv_elf_king')&&has(r,'adv_night_walker')?Math.max(1,Math.floor(h.stats().atk*.2)):0;
-  var target=alive[0],roomTargets=h.roomTargets?h.roomTargets():[];
-  if(target&&target.foe.hp>0){
-   var damage=Math.max(1,panther.atk+bonus-(target.foe.def||0)-Math.max(0,target.foe.guard||0));
-   if(h.provoke)h.provoke(target.foe,'panther');
-   target.foe.hp=Math.max(0,target.foe.hp-damage);
-   h.log('Чёрная пантера атакует '+target.foe.name+': '+damage+' физического урона.');
-   if(target.foe.hp<=0)h.kill(target);
-  }else if(roomTargets.length){
-   var guard=roomTargets[0],damageRoom=Math.max(1,panther.atk+bonus-(guard.def||0));
-   if(h.provoke)h.provoke(guard,'panther');
-   if(h.hitRoom)h.hitRoom(guard,damageRoom);
-   h.log('Чёрная пантера атакует '+guard.name+' в побочной комнате: '+damageRoom+'.');
-  }
- }
-}
-function summonPanther(r,h){
- if(!r||!has(r,'adv_elven_ranger'))return {ok:false,message:'Не изучено звание Эльфийского следопыта.'};
- if(r.titlePanther&&r.titlePanther.hp>0)return {ok:false,message:'Чёрная пантера уже призвана.'};
- if(curSup(r,'leopard')<1)return {ok:false,message:'Нет статуэток чёрной пантеры.'};
- var st=h.stats(),boost=has(r,'adv_elf_king')&&has(r,'adv_night_walker');
- var maxHp=Math.max(12,Math.ceil(st.hp*(boost?.52:.36)));
- var atk=Math.max(4,Math.ceil(st.atk*(boost?.66:.46)));
- r.titleSupplies.leopard--;
- r.titlePanther={name:'Чёрная пантера',hp:maxHp,maxHp:maxHp,atk:atk,def:Math.max(1,Math.floor(st.def*.5))};
- return {ok:true,message:'Статуэтка призвала чёрную пантеру (HP '+maxHp+', атака '+atk+').'};
+ if(has(r,'lt_mark')&&e.titleLanternMarked&&!e.titleLanternHit){damage*=1.2;e.titleLanternHit=true;}
+ e.titleHeroTurn=r.turn+1;return Math.max(1,Math.ceil(damage));
 }
 function onKill(r,e,drop,h){
- if(has(r,'war_silver'))r.hp=Math.min(h.stats().hp,r.hp+level(r,'war_silver'));
- if(has(r,'war_royal'))r.titleFloorAtk=(r.titleFloorAtk||0)+level(r,'war_royal');
- if(has(r,'war_shadow')){r.titleEchoCharges=Math.min(3,(r.titleEchoCharges||0)+level(r,'war_shadow'));h.log('Теневой воин: Эхо ×'+r.titleEchoCharges+' (следующие обычные удары станут двойными).');}
- if(has(r,'mag_conjuror'))r.titleTotemTurns=Math.max(r.titleTotemTurns||0,3*level(r,'mag_conjuror'));
- if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&!/голем|элементал|механи|автомат|скелет|мертвец|нежить|призрак|костяк|лич/i.test(e.name)&&Math.random()<.05)drop.soul={kind:e.boss||e.elite?'elite':'common',name:'Душа '+e.name};
- if(titleSetEquipped(r,'hunter')===3)r.ep+=2;
- if(has(r,'war_dragon')&&Math.random()<(0.1+.1*level(r,'war_dragon')))h.cross(e,Math.ceil(h.stats().atk*.65));
- if(has(r,'war_duke')&&Math.random()<.1){var m=rank5(r,'war_duke','atk')+rank5(r,'war_duke','pow')+rank5(r,'war_duke','hp');h.cross(e,Math.ceil(h.stats().atk*(.7+.1*m)));h.log('Герцог разрушения: Клинок разрушения.');}
- if(has(r,'war_light_arbiter')&&Math.random()<.1){var m=rank5(r,'war_light_arbiter','atk')+rank5(r,'war_light_arbiter','pow')+rank5(r,'war_light_arbiter','hp');h.flash(Math.max(8,Math.ceil(h.stats().pow*(2+.1*m))));h.log('Судья света: Святой луч.');}
+ if(e.ethereal||e.titleKillRewarded)return;e.titleKillRewarded=true;
+ var q=state(r);if(q.casting&&!q.castManaReward&&has(r,'mt_resonance')){r.mp=Math.min(h.stats().mp,r.mp+val(r,'mt_resonance',[2,3,4]));q.castManaReward=true;}if(has(r,'wt_tempo'))q.victoryStrike=true;if(has(r,'wt_fervor'))q.fervor=Math.min(5,(q.fervor||0)+1);
 }
-/* One Echo charge empowers one normal hero attack. It never creates an actor or a
-   separate turn. Game combat performs the follow-up after its single counterattack. */
-function consumeEcho(r){
- if(!r||!has(r,'war_shadow')||(r.titleEchoCharges||0)<=0)return false;
- r.titleEchoCharges--;
- return true;
-}
-function beforeAttack(r){return has(r,'war_novice')&&Math.random()<.05+.05*level(r,'war_novice');}
-function attack(r,e,dmg,h){
- if(has(r,'adv_demon_hunter')&&undead(e))dmg=Math.ceil(dmg*(1+.05+.05*level(r,'adv_demon_hunter')));
- if(has(r,'war_templar')&&undead(e))dmg=Math.ceil(dmg*(1+.25+.25*level(r,'war_templar')));
- if(has(r,'war_warrior')&&e.boss)dmg=Math.ceil(dmg*(1.5+.15*(rank5(r,'war_warrior','atk')+rank5(r,'war_warrior','mp')+rank5(r,'war_warrior','hp'))));
- if(has(r,'war_magic')&&Math.random()<.05+.05*level(r,'war_magic'))dmg+=h.stats().pow;
- if(has(r,'war_dancer')&&curSup(r,'sword_scroll')>0&&Math.random()<.08){supply(r,'sword_scroll',-1);dmg=Math.ceil(dmg*1.45);h.log('Техника мастера меча усилила удар.');}
- if(has(r,'war_dark_arbiter')&&Math.random()<.05){var m=rank5(r,'war_dark_arbiter','pow')+rank5(r,'war_dark_arbiter','atk')+rank5(r,'war_dark_arbiter','hp');h.flash(Math.max(6,Math.ceil(h.stats().pow*(1.2+.15*m))));h.log('Тёмный судья: Волна смерти.');}
- if(has(r,'war_hell')&&Math.random()<.05){var m=rank5(r,'war_hell','pow')+rank5(r,'war_hell','atk')+rank5(r,'war_hell','hp');h.flash(Math.max(12,Math.ceil(h.stats().pow*(2+.2*m))));h.log('Бог войны преисподней: Метеоритный дождь.');}
- if(has(r,'war_titan')&&Math.random()<.05){var m=rank5(r,'war_titan','atk')+rank5(r,'war_titan','pow')+rank5(r,'war_titan','hp');e.stun=Math.max(e.stun||0,1);dmg+=Math.max(4,Math.ceil(h.stats().pow*(.5+.1*m)));h.log('Рыцарь титанов: Земляной шип — урон и оглушение.');}
- if(has(r,'adv_great_enchanter')&&has(r,'adv_rune_master'))dmg+=Math.max(1,Math.round(h.stats().pow*.35));
- return dmg;
-}
-function incoming(r,e,damage){
- if(e&&e.ranged&&has(r,'war_heavy'))damage*=1-(.1+.1*level(r,'war_heavy'));
+function petHit(r,p,e,damage,h){
+ syncPet(r,p);var q=state(r),charge=q.petCharge;
+ if(has(r,'wt_pair')&&e.titlePairReady){damage*=1.35;e.titlePairReady=false;}
+ if(charge){damage+=charge.damage;if(has(r,'mt_fused')){damage*=1.4;applySchool(r,e,charge.school);}
+  if(charge.double)damage*=2;q.petCharge=null;
+ }
  return Math.max(1,Math.ceil(damage));
 }
-function counterImmune(r){return has(r,'adv_great_swordsmith')&&has(r,'adv_rune_master')&&Math.random()<.15;}
-/* Deterministic part of actual spell strength, for spellbook previews only.
-   Random crits and on-cast title procs remain in spellMultiplier(). */
+function applySchool(r,e,school){
+ var duration=1+schoolDuration(r,school);
+ if(school==='fire')e.burn=Math.max(e.burn||0,duration+2);
+ else if(school==='water'||school==='air')e.stun=Math.max(e.stun||0,duration);
+ else if(school==='earth')e.guard=Math.min(e.guard||0,-2);
+ else if(school==='dark')e.poison=Math.max(e.poison||0,duration+1);
+ else if(school==='light')r.shield=(r.shield||0)+Math.max(1,Math.ceil((r.summon||{}).maxHp*.05)||1);
+}
+function petAfterHit(r,p,e,damage,h){
+ if(e.titleHeroTurn===r.turn&&has(r,'wt_pair'))e.titlePairReady=true;
+ var rate=has(r,'wt_insatiable')?.30:val(r,'wt_blood',[.15,.20,.25]);
+ var cap=has(r,'wt_insatiable')?.20:val(r,'wt_feast',[.12,.15,.18])||val(r,'wt_blood',[.08,.10,.12]);
+ if(rate)p.hp=Math.min(p.maxHp,p.hp+Math.min(Math.ceil(damage*rate),Math.ceil(p.maxHp*cap)));
+ if(e.hp<=0&&!e.ethereal){var heal=has(r,'wt_redfeast')?.15:val(r,'wt_victory',[.05,.07,.09]);p.hp=Math.min(p.maxHp,p.hp+Math.ceil(p.maxHp*heal));if(has(r,'wt_redfeast'))r.hp=Math.min(h.stats().hp,r.hp+Math.ceil(h.stats().hp*.05));}
+}
+var harm=['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall','earthquake','sunfall','soulcovenant','firstlight'];
+function effectMultiplier(r,sp){
+ var chosen=state(r).school===sp.school,n=1;
+ if(chosen)n+=val(r,'mt_effect',[.10,.15,.20])+(has(r,'mt_lord')?.20:0);
+ if(['heal','shield','healshield','lastlight','blessing','timestop','stun','freezeall','weakness','burn','burnall','drain','drainall'].includes(sp.kind))n+=val(r,'mt_expand',[.15,.20,.25]);
+ return n;
+}
 function previewMultiplier(r,sp){
- var map={fire:'mag_fire',dark:'mag_dark',earth:'mag_earth',air:'mag_air',light:'mag_light',water:'mag_water'};
- var n=level(r,map[sp.school]),result=1+n*.1+(n?.1:0);
- if(has(r,'mag_elements')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall','earthquake'].includes(sp.kind))
-  result+=.30+.10*(rank5(r,'mag_elements','pow')+rank5(r,'mag_elements','mp')+rank5(r,'mag_elements','hp'));
- if(has(r,'mag_legendary')&&['blessing','heal','shield','healshield','lastlight','timestop','reveal'].includes(sp.kind))
-  result+=.30+.10*rank5(r,'mag_legendary','pow');
- if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].includes(sp.kind))
-  result+=.30+.10*rank5(r,'mag_light_bishop','pow');
- if(has(r,'mag_dark_priest')&&sp.id==='deathripple')result*=1+.25*rank5(r,'mag_dark_priest','pow');
- if(has(r,'mag_dark_priest')&&sp.id==='implosion')result*=1+.25*rank5(r,'mag_dark_priest','mp');
- if(has(r,'mag_pope')&&sp.id==='holybolt')result*=1+.25*rank5(r,'mag_pope','mp');
- return result;
+ var n=1;
+ if(harm.includes(sp.kind)){
+  n+=val(r,'mt_power',[.08,.12,.16]);
+  if(state(r).school===sp.school)n+=val(r,'mt_school',[.10,.15,.20])+val(r,'mt_elemental',[.10,.15,.20])+(has(r,'mt_lord')?.25:0);
+  n*=1-val(r,'mt_familiar',[.10,.15,.20]);
+ }else {n*=effectMultiplier(r,sp);if(['heal','shield','healshield','lastlight'].includes(sp.kind))n*=1+schoolDuration(r,sp.school);}
+ return n;
 }
-function spellMultiplier(r,sp){
- var n=has(r,'mag_fire')&&sp.school==='fire'?level(r,'mag_fire'):has(r,'mag_dark')&&sp.school==='dark'?level(r,'mag_dark'):has(r,'mag_earth')&&sp.school==='earth'?level(r,'mag_earth'):has(r,'mag_air')&&sp.school==='air'?level(r,'mag_air'):has(r,'mag_light')&&sp.school==='light'?level(r,'mag_light'):has(r,'mag_water')&&sp.school==='water'?level(r,'mag_water'):0;
- var result=1+n*.1+(n? .1:0);
- if(has(r,'mag_elements')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall','earthquake'].indexOf(sp.kind)>=0)result+=.30+.10*(rank5(r,'mag_elements','pow')+rank5(r,'mag_elements','mp')+rank5(r,'mag_elements','hp'));
- if(has(r,'mag_legendary')&&['blessing','heal','shield','healshield','lastlight','timestop','reveal'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_legendary','pow');
- if(has(r,'mag_light_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)result+=.30+.10*rank5(r,'mag_light_bishop','pow');
- if(has(r,'mag_dark_priest')&&sp.school==='dark'&&Math.random()<.5)result*=2;
- if(has(r,'mag_dark_priest')&&sp.id==='deathripple')result*=1+.25*rank5(r,'mag_dark_priest','pow');
- if(has(r,'mag_dark_priest')&&sp.id==='implosion')result*=1+.25*rank5(r,'mag_dark_priest','mp');
- if(has(r,'mag_pope')&&sp.school==='light'&&['holy','attack','aoe'].indexOf(sp.kind)>=0&&Math.random()<.5){
-   result*=2;
-   r.titlePopeTriggered=true;
+function schoolDuration(r,school){return state(r).school===school?(has(r,'mt_architect')?2:has(r,'mt_seal')?1:0):0;}
+function effectTurns(r,sp,base){return Math.max(1,Math.ceil(base*effectMultiplier(r,sp)))+schoolDuration(r,sp.school);}
+function spellHit(r,sp,e,raw,h){
+ var q=state(r),pen=has(r,'mt_arcane')?8:val(r,'mt_pierce',[2,3,4]);
+ var amount=Math.max(1,raw-Math.max(0,(e.def||0)-pen));
+ if(e.hp<e.maxHp*.30)amount*=1+val(r,'mt_execute',[.20,.30,.40]);
+ if(e.titleSpellChain){amount*=1+(has(r,'mt_unbound')?.35:val(r,'mt_chain',[.10,.15,.20]));e.titleSpellChain=false;}
+ if(e.titleControlled&&has(r,'mt_consequence')){amount*=1.25;e.titleControlled=false;}
+ return Math.max(1,Math.ceil(amount));
+}
+function afterSpellHit(r,sp,e,before,damage,h){
+ var q=state(r);q.castDamage=Math.max(q.castDamage||0,Math.min(before,damage));
+ if(e.hp>0){
+  if(['burn','burnall'].includes(sp.kind)){e.burn=Math.max(e.burn||0,effectTurns(r,sp,3));e.titleBurnFactor=effectMultiplier(r,sp);}
+  if(['stun','freezeall'].includes(sp.kind)){e.stun=Math.max(e.stun||0,effectTurns(r,sp,e.boss?1:2));e.titleControlled=true;}
+  if(sp.kind==='weakness'){e.titleControlled=true;e.guard=-Math.max(1,Math.ceil(2*effectMultiplier(r,sp)));}
+  if(['burn','burnall','stun','freezeall','weakness'].includes(sp.kind)&&has(r,'mt_chain'))e.titleSpellChain=true;
+ }else{
+  if(!e.ethereal&&!q.castManaReward){var restored=val(r,'mt_resonance',[2,3,4]);if(restored){r.mp=Math.min(h.stats().mp,r.mp+restored);q.castManaReward=true;}}
+  var excess=Math.max(0,damage-before);
+  if(has(r,'mt_chord')&&excess>0&&!q.spellSplash){
+   var next=h.targets().filter(function(t){return t.foe!==e&&t.foe.hp>0;}).sort(function(a,b){return Math.abs(a.id-(e.tileId||0))-Math.abs(b.id-(e.tileId||0));})[0];
+   if(next){q.spellSplash=true;h.hit(next,excess*.5);q.spellSplash=false;}
+   else {var guard=h.roomTargets().find(function(g){return g!==e&&g.hp>0;});if(guard)h.hitRoom(guard,excess*.5);}
+  }
  }
- if(has(r,'mag_pope')&&sp.id==='holybolt')result*=1+.25*rank5(r,'mag_pope','mp');
- if(has(r,'mag_archbishop')&&sp.id==='iceshield'&&Math.random()<(.15+[0,.09,.12,.15][rank5(r,'mag_archbishop','pow')])){
-   result*=1.8*(1+.25*rank5(r,'mag_archbishop','mp'));
-   r.titleAuroraTriggered=true;
+}
+function spellCast(r,sp){var q=state(r);q.castManaReward=false;q.castDamage=0;q.casting=sp.id;}
+function finishSpell(r,sp){
+ var q=state(r);
+ if(has(r,'mt_channel')&&sp.school===q.school&&q.castDamage>0){
+  q.charges=(q.charges||0)+1;var damage=q.castDamage*val(r,'mt_channel',[.30,.45,.60]);
+  q.petCharge={school:sp.school,damage:Math.ceil(damage),double:has(r,'mt_archsummon')&&q.charges%3===0};
  }
- return result;
+ q.casting=null;
 }
-function spellCast(r,sp,h){
- if(has(r,'mag_bishop')&&['heal','healshield','lastlight'].indexOf(sp.kind)>=0)r.titleHealAtk=Math.max(r.titleHealAtk||0,5*level(r,'mag_bishop'));
- if(has(r,'mag_time')&&sp.school==='air'&&!h.targets().some(function(t){return t.foe&&t.foe.boss&&t.foe.hp>0;})&&Math.random()<.5)r.timeStopTurns=(r.timeStopTurns||0)+1;
- /* Ice Shield conversion to Aurora Barrier is calculated in spellMultiplier so
-  the same cast cannot trigger the upgrade twice. */
- if(has(r,'mag_destruction')&&sp.id==='fireball'&&Math.random()<(.12+[0,.06,.09,.12][rank5(r,'mag_destruction','pow')])){
-   h.flash(Math.ceil(h.stats().pow*(2+.25*rank5(r,'mag_destruction','mp'))));
-   h.log('Армагеддон: магия огня по всем доступным врагам.');
- }
- if(has(r,'mag_wizard')&&['attack','burn','stun','drain','chain','aoe','burnall','freezeall','holy','weakness','drainall'].indexOf(sp.kind)>=0&&Math.random()<.1+.1*level(r,'mag_wizard'))h.flash(Math.ceil(h.stats().pow*.6));
- /* Light Bishop/Pope repeated hit is applied to the spell's original target in spellMultiplier. */
-}
-function scrollCount(r,sp,count,source){
- if(source==='title'||source==='forge')return count;
- if(has(r,'adv_rune_master')&&sp.rank<=3&&Math.random()<.1+.1*level(r,'adv_rune_master'))return count*2;
- return count;
-}
-function canCast(r,sp){
- if(sp.rank<=2||sp.rank===6)return null;
- if(level(r,'mag_apprentice')>0&&sp.rank<=2+level(r,'mag_apprentice'))return null;
- var caster=has(r,'war_magic')?['earth','fire','dark']:has(r,'war_dancer')?['fire','air','dark']:has(r,'war_silver')?['earth','water','light']:has(r,'war_faith')?['water','air','light']:[];
- if(has(r,'war_faith')&&sp.rank<=2+level(r,'war_faith')&&['water','air','light'].includes(sp.school))return null;
- if(caster.indexOf(sp.school)>=0&&sp.rank<=2+Math.max(level(r,'war_magic'),level(r,'war_dancer'),level(r,'war_silver')))return null;
- return 'Для свитка '+sp.rank+'★ нужно магическое или воинское звание';
-}
-function corpse(r,entry,h){
- if(has(r,'adv_farplane')&&has(r,'adv_night_walker')){
-  h.addSoul({kind:'unique',name:entry.soul,storyId:entry.id});return true;
- }
- return false;
-}
-function onScrap(r,it,h){
- if(has(r,'adv_blacksmith')){supply(r,'quench',Math.max(1,Math.ceil(it.rarity/2)));h.log('Наковальня получила закалочную эссенцию.');}
- if(titleSetEquipped(r,'smith')>0)r.ep+=2*titleSetEquipped(r,'smith');
- if(titleSetEquipped(r,'rune')>0)r.mp=Math.min(h.stats().mp,r.mp+3*titleSetEquipped(r,'rune'));
-}
+function manaMultiplier(r){return 1-val(r,'mt_economy',[.08,.12,.16]);}
+function canCast(r,sp){if(sp.rank<=2||sp.rank===6||sp.rank<=2+level(r,'mt_initiate'))return null;return 'Нужен «Посвящённый эфира» подходящей ступени';}
+function skills(r){return data.filter(function(t){return ['lt_crossbow','lt_hound','lt_silence','lt_exchange'].includes(t.id)&&ownedLevel(r,t.id)>0;});}
+function toolOf(r){var q=state(r),t=byId[q.active];return t?{name:t.name,kind:'lantern-skill',icon:({lt_crossbow:'crossbow',lt_hound:'paw',lt_silence:'moon',lt_exchange:'mana'})[t.id],id:t.id,cooldown:Math.max(0,(q.cooldowns[t.id]||0)-(r.turn||0))}:null;}
 function useTool(r,h,selected){
- var tool=toolOf(r);
- // The initial compass stays nested inside the later lantern.
- if(selected==='compass'&&tool&&tool.kind==='lantern'&&
-  (has(r,'adv_explorer')||has(r,'adv_explorationist')))
-  tool={name:'Компас в фонаре',icon:'compass',kind:'compass'};
- function ok(message){return {ok:true,message:message};}
- function no(message){return {ok:false,message:message};}
- if(!tool)return no('Сначала изучите звание авантюриста, выдающее инструмент.');
- if(tool.kind==='compass'){
-  if(curSup(r,'compass')<=0)return no('Компас уже использован.');
-  var last=r.titleFlags&&r.titleFlags.compassLastFloor;
-  if(Number.isInteger(last)&&r.floor<last+2)return no('Компас можно использовать снова через '+(last+2-r.floor)+' этаж(а).');
-  supply(r,'compass',-1);
-  r.titleFlags=r.titleFlags||{};r.titleFlags.compassLastFloor=r.floor;
-  var qty=Math.max(1,1+Math.floor(level(r,'adv_explorer')/2));
-  if(Math.random()<.5){
-   var money=15+5*Math.max(1,level(r,'adv_explorer')||level(r,'adv_explorationist'));
-   r.gold=(r.gold||0)+money;
-   return ok('Компас обнаружил тайник с '+money+' золотыми монетами.');
+ var q=state(r),id=q.active,st=h.stats(),cd=0;
+ if(!id||!has(r,id))return {ok:false,message:'Изучите навык III ранга Фонарщика.'};
+ if((q.cooldowns[id]||0)>r.turn)return {ok:false,message:'До восстановления: '+(q.cooldowns[id]-r.turn)+' ходов.'};
+ if(id==='lt_crossbow'){
+  var room=h.roomTargets(),target=h.targets().find(function(t){return String(t.id)===String(selected);}),guard=room.find(function(g){return String(g.slot)===String(selected);});
+  if(!target&&!guard)return {ok:false,message:'Выберите обнаруженного противника.'};
+  var foe=target?target.foe:guard;
+  var power=st.atk*1.5*(1+val(r,'lt_bolt',[.20,.35,.50]))*((foe.elite||foe.boss)&&has(r,'lt_killer')?1.35:1);
+  if(target)h.hit(target,power);else h.hitRoom(guard,Math.max(1,power-(guard.def||0)));
+  if(has(r,'lt_explosive')){
+   if(target){var near=window.ClickerRules.near(target.id),other=h.targets().find(function(t){return t!==target&&near.includes(t.id);});if(other)h.hit(other,power*.5);}
+   else {var otherGuard=room.find(function(g){return g!==guard&&Math.abs(g.slot-guard.slot)===1;});if(otherGuard)h.hitRoom(otherGuard,Math.max(1,power*.5-(otherGuard.def||0)));}
   }
-  if(h.addFood){h.addFood(Math.random()<.5?'mushroom':'honey',qty);}
-  else if(h.addMaterial)h.addMaterial('Лесные грибы',qty);
-  return ok('Компас обнаружил скрытые припасы ×'+qty+'.');
+  cd=val(r,'lt_reload',[9,8,7])||10;
+ }else if(id==='lt_hound'){
+  if(r.titleHound&&r.titleHound.hp>0)return {ok:false,message:'Гончая уже призвана.'};
+  var price=Math.ceil(st.hp*(has(r,'lt_guide')&&q.houndDied?.05:.10));if(r.hp<=price)return {ok:false,message:'Недостаточно HP для безопасного призыва.'};
+  r.hp-=price;r.titleHound={name:'Походная гончая',hp:Math.ceil(st.hp*.4),maxHp:Math.ceil(st.hp*.4),atk:Math.max(1,Math.ceil(st.atk*.5)),def:1};syncPet(r,r.titleHound);hintSupply(r);q.houndDied=false;cd=12;
+ }else if(id==='lt_silence'){
+  q.quiet=val(r,'lt_quiet',[2,2,3])||1;q.rangedDelay=val(r,'lt_disrupt',[1,2,3]);
+  if(has(r,'lt_deadtime')&&!q.deadtime){q.deadtime=true;q.bossQuiet=q.quiet+1;}
+  cd=10;
+ }else{
+  var toMana=selected==='mana',need=Math.ceil((toMana?st.hp:st.mp)*.20),pool=toMana?r.hp:r.mp;
+  if(pool<need||(toMana&&pool===need))return {ok:false,message:'Недостаточно ресурса для обмена.'};
+  var rate=has(r,'lt_equal')?.20:val(r,toMana?'lt_lifemana':'lt_manalife',[.18,.21,.24])||.15;
+  if(toMana){if(r.mp>=st.mp)return {ok:false,message:'Мана уже полная.'};r.hp-=need;r.mp=Math.min(st.mp,r.mp+Math.ceil(st.mp*rate));}
+  else{if(r.hp>=st.hp)return {ok:false,message:'Здоровье уже полное.'};r.mp-=need;r.hp=Math.min(st.hp,r.hp+Math.ceil(st.hp*rate));}
+  cd=8;
  }
- if(tool.kind==='lantern'){
-  if(curSup(r,'wick')<=0)return no('Нужен фитиль фонаря.');
-  var t=r.tiles.find(function(t){return !t.revealed&&t.hasKey&&!t.hintKey;})||r.tiles.find(function(t){return !t.revealed&&!t.hintSpecial&&(t.kind==='secret'||t.kind==='chamber');});
-  if(!t)return no('Скрытых особых плит не осталось.');
-  supply(r,'wick',-1);
-  if(t.hasKey){t.lanternHintKey=true;t.hintKey=true;return ok('Фонарь обнаружил ключ за закрытой плитой ⚿.');}
-  t.lanternHintSpecial=true;t.hintSpecial=true;return ok('Фонарь указал на скрытый тайник ✦.');
- }
- if(tool.kind==='bow'){
-  if(curSup(r,'arrow')<=0)return no('Не хватает стрел.');
-  var target=h.targets().find(function(t){return String(t.id)===String(selected)&&t.foe&&t.foe.hp>0;});
-  if(!target)return no('Выберите обнаруженного противника для арбалета.');
-  supply(r,'arrow',-1);
-  var base=Math.round(h.stats().atk*(has(r,'adv_legendary_hunter')?1.4:1));
-  h.hit(target,base);
-  if(has(r,'adv_farplane')&&has(r,'adv_demon_hunter')&&target.foe.hp<=0&&!undead(target.foe)&&Math.random()<.3)
-   h.addSoul({kind:'common',name:'Душа '+target.foe.name});
-  return ok('Арбалет поражает '+target.foe.name+'.');
- }
- if(tool.kind==='rune'){
-  var special=has(r,'adv_holy_rune'),need=special?2:1;
-  var candidates=Object.keys(r.scrolls).map(function(id){return h.spells.find(function(x){return x.id===id&&x.rank<5&&(r.scrolls[id]||0)>=need;});}).filter(Boolean);
-  if(!candidates.length)return no(special?'Нужно два одинаковых свитка ниже 5-го ранга.':'Нужен свиток ниже 5-го ранга.');
-  var sp=candidates.find(function(x){return x.id===selected;});
-  if(!sp)return no('Выберите свиток для тигля.');
-  if(!special){
-   r.scrolls[sp.id]--;
-   var recovered=3+3*titleSetEquipped(r,'rune');
-   r.mp=Math.min(h.stats().mp,r.mp+recovered);
-   return ok('Тигель разобрал свиток и восстановил до '+recovered+' маны.');
-  }
-  var next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5&&x.school===sp.school;});
-  if(!next.length)next=h.spells.filter(function(x){return x.rank===sp.rank+1&&x.rank<=5;});
-  if(!next.length)return no('Подходящий свиток для объединения не найден.');
-  if(curSup(r,'rune')<1)return no('Нужна магическая руна для объединения свитков.');
-  supply(r,'rune',-1);r.scrolls[sp.id]-=2;
-  h.grant(next[0].id,1,'forge');return ok('Два свитка и магическая руна преобразованы в '+next[0].name+'.');
- }
- if(tool.kind==='forge'){
-  if(has(r,'adv_great_enchanter')||has(r,'adv_great_swordsmith')){
-   var kind=has(r,'adv_great_enchanter')?'pow':'atk';
-   var target=(r.items||[]).find(function(it){return String(it.id)===String(selected)&&
-    Object.keys(r.equip||{}).some(function(slot){return r.equip[slot]===it.id;})&&(it.plus||0)<9;});
-   if(!target)return no('Выберите надетое улучшаемое снаряжение.');
-   if(curSup(r,'quench')<2)return no('Нужно 2 закалочные эссенции.');
-   supply(r,'quench',-2);target.plus=(target.plus||0)+1;target[kind]=(target[kind]||0)+2;
-   return ok('Наковальня усилила «'+target.name+'» до +'+target.plus+'.');
-  }
-  if(!has(r,'adv_holy_blacksmith'))return no('Создание реликвий открывается Святым кузнецом.');
-  if(curSup(r,'quench')<3)return no('Нужно 3 закалочные эссенции.');
-  supply(r,'quench',-3);h.addItem('amulet',6);
-  return ok('Наковальня создала реликвию 6-го ранга.');
- }
- return no('Этот инструмент действует автоматически.');
+ q.cooldowns[id]=r.turn+cd;return {ok:true,message:byId[id].name+' · без затраты хода.',free:true};
 }
-
-window.CryptTitlesRuntime={previewMultiplier:previewMultiplier,data:data,titleSets:titleSets,ownedLevel:ownedLevel,borrowedTitle:borrowedTitle,refreshHints:refreshHints,summonPanther:summonPanther,masteryStatValues:masteryStatValues,titleSetEquipped:titleSetEquipped,level:level,has:has,init:init,rank5:rank5,masterKeys:masterKeys,statBonuses:statBonuses,pathConflict:pathConflict,unlocked:unlocked,cost:cost,upgraded:upgraded,masteryUpgrade:masteryUpgrade,toolOf:toolOf,curSup:curSup,spellMultiplier:spellMultiplier,spellCast:spellCast,canCast:canCast,scrollCount:scrollCount,onFloor:floor,onTurn:turn,onKill:onKill,beforeAttack:beforeAttack,attack:attack,incoming:incoming,counterImmune:counterImmune,consumeEcho:consumeEcho,onCorpse:corpse,onScrap:onScrap,useTool:useTool};
+function turn(r,h){
+ var q=state(r);q.freezeTimers=q.quiet>0;q.freezeRanged=q.rangedDelay>0;q.freezeBoss=q.bossQuiet>0;
+ if(q.quiet>0)q.quiet--;if(q.rangedDelay>0)q.rangedDelay--;if(q.bossQuiet>0)q.bossQuiet--;
+ var p=r.titleHound;if(p&&p.hp>0){
+  syncPet(r,p);var t=h.targets().find(h.reachable),g=h.roomTargets()[0];
+  if(t){var before=t.foe.hp,damage=petHit(r,p,t.foe,Math.max(1,p.atk-(t.foe.def||0)),h);h.provoke(t.foe,'hound');t.foe.hp=Math.max(0,t.foe.hp-damage);petAfterHit(r,p,t.foe,Math.min(before,damage),h);if(!t.foe.hp)h.kill(t);}
+  else if(g){var before=g.hp,damage=petHit(r,p,g,Math.max(1,p.atk-(g.def||0)),h);h.provoke(g,'hound');h.hitRoom(g,damage);petAfterHit(r,p,g,Math.min(before,damage),h);}
+ }
+}
+function frozen(r,e){var q=state(r);return !!(q.freezeTimers||(e.ranged&&q.freezeRanged)||((e.boss||e.elite)&&q.freezeBoss));}
+function physicalMultiplier(r,e){var n=1+val(r,'wt_breaker',[.05,.10,.15])+(state(r).fervor||0)*.03;if(e&&has(r,'wt_execution')&&e.hp<e.maxHp*(has(r,'wt_punisher')?.45:val(r,'wt_verdict',[.35,.40,.45])||.30))n*=1+(has(r,'wt_punisher')?.30:val(r,'wt_execution',[.15,.20,.25]));return n;}
+function resource(r,h,name,qty){var q=state(r);q.resources=(q.resources||0)+1;var extra=0;if(r.titleHound&&r.titleHound.hp>0&&q.resources<=level(r,'lt_pack'))extra++;if(has(r,'lt_collector')&&q.resources%3===0)extra+=3;if(extra)h.addMaterial(name,extra);return extra;}
+function tonic(r,kind){if(!has(r,'lt_tonic')||Math.random()>=.20)return false;var key=kind==='mp'?'titleTonicPow':'titleTonicAtk';if((r[key]||0)>=3)return false;r[key]=(r[key]||0)+1;return true;}
+window.CryptTitlesRuntime={data:data,level:level,ownedLevel:ownedLevel,borrowedTitle:borrowedTitle,has:has,init:init,cost:cost,unlocked:unlocked,pathConflict:pathConflict,upgraded:upgraded,statBonuses:statBonuses,refreshHints:refreshHints,onFloor:floor,onTurn:turn,onKill:onKill,attack:attack,previewMultiplier:previewMultiplier,spellMultiplier:previewMultiplier,spellCast:spellCast,finishSpell:finishSpell,spellHit:spellHit,afterSpellHit:afterSpellHit,effectTurns:effectTurns,effectMultiplier:effectMultiplier,schoolDuration:schoolDuration,manaMultiplier:manaMultiplier,canCast:canCast,toolOf:toolOf,useTool:useTool,skills:skills,frozen:frozen,summoned:summoned,syncPet:syncPet,petHit:petHit,petAfterHit:petAfterHit,physicalMultiplier:physicalMultiplier,petDamage:petDamage,interceptChance:interceptChance,protectFatal:protectFatal,resource:resource,tonic:tonic,
+ // Compatibility endpoints for unrelated equipment and old save readers. Removed titles have no effects.
+ rank5:function(){return 0;},masterKeys:function(){return [];},masteryStatValues:function(){return [];},masteryUpgrade:function(){return false;},titleSets:function(){return [];},titleSetEquipped:function(){return 0;},curSup:function(r,k){return r.titleSupplies&&r.titleSupplies[k]||0;},scrollCount:function(r,s,n){return n;},beforeAttack:function(){return false;},counterImmune:function(){return false;},consumeEcho:function(){return false;},incoming:function(r,e,n){return n;},onCorpse:function(r,entry,h){h.addSoul({kind:'unique',name:entry.soul,storyId:entry.id});return true;},onScrap:function(){},summonPanther:function(){return {ok:false,message:'Старое звание заменено деревом Фонарщика.'};}};
 })();

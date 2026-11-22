@@ -39,7 +39,7 @@ const dmgBefore=extract();assert.ok(dmgBefore>0);
 r.forestWellStats={pow:30};
 A('spell-detail','bolt');
 const dmgAfter=extract();assert.ok(dmgAfter>dmgBefore,'Displayed current damage grows with magic');
-r.talents.mag_elements=1;
+r.talents.mt_power=1;
 A('spell-detail','bolt');
 assert.ok(extract()>dmgAfter,'Displayed current damage includes title buffs');
 A('ui-panel','spells');

@@ -1,4 +1,4 @@
-/* Traverse and buy every one of the 65 Gumballs-inspired titles as real game actions. */
+/* Traverse and buy every one of the 76 Gumballs-inspired titles as real game actions. */
 'use strict';
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const root=path.resolve(__dirname,'../src/main/assets'),elms={},store={};
@@ -13,7 +13,7 @@ for(const name of scripts){
  vm.runInContext(fs.readFileSync(path.join(root,name),'utf8'),ctx,{filename:name,timeout:12000});
 }
 const titles=window.CryptTitles,game=window.Crypt,TR=window.CryptTitlesRuntime,A=game.debug.action;
-assert.equal(titles.length,65);
+assert.equal(titles.length,76);
 let purchased=0,mastered=0;
 function chain(t){
  const ancestry=[];const visited=new Set();
@@ -29,7 +29,7 @@ function chain(t){
 for(const leaf of titles){
  A('begin',leaf.tree===0?'guardian':leaf.tree===1?'sorceress':'scout');
  const r=game.state().run;
- r.ep=200000;
+ r.ep=200000;A('title-school','fire');
  for(const title of chain(leaf)){
   A('talent',title.id);
   assert.equal(TR.level(r,title.id),1,'failed to learn '+title.id);
@@ -52,4 +52,4 @@ for(const leaf of titles){
  const activeTitle=titles.find(x=>x.id===leaf.id);
  assert.equal(activeTitle.name,leaf.name);
 }
-console.log('PASS title paths: 65 individually learned, 5 ranks reachable, '+purchased+' purchases, '+mastered+' V-rank enhancements');
+console.log('PASS title paths: 76 individually learned, 5 ranks reachable, '+purchased+' purchases, '+mastered+' V-rank enhancements');

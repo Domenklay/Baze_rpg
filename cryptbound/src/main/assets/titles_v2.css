@@ -16,3 +16,17 @@
 .title-mastery-grid button{border:1px solid #9d7e50;min-height:42px;padding:6px 3px;background:#372d23;color:#d9bf85;font:11px/1.1 Georgia,serif}
 .title-mastery-grid button:disabled{opacity:.45}
 @media (max-width:390px){.battle-dock .quick-spells{grid-template-rows:repeat(2,32px)}.battle-dock .quick-spells .quick-spell{height:32px;min-height:32px}.title-mastery-grid button{font-size:10px}}
+/* Original trees: ten readable final choices, separate school and lantern selection. */
+.title-school-picker{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 10px;color:#ead0a2}
+.title-school-picker>b,.title-school-picker>small{flex-basis:100%}
+.title-school-picker button{padding:7px 9px;border:1px solid #957347;background:#211b17;color:#e9d3b1;font:12px Georgia,serif}
+.title-school-picker button[aria-pressed=true]{background:#683528;border-color:#e0b56b}
+.panel-talents .talent-dot{width:130px;min-height:78px}
+.panel-talents .talent-dot b{font:11px/1.15 Georgia,serif;color:#f4d7a5}
+.panel-talents .talent-inspector p{color:#ead8bd;opacity:1}
+.panel-talents .talent-inspector{max-height:33dvh;overflow-y:auto}
+.panel-talents .talent-dot b{color:#352417;background:#ead4abeF;padding:3px 5px;opacity:1;text-shadow:none}
+.panel-talents .talent-dot small{color:#3b281c;opacity:1;font-size:10px}
+.panel-talents .talent-dot.locked{filter:none;opacity:1}
+.panel-talents .talent-dot.locked>span{filter:saturate(.15)}
+.title-refund{color:#ead3a9;font-size:12px;line-height:1.4}
