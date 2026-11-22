@@ -24,6 +24,7 @@ r.talents={mt_return:3};r.floor=7;r.mp=0;TR.onFloor(r,h(r));assert.equal(r.mp,12
 r.talents={mt_infinite:1};r.floor=8;r.mp=100;r.shield=0;TR.onFloor(r,h(r));assert.equal(r.shield,20);
 // Formula penetration, execution and one-shot chained spell flags.
 r=begin();r.talents={mt_arcane:1,mt_execute:3,mt_unbound:1,mt_consequence:1};const target={hp:20,maxHp:100,def:10,titleSpellChain:true,titleControlled:true};const damage=TR.spellHit(r,water,target,100,h(r));assert.equal(damage,232);assert.equal(target.titleSpellChain,false);assert.equal(target.titleControlled,false);
+r.talents={mt_chain:3,mt_unbound:1};const repeated={hp:200,maxHp:200,def:0};TR.afterSpellHit(r,water,repeated,220,20,h(r));assert.equal(repeated.titleSpellChain,true);assert.equal(TR.spellHit(r,water,repeated,100,h(r)),135);
 r.talents={mt_resonance:3};r.mp=0;TR.spellCast(r,water);TR.afterSpellHit(r,water,{hp:0},10,20,h(r));TR.afterSpellHit(r,water,{hp:0},10,20,h(r));assert.equal(r.mp,4);
 r.talents={mt_channel:3,mt_archsummon:1};r.titleState.school='water';for(let i=1;i<=3;i++){TR.spellCast(r,water);r.titleState.castDamage=100;TR.finishSpell(r,water);assert.equal(r.titleState.petCharge.damage,60);assert.equal(r.titleState.petCharge.double,i===3);}assert.equal(r.titleState.petCharge.school,'water');
 console.log('PASS original titles: 76 definitions, migration/refund once, class stats, school lock, familiar tradeoff, spell execution/chaining/penetration, mana lifecycle and summon charges');

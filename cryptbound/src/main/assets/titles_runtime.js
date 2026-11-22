@@ -154,20 +154,21 @@ function spellHit(r,sp,e,raw,h){
  if(e.titleControlled&&has(r,'mt_consequence')){amount*=1.25;e.titleControlled=false;}
  return Math.max(1,Math.ceil(amount));
 }
+function gridDistance(a,b,width){return Math.abs(Math.floor(a/width)-Math.floor(b/width))+Math.abs(a%width-b%width);}
 function afterSpellHit(r,sp,e,before,damage,h){
  var q=state(r);q.castDamage=Math.max(q.castDamage||0,Math.min(before,damage));
  if(e.hp>0){
   if(['burn','burnall'].includes(sp.kind)){e.burn=Math.max(e.burn||0,effectTurns(r,sp,3));e.titleBurnFactor=effectMultiplier(r,sp);}
   if(['stun','freezeall'].includes(sp.kind)){e.stun=Math.max(e.stun||0,effectTurns(r,sp,e.boss?1:2));e.titleControlled=true;}
   if(sp.kind==='weakness'){e.titleControlled=true;e.guard=-Math.max(1,Math.ceil(2*effectMultiplier(r,sp)));}
-  if(['burn','burnall','stun','freezeall','weakness'].includes(sp.kind)&&has(r,'mt_chain'))e.titleSpellChain=true;
+  if(has(r,'mt_unbound')||['burn','burnall','stun','freezeall','weakness'].includes(sp.kind)&&has(r,'mt_chain'))e.titleSpellChain=true;
  }else{
   if(!e.ethereal&&!q.castManaReward){var restored=val(r,'mt_resonance',[2,3,4]);if(restored){r.mp=Math.min(h.stats().mp,r.mp+restored);q.castManaReward=true;}}
   var excess=Math.max(0,damage-before);
   if(has(r,'mt_chord')&&excess>0&&!q.spellSplash){
-   var next=h.targets().filter(function(t){return t.foe!==e&&t.foe.hp>0;}).sort(function(a,b){return Math.abs(a.id-(e.tileId||0))-Math.abs(b.id-(e.tileId||0));})[0];
+   var next=h.targets().filter(function(t){return t.foe!==e&&t.foe.hp>0;}).sort(function(a,b){return gridDistance(a.id,e.tileId||0,5)-gridDistance(b.id,e.tileId||0,5);})[0];
    if(next){q.spellSplash=true;h.hit(next,excess*.5);q.spellSplash=false;}
-   else {var guard=h.roomTargets().find(function(g){return g!==e&&g.hp>0;});if(guard)h.hitRoom(guard,excess*.5);}
+   else {var guard=h.roomTargets().filter(function(g){return g!==e&&g.hp>0;}).sort(function(a,b){return gridDistance(a.slot,e.slot||0,3)-gridDistance(b.slot,e.slot||0,3);})[0];if(guard)h.hitRoom(guard,excess*.5);}
   }
  }
 }
