@@ -10,10 +10,10 @@ for(const size of [{width:360,height:640},{width:390,height:844}]){
   assert.equal(report.count,tree===1?26:25);assert.equal(report.overflow,false);assert.ok(report.text.length>20);assert.equal(await page.locator('.talent-dot b').first().evaluate(e=>getComputedStyle(e).color),'rgb(53, 36, 23)');
   const nodes=await page.locator('.talent-dot').evaluateAll(es=>es.map(e=>e.dataset.id));
   for(const id of nodes){await action('title-detail',id);assert.ok(await page.locator('.talent-inspector h3').textContent());}
-  if(size.width===390)await page.screenshot({path:'/workspace/titles-v3-'+tree+'.png'});
+  if(size.width===390)await page.screenshot({path:path.join(require('node:os').tmpdir(),'cryptbound-titles-v3-'+tree+'.png')});
   await action('close');
  }
 }
-await action('begin','scout');for(const id of ['lt_eye','lt_supply','lt_exchange'])await action('talent',id);await action('title-tool');assert.equal(await page.locator('[data-action="title-tool-use"]').count(),2);await page.screenshot({path:'/workspace/titles-v3-lantern.png'});await action('close');
+await action('begin','scout');for(const id of ['lt_eye','lt_supply','lt_exchange'])await action('talent',id);await action('title-tool');assert.equal(await page.locator('[data-action="title-tool-use"]').count(),2);await page.screenshot({path:path.join(require('node:os').tmpdir(),'cryptbound-titles-v3-lantern.png')});await action('close');
 assert.deepEqual(errors,[]);console.log('PASS mobile titles: all 76 node descriptions selectable at 360×640 and 390×844, three trees, no page overflow, dedicated lantern exchange dialog');
 }finally{if(browser)await browser.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});
